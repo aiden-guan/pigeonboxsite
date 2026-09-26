@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · PigeonBox Cloud</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/pigeon.png">
+</head>
+<body>
+<main>
+<header><img src="/pigeon.png" alt=""><a href="/">PigeonBox Cloud</a>
+<nav><a href="/account">Account</a><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav></header>
+<h1>Privacy</h1>
+<p class="draft">Draft for review. Not legal advice; have counsel review before launch.</p>
+<div class="card">
+<h2>What PigeonBox Cloud processes</h2>
+<ul>
+<li>When you use Cloud AI (summaries, sorting, drafts, rewrites, Ask Inbox), the email content involved in that request is sent over TLS to PigeonBox Cloud and on to its AI provider, processed to answer the request, and not stored.</li>
+<li>PigeonBox Cloud does not log email content. Operational logs hold request IDs, routes, status codes, timings, model and token counts.</li>
+<li>Usage records (operation, model, token counts, time, status) are kept for limits and billing. They contain no email content.</li>
+<li>Hosted tracking stores, per tracked email: subject, sender, recipients, Gmail IDs, send time, and open/click events with user agent, a salted IP hash and a classification. Never message bodies.</li>
+<li>Account data: your user ID and email address from sign-in, and subscription status from Stripe.</li>
+</ul>
+</div>
+<div class="card">
+<h2>What stays on your computer</h2>
+<p>The PigeonBox extension keeps your inbox index, drafts, rules and settings in your browser. Cloud does not receive them.</p>
+</div>
+<div class="card">
+<h2>Your choices</h2>
+<ul>
+<li>Switch PigeonBox to run on your computer at any time; nothing is sent to Cloud in Local mode.</li>
+<li>Delete your account on the Account page. This deletes hosted tracking data and usage records and cancels your subscription.</li>
+</ul>
+</div>
+</main>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

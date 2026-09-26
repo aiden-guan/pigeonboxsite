@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account · PigeonBox Cloud</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="/pigeon.png">
+</head>
+<body data-page="account">
+<main>
+<header><img src="/pigeon.png" alt=""><a href="/">PigeonBox Cloud</a>
+<nav><a href="/account">Account</a><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav></header>
+<h1>Account</h1>
+<p id="notice" class="notice" role="status"></p>
+<section id="signed-out" class="card" hidden>
+<h2>Sign in</h2>
+<p>Sign in to see your plan, usage and billing.</p>
+<div class="row"><button id="sign-in" type="button">Sign in</button></div>
+</section>
+<section id="signed-in" hidden>
+<div class="card">
+<h2>Your account</h2>
+<dl>
+<dt>Signed in as</dt><dd id="email">—</dd>
+<dt>Plan</dt><dd id="plan">—</dd>
+<dt>Subscription</dt><dd id="subscription">—</dd>
+<dt>Renews</dt><dd id="renews">—</dd>
+<dt>Usage</dt><dd id="usage">—</dd>
+</dl>
+</div>
+<div class="card">
+<h2>Cloud features on this account</h2>
+<div id="capabilities" class="chips"></div>
+<p>PigeonBox on your computer works whatever your plan is.</p>
+</div>
+<div class="card">
+<h2>Billing</h2>
+<p>Payments are handled by Stripe. PigeonBox never sees or stores your card details.</p>
+<div class="row"><button id="subscribe" type="button" hidden>Subscribe</button><button id="portal" type="button" class="ghost" hidden>Manage billing</button></div>
+</div>
+<div class="card">
+<h2>Session</h2>
+<div class="row"><button id="sign-out" type="button" class="ghost">Sign out</button><button id="delete" type="button" class="danger">Delete account</button></div>
+</div>
+</section>
+</main>
+<script type="module" src="/app.js"></script>
+</body>
+</html>
