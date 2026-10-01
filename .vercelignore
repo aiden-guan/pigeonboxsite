@@ -1,3 +1,12 @@
 _headers
 .gitignore
 .vercelignore
+journey/
+journey.css
+vendor/
+assets/models/
+scripts/
+docs/overhaul/
+flight-study.html
+flight-frames.js
+site-motion.js

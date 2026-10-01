@@ -1,217 +1,189 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://pigeonbox-site.vercel.app/"><meta property="og:url" content="https://pigeonbox-site.vercel.app/">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="canonical" href="https://pigeonbox-site.vercel.app/">
   <title>PigeonBox — Sort Gmail. Draft replies.</title>
-  <meta name="description" content="A Gmail extension to sort email, summarize threads, draft replies, search indexed mail, and track sent messages. Free Local mode or hosted Cloud.">
+  <meta name="description" content="PigeonBox sorts your Gmail, summarizes threads, and drafts replies inside Gmail. Use it free in Local mode or choose hosted Cloud.">
+  <meta name="theme-color" content="#101114">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pigeonbox-site.vercel.app/">
+  <meta property="og:title" content="PigeonBox — Sort Gmail. Draft replies.">
+  <meta property="og:description" content="Sort messages, summarize threads, and draft replies inside Gmail. Free Local mode or hosted Cloud.">
+  <meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/brand/pigeon-icon.png">
-  <meta property="og:type" content="website"><meta property="og:title" content="PigeonBox — Sort Gmail. Draft replies."><meta property="og:description" content="Sort email, summarize threads, draft replies, search indexed mail, and track sent messages inside Gmail."><meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png">
-  <meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#f3c7a8">
-  <script src="/journey/boot.js"></script>
-  <link rel="modulepreload" href="/vendor/three.min.js">
-  <link rel="stylesheet" href="/journey.css?v=1">
+  <link rel="stylesheet" href="/home.css?v=2">
 </head>
 <body data-page="home">
   <a class="skip-link" href="#main">Skip to content</a>
-  <canvas id="world" aria-hidden="true"></canvas>
-  <div class="atmosphere" aria-hidden="true"></div>
-  <svg class="tether" aria-hidden="true"><path class="tether-line" d=""></path><circle class="tether-ring" r="16" cx="-50" cy="-50"></circle><circle class="tether-dot" r="3.5" cx="-50" cy="-50"></circle></svg>
-  <div class="loader" aria-hidden="true">
-    <img src="/brand/pigeon-icon.png" alt="" width="56" height="56">
-    <span class="loader-bar"><i></i></span>
-    <span class="loader-text">Warming up wings</span>
-  </div>
-
-  <header class="j-header">
-    <a class="brand" href="/" aria-label="PigeonBox home"><img src="/brand/pigeon-icon.png" alt="" width="30" height="30"><span>PigeonBox</span></a>
-    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
-    <nav class="site-nav" id="site-nav" aria-label="Main navigation"><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a class="nav-github" href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a class="account-link" href="/account" hidden>Sign in</a><a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox <span aria-hidden="true">↗</span></a></nav>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="PigeonBox home">
+        <img src="/brand/pigeon-icon.png" alt="" width="28" height="28">
+        <span>PigeonBox</span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="/#product">Product</a>
+        <a href="/#features">Features</a>
+        <a href="/#modes">Local &amp; Cloud</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/docs">Docs</a>
+        <a class="account-link" href="/account" hidden>Sign in</a>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
   </header>
 
-  <aside class="flight-log" aria-hidden="true">
-    <span class="log-time">06:12</span><span class="log-sep"></span><span>ALT <b class="log-alt">0</b> m</span><span class="log-sep"></span><span><b class="log-dist">0.0</b> km flown</span><span class="log-sep"></span><span class="log-place">The Rooftop</span>
-  </aside>
-
-  <nav class="route" aria-label="Journey stops">
-    <span class="route-track"><i class="route-fill"></i></span>
-    <ol>
-      <li><a href="#top" data-go="0"><span>Rooftop</span></a></li>
-      <li><a href="#product" data-go="1"><span>Sort</span></a></li>
-      <li><a href="#summaries" data-go="2"><span>Catch up</span></a></li>
-      <li><a href="#drafts" data-go="3"><span>Draft</span></a></li>
-      <li><a href="#ask" data-go="4"><span>Ask</span></a></li>
-      <li><a href="#tracking" data-go="5"><span>Track</span></a></li>
-      <li><a href="#get-pigeonbox" data-go="6"><span>Home</span></a></li>
-    </ol>
-  </nav>
-
-  <main id="main" class="journey">
-    <section class="stop stop-hero" id="top" data-stop="0" aria-labelledby="hero-title">
-      <div class="stage">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="eyebrow-dot"></span>PigeonBox for Gmail</p>
-          <h1 id="hero-title">Less inbox.<br><span>More outbox.</span></h1>
-          <p class="deck">A little courier that sorts your Gmail, catches you up, and helps you write back. Come along for the flight.</p>
-          <div class="actions"><a class="btn btn-primary" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox <span aria-hidden="true">↗</span></a><a class="btn btn-glass" href="#product">Take the tour <span aria-hidden="true">↓</span></a></div>
-          <p class="micro">Free &amp; open source <span aria-hidden="true">·</span> Chrome extension <span aria-hidden="true">·</span> Lives inside Gmail</p>
+  <main id="main" tabindex="-1">
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">PigeonBox for Gmail</p>
+        <h1 id="hero-title">Get through Gmail<br>faster.</h1>
+        <p class="hero-deck">Sort messages, catch up on threads, and draft replies without leaving Gmail.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox <span aria-hidden="true">↗</span></a>
+          <a class="button button-text" href="#product">See how it works <span aria-hidden="true">↓</span></a>
         </div>
-        <p class="scroll-cue" aria-hidden="true"><span class="scroll-mouse"><i></i></span>Scroll to take flight</p>
+        <p class="hero-note">Chrome extension <span aria-hidden="true">·</span> Free Local mode <span aria-hidden="true">·</span> Open source</p>
       </div>
     </section>
 
-    <section class="leg" data-leg="0" aria-hidden="true"><div class="leg-stage"><p class="postmark"><span class="postmark-ring">07:05</span><span class="postmark-text">Over the old town</span></p></div></section>
-
-    <section class="stop" id="product" data-stop="1" data-side="right" aria-labelledby="sort-title">
-      <div class="stage">
-        <article class="card">
-          <header class="card-head"><span class="stamp">01</span><span class="card-place">The Clock Tower <b>07:42</b></span></header>
-          <p class="kicker">Sort</p>
-          <h2 id="sort-title">See what needs a reply.</h2>
-          <p class="card-text">PigeonBox groups mail into Respond, Waiting, FYI and Notifications. Your Gmail labels stay untouched.</p>
-          <div class="demo demo-sort" data-demo="sort">
-            <div class="demo-chrome"><i></i><i></i><i></i><span>Gmail · Inbox</span><em>Live preview</em></div>
-            <div class="sort-tabs" role="group" aria-label="PigeonBox categories">
-              <button type="button" class="sort-tab" data-cat="respond" aria-pressed="false">Respond <b>0</b></button>
-              <button type="button" class="sort-tab" data-cat="waiting" aria-pressed="false">Waiting <b>0</b></button>
-              <button type="button" class="sort-tab" data-cat="fyi" aria-pressed="false">FYI <b>0</b></button>
-              <button type="button" class="sort-tab" data-cat="note" aria-pressed="false">Notifications <b>0</b></button>
-            </div>
-            <ul class="sort-list">
-              <li data-cat="respond" class="is-new"><span class="av av-e">PS</span><span class="mail"><strong>Priya Shah</strong><span>Can you look at the budget today?</span></span><span class="cat">Respond</span></li>
-              <li data-cat="respond"><span class="av av-a">MC</span><span class="mail"><strong>Maya Chen</strong><span>Final review on the launch note</span></span><span class="cat">Respond</span></li>
-              <li data-cat="note"><span class="av av-n">DB</span><span class="mail"><strong>Deploy bot</strong><span>Build passed on main</span></span><span class="cat">Notifications</span></li>
-              <li data-cat="waiting"><span class="av av-b">JT</span><span class="mail"><strong>Jules Turner</strong><span>Re: September handoff</span></span><span class="cat">Waiting</span></li>
-              <li data-cat="fyi"><span class="av av-c">AR</span><span class="mail"><strong>Alex Rivera</strong><span>Design files for tomorrow</span></span><span class="cat">FYI</span></li>
-              <li data-cat="fyi"><span class="av av-d">WL</span><span class="mail"><strong>The Weekly Letter</strong><span>Five things worth reading</span></span><span class="cat">FYI</span></li>
-            </ul>
+    <section class="product-stage" id="product" aria-labelledby="product-title">
+      <div class="stage-intro wrap">
+        <div>
+          <p class="eyebrow">The product</p>
+          <h2 id="product-title">Your inbox, sorted by what needs you.</h2>
+        </div>
+        <p>Try the categories and select a message. This preview uses example mail.</p>
+      </div>
+      <div class="preview-wrap wrap">
+        <div class="app-window" aria-label="Interactive PigeonBox inbox preview">
+          <div class="window-top">
+            <div class="window-brand"><img src="/brand/pigeon-icon.png" alt="" width="20" height="20"> PigeonBox <span>/ Gmail</span></div>
+            <span class="window-demo">INTERACTIVE PREVIEW</span>
+            <span class="window-avatar" aria-hidden="true">A</span>
           </div>
-          <p class="fine">Works with AI off, too. Illustrative mail.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="leg" data-leg="1" aria-hidden="true"><div class="leg-stage"><p class="postmark"><span class="postmark-ring">08:50</span><span class="postmark-text">Across the green country</span></p></div></section>
-
-    <section class="stop" id="summaries" data-stop="2" data-side="left" aria-labelledby="summary-title">
-      <div class="stage">
-        <article class="card">
-          <header class="card-head"><span class="stamp">02</span><span class="card-place">The Old Windmill <b>09:58</b></span></header>
-          <p class="kicker">Catch up</p>
-          <h2 id="summary-title">Catch up at a glance.</h2>
-          <p class="card-text">Open a long thread and see the key details, what changed, and the next step.</p>
-          <div class="demo demo-summary" data-demo="summary">
-            <div class="demo-chrome"><i></i><i></i><i></i><span>Final review on the launch note</span><em>6 messages</em></div>
-            <div class="thread">
-              <div class="t-msg"><span class="av av-a">MC</span><p><b>Maya</b> Love the direction. Can we soften the first line?</p></div>
-              <div class="t-msg"><span class="av av-b">JT</span><p><b>Jules</b> Agreed. The screenshot is from the old build, too.</p></div>
-              <div class="t-msg"><span class="av av-a">MC</span><p><b>Maya</b> Good catch. The review is Friday at 10.</p></div>
-              <p class="t-more">+ 3 earlier messages</p>
+          <div class="app-layout">
+            <aside class="app-rail" aria-hidden="true">
+              <div class="rail-compose"><span>＋</span> Compose</div>
+              <div class="rail-item rail-selected">▤ <span>Inbox</span><b>8</b></div>
+              <div class="rail-item">◷ <span>Snoozed</span></div>
+              <div class="rail-item">↗ <span>Sent</span></div>
+              <div class="rail-divider"></div>
+              <div class="rail-label">PIGEONBOX</div>
+              <div class="rail-item rail-pb">◈ <span>Focused</span></div>
+              <div class="rail-item">◇ <span>Ask Inbox</span></div>
+            </aside>
+            <div class="inbox-pane">
+              <div class="inbox-heading">
+                <div><span class="pane-overline">PIGEONBOX</span><h3>Inbox</h3></div>
+                <span class="inbox-date">MON, SEP 28</span>
+              </div>
+              <div class="inbox-meta">
+                <span>Grouped by what needs a reply</span>
+                <button class="shortcut" type="button" data-command-open aria-label="Open preview command menu"><kbd>⌘ K</kbd> Quick actions</button>
+              </div>
+              <div class="category-tabs" role="group" aria-label="Filter preview messages">
+                <button class="category-tab is-active" type="button" data-category="respond" aria-pressed="true">Respond <b>2</b></button>
+                <button class="category-tab" type="button" data-category="waiting" aria-pressed="false">Waiting <b>1</b></button>
+                <button class="category-tab" type="button" data-category="fyi" aria-pressed="false">FYI <b>2</b></button>
+                <button class="category-tab" type="button" data-category="notifications" aria-pressed="false">Notifications <b>1</b></button>
+              </div>
+              <div class="message-list" id="preview-messages" aria-live="polite"></div>
+              <p class="preview-footnote">Example messages. PigeonBox does not change your Gmail labels.</p>
             </div>
-            <div class="summary">
-              <p class="summary-head"><img src="/brand/pigeon-icon.png" alt="" width="18" height="18"> Thread summary</p>
-              <h3>Two edits by Friday.</h3>
-              <ul><li>Soften the opening line.</li><li>Swap in a screenshot from the new build.</li></ul>
-              <dl><div><dt>What changed</dt><dd>Maya approved the direction.</dd></div><div><dt>Needs you</dt><dd>Send the revised note before Friday 10:00.</dd></div></dl>
-            </div>
-            <button class="demo-replay" type="button">Summarize again <span aria-hidden="true">↺</span></button>
+            <aside class="companion-pane" aria-label="Message context">
+              <div class="companion-head"><span>Thread summary</span><img src="/brand/pigeon-icon.png" alt="" width="22" height="22"></div>
+              <div class="companion-body">
+                <p class="companion-eyebrow">CURRENT THREAD</p>
+                <h4 id="brief-title">Two edits by Friday.</h4>
+                <p id="brief-copy">Maya likes the direction. She needs a softer opening line and a screenshot from the new build before Friday’s 10:00 review.</p>
+                <div class="brief-divider"></div>
+                <div class="brief-detail"><span>NEXT STEP</span><strong id="brief-action">Send the revised note before Friday.</strong></div>
+                <button class="companion-action" type="button" data-draft-jump>Preview a reply <span aria-hidden="true">↗</span></button>
+              </div>
+              <div class="companion-bottom">You review and send every draft.</div>
+            </aside>
           </div>
-          <p class="fine">Illustrative thread.</p>
-        </article>
+          <div class="command-menu" id="command-menu" hidden>
+            <div class="command-card" role="dialog" aria-modal="true" aria-labelledby="command-title">
+              <div class="command-title"><span id="command-title">Quick actions</span><button type="button" data-command-close aria-label="Close quick actions">Esc</button></div>
+              <button type="button" data-command-action="respond"><span>↳</span> Show messages to reply to</button>
+              <button type="button" data-command-action="waiting"><span>◷</span> Check what I’m waiting on</button>
+              <button type="button" data-command-action="draft"><span>✎</span> Preview a reply</button>
+              <p>Choose an action to explore the preview.</p>
+            </div>
+          </div>
+        </div>
+        <div class="preview-caption"><span>Example inbox</span><span>Sorting works with AI off</span></div>
       </div>
     </section>
 
-    <section class="leg" data-leg="2" aria-hidden="true"><div class="leg-stage"><p class="postmark"><span class="postmark-ring">11:30</span><span class="postmark-text">Out over open water</span></p></div></section>
-
-    <section class="stop" id="drafts" data-stop="3" data-side="right" aria-labelledby="draft-title">
-      <div class="stage">
-        <article class="card">
-          <header class="card-head"><span class="stamp">03</span><span class="card-place">Gull Point Lighthouse <b>12:22</b></span></header>
-          <p class="kicker">Draft</p>
-          <h2 id="draft-title">Draft replies in context.</h2>
-          <p class="card-text">Pick a tone. PigeonBox writes in your chosen name and places the draft in Gmail’s composer.</p>
-          <div class="demo demo-draft" data-demo="draft">
-            <div class="demo-chrome"><i></i><i></i><i></i><span>Reply to Maya Chen</span><em>Draft</em></div>
-            <div class="tone" role="group" aria-label="Tone">
+    <section class="features" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+      <div class="section-heading">
+        <p class="eyebrow">Features</p>
+        <h2 id="features-title">What PigeonBox does.</h2>
+        <p>The extension works in Gmail. You stay in control of what gets sent.</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature feature-summary">
+          <div class="feature-copy"><span class="feature-index">SUMMARIES</span><h3>Catch up on a thread.</h3><p>Get the key points and the next step from the conversation you opened.</p></div>
+          <div class="summary-visual" aria-label="Example thread summary">
+            <div class="visual-top"><span class="visual-icon">✳</span> Final review on the launch note <span>6 messages</span></div>
+            <div class="visual-line"><span class="visual-avatar">MC</span><span>Can we update the screenshot before Friday?</span></div>
+            <div class="visual-line muted"><span class="visual-avatar">JT</span><span>Yes, the new build is ready.</span></div>
+            <div class="summary-result"><span class="result-label">SUMMARY</span><strong>New screenshot. Softer opening.</strong><span>Friday at 10:00 · Maya approved the direction.</span></div>
+          </div>
+        </article>
+        <article class="feature feature-draft" id="drafts">
+          <div class="feature-copy"><span class="feature-index">DRAFTS</span><h3>Draft a reply in context.</h3><p>Choose a tone. PigeonBox puts the draft in Gmail’s composer for you to edit and send.</p></div>
+          <div class="draft-visual">
+            <div class="draft-top"><span>Reply to Maya</span><span class="draft-status">NOT SENT</span></div>
+            <div class="tone-group" role="group" aria-label="Preview a reply tone">
               <button type="button" data-tone="warm" aria-pressed="true">Warm</button>
               <button type="button" data-tone="brief" aria-pressed="false">Brief</button>
               <button type="button" data-tone="formal" aria-pressed="false">Formal</button>
             </div>
-            <div class="compose"><p class="compose-body">Hi Maya, thanks for the clear notes! I’ll soften the opening line and swap in the new screenshot, then send the revised version ahead of Friday’s review. Best, Alex</p></div>
-            <div class="compose-foot"><span class="send" aria-hidden="true">Send</span><small>Drafted by PigeonBox · You review and send</small></div>
+            <p id="draft-copy">Hi Maya, thanks for the clear notes. I’ll soften the opening and swap in the new screenshot before Friday’s review. Best, Alex</p>
+            <div class="draft-bottom"><span class="mock-send">Send</span><span>Only you can send</span></div>
           </div>
-          <p class="fine">PigeonBox never sends for you.</p>
         </article>
+        <article class="feature feature-ask">
+          <div class="feature-copy"><span class="feature-index">ASK INBOX</span><h3>Find answers in your mail.</h3><p>Ask about indexed messages and open the source thread to check the answer.</p><a href="/docs">Read the docs <span aria-hidden="true">↗</span></a></div>
+          <div class="ask-visual"><div class="ask-input"><span>⌕</span> What did Maya need for Friday?</div><div class="ask-result"><span>ANSWER</span><p>A softer opening line and a screenshot from the new build before Friday’s 10:00 review.</p><small>↳ Final review on the launch note · Maya Chen</small></div></div>
+        </article>
+        <article class="feature feature-track">
+          <div class="feature-copy"><span class="feature-index">TRACKING</span><h3>See opens and clicks.</h3><p>When tracking is enabled, PigeonBox shows detected activity after you send. Opens are signals, not read receipts.</p><a href="/privacy">How tracking works <span aria-hidden="true">↗</span></a></div>
+          <div class="track-visual"><div><span class="track-dot"></span><span>Project note to Jules</span><strong>Open detected</strong></div><ol><li><time>9:02</time> Sent from Gmail</li><li><time>9:14</time> Open detected</li><li><time>9:16</time> Link click detected</li></ol></div>
+        </article>
+      </div>
       </div>
     </section>
 
-    <section class="leg" data-leg="3" aria-hidden="true"><div class="leg-stage"><p class="postmark"><span class="postmark-ring">14:10</span><span class="postmark-text">Into the dunes</span></p></div></section>
-
-    <section class="stop" id="ask" data-stop="4" data-side="left" aria-labelledby="ask-title">
-      <div class="stage">
-        <article class="card">
-          <header class="card-head"><span class="stamp">04</span><span class="card-place">The Sand Pyramid <b>15:05</b></span></header>
-          <p class="kicker">Ask</p>
-          <h2 id="ask-title">Ask your indexed inbox.</h2>
-          <p class="card-text">Get answers linked to the source threads.</p>
-          <div class="demo demo-ask" data-demo="ask">
-            <div class="ask-bar"><span class="ask-icon" aria-hidden="true">⌕</span><span class="ask-q">What did Maya need for Friday?</span><i class="caret" aria-hidden="true"></i></div>
-            <div class="ask-suggest" role="group" aria-label="Example questions">
-              <button type="button" data-q="0">Maya’s Friday ask</button>
-              <button type="button" data-q="1">Design files</button>
-              <button type="button" data-q="2">Jules’ handoff</button>
-            </div>
-            <div class="ask-answer"><p class="ask-text">Maya asked for a softer opening line and a screenshot from the new build before Friday’s 10:00 review.</p><span class="source"><span aria-hidden="true">↳</span> <span class="source-name">Final review on the launch note · Maya Chen</span></span></div>
-          </div>
-          <p class="fine">Answers use indexed or opened mail. Coverage depends on what you indexed.</p>
-        </article>
+    <section class="modes" id="modes" aria-labelledby="modes-title">
+      <div class="wrap modes-layout">
+        <div class="modes-intro"><p class="eyebrow">Local and Cloud</p><h2 id="modes-title">Choose how AI runs.</h2><p>Use the same Gmail extension with either option. You can switch modes in Settings.</p><a href="/pricing">Compare plans <span aria-hidden="true">↗</span></a></div>
+        <div class="mode-options">
+          <a class="mode-option" href="/local"><span class="mode-heading"><strong>Local</strong><small>FREE &amp; OPEN SOURCE</small></span><span class="mode-description">Run AI on your device or use your own supported provider. No PigeonBox account.</span><span class="mode-arrow" aria-hidden="true">↗</span></a>
+          <a class="mode-option" href="/cloud"><span class="mode-heading"><strong>Cloud</strong><small>HOSTED</small></span><span class="mode-description">Use hosted AI and tracking without downloading a model or bringing your own AI key.</span><span class="mode-arrow" aria-hidden="true">↗</span></a>
+        </div>
       </div>
     </section>
 
-    <section class="leg" data-leg="4" aria-hidden="true"><div class="leg-stage"><p class="postmark"><span class="postmark-ring">17:20</span><span class="postmark-text">Up through the high passes</span></p></div></section>
-
-    <section class="stop" id="tracking" data-stop="5" data-side="right" aria-labelledby="track-title">
-      <div class="stage">
-        <article class="card">
-          <header class="card-head"><span class="stamp">05</span><span class="card-place">Cairn Summit <b>18:08</b></span></header>
-          <p class="kicker">Track</p>
-          <h2 id="track-title">See opens and clicks.</h2>
-          <p class="card-text">Get activity signals after you hit send.</p>
-          <div class="demo demo-track" data-demo="track">
-            <div class="track-mail"><span class="env" aria-hidden="true">✉</span><div><small>Sent · Project note</small><strong>To Jules Turner</strong></div><span class="track-status">Opened</span></div>
-            <ol class="track-events">
-              <li class="is-in"><time>9:02</time><span>Sent from Gmail</span></li>
-              <li class="is-in"><time>9:14</time><span>Open detected</span></li>
-              <li class="is-in"><time>9:16</time><span>Click detected · product note link</span></li>
-              <li class="is-in"><time>11:40</time><span>Opened again</span></li>
-            </ol>
-          </div>
-          <p class="fine">An open is not proof that someone read your email. Mail privacy settings can affect activity.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="leg" data-leg="5" aria-hidden="true"><div class="leg-stage"><p class="postmark"><span class="postmark-ring">19:40</span><span class="postmark-text">Home by nightfall</span></p></div></section>
-
-    <section class="stop stop-final" id="get-pigeonbox" data-stop="6" data-side="left" aria-labelledby="final-title">
-      <div class="stage">
-        <article class="card card-final">
-          <header class="card-head"><span class="stamp">06</span><span class="card-place">Home <b>20:32</b></span></header>
-          <p class="kicker">Special delivery</p>
-          <h2 id="final-title">Your inbox.<br>With wings.</h2>
-          <p class="card-text">Add PigeonBox to Chrome and let the courier take it from here.</p>
-          <div class="actions"><a class="btn btn-primary" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox <span aria-hidden="true">↗</span></a><a class="btn btn-glass" href="https://github.com/aiden-guan/pigeonbox">View on GitHub <span aria-hidden="true">↗</span></a></div>
-          <div class="modes">
-            <a class="mode" href="/local"><span class="mode-tag">Local</span><strong>Free and open source.</strong><span>Your device, Chrome’s built-in model, Ollama or your own provider key.</span></a>
-            <a class="mode" href="/cloud"><span class="mode-tag mode-cloud">Cloud</span><strong>Skip the setup.</strong><span>Hosted AI and tracking. No model download or personal AI key.</span></a>
-          </div>
-          <p class="fine"><a href="/pricing">Compare plans</a> · <a href="/privacy">Where your mail goes</a> · <a href="/security">Security</a></p>
-        </article>
+    <section class="final-cta" aria-labelledby="final-title">
+      <div class="wrap final-layout">
+        <div><p class="eyebrow">Get started</p><h2 id="final-title">Start with Local.<br>Use Cloud if you need it.</h2><p>Install the Chrome extension and choose your mode in Settings.</p></div>
+        <div class="final-actions"><a class="button button-primary" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox <span aria-hidden="true">↗</span></a><a class="button button-text" href="https://github.com/aiden-guan/pigeonbox">View source <span aria-hidden="true">↗</span></a></div>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer"><div class="footer-grid"><div><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="30" height="30"><span>PigeonBox</span></a><p>Open source locally.<br>Cloud when you want it.</p></div><div><span>EXPLORE</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a></div><div><span>MORE</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub</a></div><div><span>TRUST</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></div></div><div class="footer-bottom"><span>© 2026 PigeonBox</span><span>Built to work inside Gmail.</span></div></footer>
+  <footer class="site-footer"><div class="wrap footer-main"><div class="footer-brand"><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="28" height="28"><span>PigeonBox</span></a><p>Works inside Gmail.</p></div><nav aria-label="Footer navigation"><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub</a></nav></div><div class="wrap footer-bottom"><span>© 2026 PigeonBox</span><div><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></div></div></footer>
   <script type="module" src="/app.js"></script>
-  <script type="module" src="/journey/main.js?v=1"></script>
+  <script type="module" src="/home.js"></script>
 </body>
 </html>
