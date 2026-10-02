@@ -1,1 +1,125 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://pigeonbox-site.vercel.app/pricing"><meta property="og:url" content="https://pigeonbox-site.vercel.app/pricing"><title>Pricing · PigeonBox</title><meta name="description" content="Compare free, open-source PigeonBox Local with the hosted PigeonBox Cloud subscription."><meta name="theme-color" content="#101114"><meta property="og:type" content="website"><meta property="og:title" content="Pricing · PigeonBox"><meta property="og:description" content="Compare free, open-source PigeonBox Local with the hosted PigeonBox Cloud subscription."><meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/brand/pigeon-icon.png"><link rel="stylesheet" href="/styles.css?v=courier-2"><link rel="stylesheet" href="/courier.css?v=5"></head><body data-page="pricing"><a class="skip-link" href="#main">Skip to content</a><header class="site-header"><div class="nav-shell"><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="32" height="32">PigeonBox</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button><nav class="site-nav" id="site-nav" aria-label="Main navigation"><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a class="nav-github" href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a class="account-link" href="/account" hidden>Sign in</a><a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox ↗</a></nav></div></header><main id="main" class="inner-main wrap"><div class="inner-hero"><p class="eyebrow">LOCAL OR CLOUD</p><h1>Free Local.<br><em>Hosted Cloud.</em></h1><p>Both use the same Gmail extension. Run AI on your device, or use hosted AI and tracking.</p></div><div class="inner-grid"><article class="info-panel"><span class="label">PIGEONBOX LOCAL</span><div class="price">$0 <small>forever</small></div><p>Run it on your computer. No PigeonBox account.</p><ul><li>Focused inbox, summaries, drafts, and Ask Inbox</li><li>Local model, Chrome’s built-in model, Ollama, or your own supported AI provider</li><li>Local inbox index and search</li><li>Optional self-hosted tracking</li></ul><a class="button button-outline" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get Local ↗</a></article><article class="info-panel accent-panel"><span class="label">PIGEONBOX CLOUD</span><div class="price" id="cloud-price">Early access</div><p id="cloud-price-detail">Hosted AI and tracking. No model download or personal AI key.</p><ul><li>Everything you use in the same Gmail extension</li><li>Hosted AI processing and open/click tracking</li><li>Account, usage, and billing controls</li><li>Switch back to Local in Settings</li></ul><a class="button button-dark" id="cloud-cta" href="/cloud">Learn about Cloud ↗</a></article></div><table class="compare"><caption>At a glance</caption><thead><tr><th> </th><th>Local</th><th>Cloud</th></tr></thead><tbody><tr><td>Account</td><td>None required</td><td>PigeonBox account</td></tr><tr><td>AI processing</td><td>Your device or chosen provider</td><td>PigeonBox Cloud and configured provider</td></tr><tr><td>Inbox index and search</td><td>Your browser</td><td>Your browser</td></tr><tr><td>Tracking</td><td>Optional self-hosted endpoint</td><td>Hosted</td></tr><tr><td>Setup</td><td>Choose a model or provider</td><td>Sign in and choose Cloud</td></tr></tbody></table><section class="inner-section faq"><h2>Common questions</h2><details><summary>Is Local a trial?</summary><p>No. Local is the full open-source extension, with no PigeonBox account or subscription.</p></details><details><summary>Can I cancel Cloud?</summary><p>Yes. Manage the subscription from your account’s Stripe billing portal. The extension can run in Local mode regardless of your plan.</p></details><details><summary>What happens to data after account deletion?</summary><p>Account deletion cancels the subscription and removes hosted tracking data and usage records. Local browser data remains on your device.</p></details><details><summary>Does Cloud store my inbox?</summary><p>Your inbox index stays in your browser. Cloud processes the content needed for a request and does not store raw email bodies. Hosted tracking stores message metadata and events.</p></details><details><summary>Does PigeonBox use the Gmail API?</summary><p>No. The extension works in Gmail using InboxSDK and a DOM fallback. Gmail changes can affect that integration.</p></details><details><summary>Does Local send my mail to PigeonBox servers?</summary><p>No. With a local model, AI content stays on your device. If you choose a provider using your own key, that provider receives the requests you send to it. Optional self-hosted tracking uses the endpoint you configure.</p></details><details><summary>Do I need a powerful computer?</summary><p>Not for the whole product. Rules and on-device heuristics work with AI off. Smaller local models may produce shorter, simpler drafts; Ollama and your own provider are alternatives.</p></details><details><summary>Can I use Ollama or my own provider?</summary><p>Yes. Both are supported Local choices. Some choices require a network or a model running elsewhere.</p></details><details><summary>What is Convex used for?</summary><p>Convex is an optional self-hosted persistent tracker. Local inbox features do not need it, and PigeonBox Cloud does not use it.</p></details><details><summary>Is PigeonBox actually open source?</summary><p>Yes. The extension is MIT licensed in the public GitHub repository. The hosted Cloud infrastructure is separate.</p></details><details><summary>How reliable is open tracking?</summary><p>It is a signal, not a read receipt. Blocking and mail privacy proxies can hide or trigger opens. PigeonBox reports “Open detected.”</p></details><details><summary>Does PigeonBox send email automatically?</summary><p>No. It places draft text in Gmail’s composer for you to review and send.</p></details></section></main><footer class="site-footer"><div class="wrap footer-grid"><div><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="30" height="30">PigeonBox</a><p>Open source locally.<br>Cloud when you want it.</p></div><div><span>EXPLORE</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a></div><div><span>MORE</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub</a></div><div><span>TRUST</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></div></div><div class="wrap footer-bottom"><span>© 2026 PigeonBox</span><span>Built to work inside Gmail.</span></div></footer><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pricing · PigeonBox</title>
+  <meta name="description" content="Local is free. Cloud has no public price yet.">
+  <link rel="canonical" href="https://pigeonbox-site.vercel.app/pricing">
+  <meta property="og:url" content="https://pigeonbox-site.vercel.app/pricing">
+  <meta name="theme-color" content="#f3f0e8">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PigeonBox">
+  <meta property="og:title" content="Pricing · PigeonBox">
+  <meta property="og:description" content="Local is free. Cloud has no public price yet.">
+  <meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/brand/pigeon-icon.png">
+  <link rel="preload" href="/brand/pidgy.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="/dispatch.css?v=2">
+</head>
+<body data-page="pricing">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="PigeonBox home"><span class="pidgy" data-state="idle" aria-hidden="true"></span><span class="wordmark">PigeonBox</span></a>
+      <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="/#product"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing" aria-current="page"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a class="account-link" href="/account" hidden>Sign in</a>
+        <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <header class="page-head">
+      <div class="wrap">
+        <div class="meta"><span class="label">Pricing</span></div>
+        <h1 class="display">Start free.</h1>
+        <p class="lede">Local costs nothing. Cloud has no public price yet.</p>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="plans-title">
+      <div class="wrap">
+        <h2 class="sr-only" id="plans-title">Plans</h2>
+        <div class="price-sheet" data-reveal>
+          <div class="price-col">
+            <p class="label">Local</p>
+            <p class="price">$0</p>
+            <p class="price-note">Open source. No account.</p>
+            <a class="btn btn-primary" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span class="arr" aria-hidden="true">↗</span></a>
+          </div>
+          <div class="price-col price-cloud on-ink">
+            <p class="label">Cloud <span class="tag tag-copper">Beta</span></p>
+            <p class="price" id="cloud-price">Early access</p>
+            <p class="price-note" id="cloud-price-detail">Private beta. No sign-up yet.</p>
+            <a class="btn btn-primary" id="cloud-cta" href="/cloud">Explore Cloud beta <span class="arr right" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+
+        <div class="matrix-wrap" data-reveal>
+          <table class="matrix matrix-stack compare">
+            <caption class="label">Compare</caption>
+            <thead><tr><th scope="col"></th><th scope="col">Local</th><th scope="col">Cloud beta</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Triage, companion, drafts</th><td data-col="Local"><strong>●</strong></td><td data-col="Cloud beta"><strong>●</strong></td></tr>
+              <tr><th scope="row">Ask Pigeon</th><td data-col="Local"><strong>●</strong> Browser index</td><td data-col="Cloud beta"><strong>●</strong> + synced index</td></tr>
+              <tr><th scope="row">AI</th><td data-col="Local">Device, Ollama or your key</td><td data-col="Cloud beta">Hosted</td></tr>
+              <tr><th scope="row">Tracking</th><td data-col="Local">Self-hosted</td><td data-col="Cloud beta">Managed</td></tr>
+              <tr><th scope="row">Works with Gmail closed</th><td data-col="Local">—</td><td data-col="Cloud beta"><strong>●</strong></td></tr>
+              <tr><th scope="row">Account</th><td data-col="Local">None</td><td data-col="Cloud beta">Required</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="faq-title">
+      <div class="wrap faq-layout">
+        <div data-reveal>
+          <p class="label"><b>FAQ</b></p>
+          <h2 class="h-section" id="faq-title">Short answers.</h2>
+        </div>
+        <div class="faq" data-reveal>
+          <details><summary><span class="n">01</span>Is Local a trial?</summary><div><p>No. It’s the full extension, free, with no time limit.</p></div></details>
+          <details><summary><span class="n">02</span>Can I buy Cloud?</summary><div><p>Not yet. It’s a private beta with test-mode billing.</p></div></details>
+          <details><summary><span class="n">03</span>Does PigeonBox use the Gmail API?</summary><div><p>Local doesn’t request Gmail API OAuth. Cloud uses Google APIs only after you connect your account.</p></div></details>
+          <details><summary><span class="n">04</span>Does Cloud store my mail?</summary><div><p>Not the bodies, by default. It keeps metadata and encrypted summaries so it can work while Gmail is closed. Opt-in Fast Recall adds encrypted excerpts.</p></div></details>
+          <details><summary><span class="n">05</span>Does Local send mail to PigeonBox?</summary><div><p>No. Only to a provider you add with your own key, or a tracker you host.</p></div></details>
+          <details><summary><span class="n">06</span>Will it send email for me?</summary><div><p>No. You press Send. In Cloud, every send waits for your approval.</p></div></details>
+          <details><summary><span class="n">07</span>Is an open a read receipt?</summary><div><p>No. It’s a signal. Privacy proxies can hide or fake it.</p></div></details>
+          <details><summary><span class="n">08</span>Do I need a powerful computer?</summary><div><p>No. Sorting works with AI off. Ollama or your own key are options too.</p></div></details>
+          <details><summary><span class="n">09</span>What if I delete my Cloud account?</summary><div><p>Your Cloud data is designed to be deleted with it. Browser data stays until you clear it.</p></div></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-art">
+      <canvas data-halftone="night" aria-hidden="true"></canvas>
+      <p class="footer-art-cap label" aria-hidden="true"><span>Night shift</span><span class="cap-hint"><span class="on-fine">Click</span><span class="on-touch">Tap</span> the sky to send Pidgy</span></p>
+    </div>
+    <div class="wrap footer-grid">
+      <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
+      <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>© 2026 PigeonBox</span>
+      <span>Extension · MIT license</span>
+      <span class="perch">
+        <button class="term-launch" type="button" data-term-open aria-haspopup="dialog" aria-expanded="false">PIDGY://<span class="caret" aria-hidden="true"></span></button>
+        <button class="perch-bird" type="button" data-coo aria-label="Say hello to Pidgy"><span class="pidgy" data-state="idle" aria-hidden="true"></span></button>
+      </span>
+    </div>
+  </footer>
+  <script type="module" src="/site.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

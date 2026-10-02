@@ -1,1 +1,162 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://pigeonbox-site.vercel.app/privacy"><meta property="og:url" content="https://pigeonbox-site.vercel.app/privacy"><title>Privacy · PigeonBox</title><meta name="description" content="How PigeonBox Local and Cloud process email content, indexes, tracking events, account data, and billing data."><meta name="theme-color" content="#101114"><meta property="og:type" content="website"><meta property="og:title" content="Privacy · PigeonBox"><meta property="og:description" content="How PigeonBox Local and Cloud process email content, indexes, tracking events, account data, and billing data."><meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/brand/pigeon-icon.png"><link rel="stylesheet" href="/styles.css?v=courier-2"><link rel="stylesheet" href="/courier.css?v=5"></head><body data-page="privacy"><a class="skip-link" href="#main">Skip to content</a><header class="site-header"><div class="nav-shell"><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="32" height="32">PigeonBox</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button><nav class="site-nav" id="site-nav" aria-label="Main navigation"><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a class="nav-github" href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a class="account-link" href="/account" hidden>Sign in</a><a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox ↗</a></nav></div></header><main id="main" class="inner-main wrap"><div class="inner-hero"><p class="eyebrow">PRIVACY ARCHITECTURE</p><h1>Know where<br><em>your mail goes.</em></h1><p>The extension runs in Gmail. What leaves your browser depends on the run mode and provider you choose.</p></div><div class="inner-grid"><div class="info-panel"><span class="label">LOCAL MODEL</span><h2>On this device.</h2><p>Inbox text, index, embeddings, drafts, rules, and settings live in your browser. With an on-device model, AI requests are processed there. If you choose Ollama or a provider with your own key, requests go to that endpoint instead.</p></div><div class="info-panel accent-panel"><span class="label">PIGEONBOX CLOUD</span><h2>Processed, not archived.</h2><p>Email content needed for Cloud summaries, categorization, drafts, rewrites, and Ask Inbox is sent over TLS to PigeonBox Cloud and its configured AI provider. PigeonBox Cloud does not store raw content or put it in operational logs. The local inbox index does not move to Cloud.</p></div></div><section class="inner-section"><h2>What Cloud stores</h2><p>Usage records contain operation, model, token counts, time, and status, without email content. Hosted tracking stores subject, sender, recipients, Gmail IDs, send time, and open/click events with user agent, a salted IP hash, and classification. It does not store message bodies. Accounts store the sign-in ID and email plus Stripe subscription status; Stripe handles payment details.</p><h2>Deleting Cloud data</h2><p>The Account page can delete the Cloud account, hosted tracking data, and usage records and cancel the subscription. Browser data remains on your device and can be cleared in extension Settings.</p><p class="legal-note">This page describes the current architecture. A formal privacy notice still requires legal review before commercial launch.</p><a class="text-link" href="/security">Read security architecture ↗</a></section></main><footer class="site-footer"><div class="wrap footer-grid"><div><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="30" height="30">PigeonBox</a><p>Open source locally.<br>Cloud when you want it.</p></div><div><span>EXPLORE</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a></div><div><span>MORE</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub</a></div><div><span>TRUST</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></div></div><div class="wrap footer-bottom"><span>© 2026 PigeonBox</span><span>Built to work inside Gmail.</span></div></footer><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy · PigeonBox</title>
+  <meta name="description" content="Where your mail goes in Local and Cloud.">
+  <link rel="canonical" href="https://pigeonbox-site.vercel.app/privacy">
+  <meta property="og:url" content="https://pigeonbox-site.vercel.app/privacy">
+  <meta name="theme-color" content="#f3f0e8">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PigeonBox">
+  <meta property="og:title" content="Privacy · PigeonBox">
+  <meta property="og:description" content="Where your mail goes in Local and Cloud.">
+  <meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/brand/pigeon-icon.png">
+  <link rel="preload" href="/brand/pidgy.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="/dispatch.css?v=2">
+</head>
+<body data-page="privacy">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="PigeonBox home"><span class="pidgy" data-state="idle" aria-hidden="true"></span><span class="wordmark">PigeonBox</span></a>
+      <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="/#product"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a class="account-link" href="/account" hidden>Sign in</a>
+        <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <header class="page-head">
+      <div class="wrap page-head-split">
+        <div>
+          <div class="meta"><span class="label">Privacy</span></div>
+          <h1 class="display">Know where your mail goes.</h1>
+          <p class="lede">It depends on the mode you pick. PigeonBox never switches for you.</p>
+        </div>
+        <figure class="art-frame"><canvas data-halftone="sealed" aria-hidden="true"></canvas><figcaption class="label">Sealed by default</figcaption></figure>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="flow-title">
+      <div class="wrap">
+        <h2 class="sr-only" id="flow-title">Data flow</h2>
+                <div class="flow-module" data-flow data-reveal>
+          <div class="flow-keys" role="group" aria-label="Highlight a kind of data">
+            <button type="button" class="flow-key k-raw" data-key="raw" aria-pressed="false"><i aria-hidden="true"></i>Raw mail content</button>
+            <button type="button" class="flow-key k-meta" data-key="meta" aria-pressed="false"><i aria-hidden="true"></i>Metadata</button>
+            <button type="button" class="flow-key k-derived" data-key="derived" aria-pressed="false"><i aria-hidden="true"></i>Derived intelligence</button>
+            <button type="button" class="flow-key k-track" data-key="track" aria-pressed="false"><i aria-hidden="true"></i>Tracking events</button>
+          </div>
+          <div class="flows" data-flows>
+            <div class="flow">
+              <div class="flow-head"><h3>Local</h3><span class="tag">Free · Open source</span></div>
+              <ol>
+                <li class="flow-node"><strong>Gmail</strong><p>The tab you have open. No Gmail API OAuth.</p><div class="flow-data"><span class="k-raw">Raw</span><span class="k-meta">Meta</span></div></li>
+                <li class="flow-node"><strong>PigeonBox extension</strong><p>Keys stay in the extension, never the page.</p><div class="flow-data"><span class="k-raw">Raw</span></div></li>
+                <li class="flow-node"><strong>Browser index</strong><p>Index, drafts and settings on this computer.</p><div class="flow-data"><span class="k-raw">Raw</span><span class="k-meta">Meta</span><span class="k-derived">Derived</span></div></li>
+                <li class="flow-node"><strong>Local AI</strong><p>On-device or Ollama. Your own key only if you add one.</p><div class="flow-data"><span class="k-raw">Raw · request</span><span class="k-derived">Derived</span></div></li>
+                <li class="flow-node"><strong>Your tracker (optional)</strong><p>A tracker you host. Never bodies.</p><div class="flow-data"><span class="k-meta">Meta</span><span class="k-track">Events</span></div></li>
+              </ol>
+            </div>
+            <div class="flow">
+              <div class="flow-head"><h3>Cloud beta</h3><span class="tag tag-copper">Early access</span></div>
+              <ol>
+                <li class="flow-node"><strong>Gmail</strong><p>Via the extension, plus Google APIs if you connect.</p><div class="flow-data"><span class="k-raw">Raw</span><span class="k-meta">Meta</span></div></li>
+                <li class="flow-node"><strong>Cloud, over TLS</strong><p>Processed for the task. Never logged.</p><div class="flow-data"><span class="k-raw">Raw · in transit</span></div></li>
+                <li class="flow-node"><strong>Hosted processing</strong><p>One model. No silent fallback.</p><div class="flow-data"><span class="k-raw">Raw · in memory</span><span class="k-derived">Derived</span></div></li>
+                <li class="flow-node"><strong>Cloud store</strong><p>Metadata and encrypted summaries. Deleted with your account.</p><div class="flow-data"><span class="k-meta">Meta</span><span class="k-derived">Derived · encrypted</span></div></li>
+                <li class="flow-node"><strong>Hosted tracker</strong><p>Metadata and events. Never bodies.</p><div class="flow-data"><span class="k-meta">Meta</span><span class="k-track">Events</span></div></li>
+              </ol>
+            </div>
+          </div>
+          <p class="flow-explain" data-flow-explain aria-live="polite">Cloud doesn’t keep mail bodies by default. Opt-in Fast Recall stores encrypted excerpts until you turn it off.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap doc-layout">
+      <nav class="doc-toc" aria-label="On this page">
+        <p class="label">On this page</p>
+        <a href="#local">Local</a>
+        <a href="#cloud">Cloud</a>
+        <a href="#stores">What Cloud keeps</a>
+        <a href="#tracking">Tracking</a>
+        <a href="#analytics">Analytics</a>
+        <a href="#delete">Deleting data</a>
+      </nav>
+      <article class="prose">
+        <h2 id="local">Local</h2>
+        <ul>
+          <li>Works in your open Gmail tab. No Gmail API OAuth, no Google cookies.</li>
+          <li>Index, drafts, rules and settings stay in your browser.</li>
+          <li>On-device models and Ollama keep AI on your machine.</li>
+          <li>Add your own provider key, and that provider sees what you send it.</li>
+        </ul>
+
+        <h2 id="cloud">Cloud</h2>
+        <ul>
+          <li>Opt-in, private beta.</li>
+          <li>Requests go over TLS to PigeonBox Cloud and one configured model.</li>
+          <li>Request bodies are never logged.</li>
+          <li>If Cloud fails, you get an error. Nothing reroutes.</li>
+          <li>Connecting Google is a separate step, scope by scope.</li>
+        </ul>
+
+        <h2 id="stores">What Cloud keeps</h2>
+        <ul>
+          <li><strong>Metadata:</strong> senders, recipients, subjects, IDs, times.</li>
+          <li><strong>Derived data:</strong> summaries, drafts, search text. Encrypted.</li>
+          <li><strong>Fast Recall:</strong> opt-in encrypted excerpts, for as long as you choose.</li>
+          <li><strong>Usage:</strong> counts and timing. No content.</li>
+          <li><strong>Account:</strong> sign-in and subscription status. Stripe handles cards.</li>
+        </ul>
+        <p>Not message bodies, by default. Every row is locked to your account.</p>
+
+        <h2 id="tracking">Tracking</h2>
+        <p>Optional. A tracker keeps the subject, sender, recipients and send time, plus each open or click with a hashed IP. Never the body.</p>
+        <div class="note"><span class="pidgy" data-state="alert" aria-hidden="true"></span><p>An open is a signal, not proof of a read.</p></div>
+
+        <h2 id="analytics">Analytics</h2>
+        <p>No ads. No analytics provider. Optional usage counters stay in your browser. This site sets no cookies.</p>
+
+        <h2 id="delete">Deleting data</h2>
+        <p>Clear the local index in Settings, or uninstall. Deleting a Cloud account is designed to remove its Cloud data.</p>
+        <p class="note-plain">Describes the current architecture, not a final legal notice. Details: <a href="https://github.com/aiden-guan/pigeonbox/blob/main/PRIVACY.md">privacy policy</a>, <a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/privacy-model.md">privacy model</a>, <a href="/security">security</a>.</p>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-art">
+      <canvas data-halftone="night" aria-hidden="true"></canvas>
+      <p class="footer-art-cap label" aria-hidden="true"><span>Night shift</span><span class="cap-hint"><span class="on-fine">Click</span><span class="on-touch">Tap</span> the sky to send Pidgy</span></p>
+    </div>
+    <div class="wrap footer-grid">
+      <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
+      <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>© 2026 PigeonBox</span>
+      <span>Extension · MIT license</span>
+      <span class="perch">
+        <button class="term-launch" type="button" data-term-open aria-haspopup="dialog" aria-expanded="false">PIDGY://<span class="caret" aria-hidden="true"></span></button>
+        <button class="perch-bird" type="button" data-coo aria-label="Say hello to Pidgy"><span class="pidgy" data-state="idle" aria-hidden="true"></span></button>
+      </span>
+    </div>
+  </footer>
+  <script type="module" src="/site.js"></script>
+  <script type="module" src="/app.js"></script>
+  <script type="module" src="/privacy.js"></script>
+</body>
+</html>

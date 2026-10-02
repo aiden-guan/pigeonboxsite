@@ -1,1 +1,103 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://pigeonbox-site.vercel.app/security"><meta property="og:url" content="https://pigeonbox-site.vercel.app/security"><title>Security · PigeonBox</title><meta name="description" content="PigeonBox Cloud security architecture and responsible disclosure information."><meta name="theme-color" content="#101114"><meta property="og:type" content="website"><meta property="og:title" content="Security · PigeonBox"><meta property="og:description" content="PigeonBox Cloud security architecture and responsible disclosure information."><meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/brand/pigeon-icon.png"><link rel="stylesheet" href="/styles.css?v=courier-2"><link rel="stylesheet" href="/courier.css?v=5"></head><body data-page="security"><a class="skip-link" href="#main">Skip to content</a><header class="site-header"><div class="nav-shell"><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="32" height="32">PigeonBox</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button><nav class="site-nav" id="site-nav" aria-label="Main navigation"><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a class="nav-github" href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a class="account-link" href="/account" hidden>Sign in</a><a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox ↗</a></nav></div></header><main id="main" class="inner-main wrap"><div class="inner-hero"><p class="eyebrow">SECURITY ARCHITECTURE</p><h1>Built with<br><em>clear boundaries.</em></h1><p>Cloud sign-in, billing, and hosted processing are separate from Gmail’s page. The public extension documents its threat model and the data each mode handles.</p></div><div class="inner-grid"><div class="info-panel"><span class="label">SIGN-IN & ACCESS</span><h2>Scoped to your account.</h2><p>OAuth with PKCE starts sign-in. Gmail content scripts do not receive PigeonBox tokens. The server derives the account from a verified token rather than a client-supplied account ID. Hosted records use account scoping and Postgres row-level security.</p></div><div class="info-panel"><span class="label">BILLING & REQUESTS</span><h2>Separate systems.</h2><p>Stripe handles card details through Checkout and its customer portal. Webhooks are signature-verified and processed idempotently. Cloud AI request content is processed without being stored in PigeonBox Cloud’s database or logs.</p></div></div><section class="inner-section"><h2>Report a vulnerability</h2><p>Please follow the private disclosure instructions in the public repository’s <a href="https://github.com/aiden-guan/pigeonbox/blob/main/SECURITY.md">SECURITY.md</a>. The <a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/threat-model.md">threat model</a> describes extension trust boundaries and known limits.</p><p>No certification or independent audit is claimed here.</p></section></main><footer class="site-footer"><div class="wrap footer-grid"><div><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="30" height="30">PigeonBox</a><p>Open source locally.<br>Cloud when you want it.</p></div><div><span>EXPLORE</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a></div><div><span>MORE</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub</a></div><div><span>TRUST</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></div></div><div class="wrap footer-bottom"><span>© 2026 PigeonBox</span><span>Built to work inside Gmail.</span></div></footer><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security · PigeonBox</title>
+  <meta name="description" content="How PigeonBox keeps boundaries clear.">
+  <link rel="canonical" href="https://pigeonbox-site.vercel.app/security">
+  <meta property="og:url" content="https://pigeonbox-site.vercel.app/security">
+  <meta name="theme-color" content="#f3f0e8">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PigeonBox">
+  <meta property="og:title" content="Security · PigeonBox">
+  <meta property="og:description" content="How PigeonBox keeps boundaries clear.">
+  <meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/brand/pigeon-icon.png">
+  <link rel="preload" href="/brand/pidgy.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="/dispatch.css?v=2">
+</head>
+<body data-page="security">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="PigeonBox home"><span class="pidgy" data-state="idle" aria-hidden="true"></span><span class="wordmark">PigeonBox</span></a>
+      <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="/#product"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a class="account-link" href="/account" hidden>Sign in</a>
+        <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <header class="page-head">
+      <div class="wrap">
+        <div class="meta"><span class="label">Security</span><span class="label">No audit or certification claimed</span></div>
+        <h1 class="display">Clear boundaries.</h1>
+        <p class="lede">Gmail’s page is untrusted. Your keys never touch it.</p>
+      </div>
+    </header>
+
+    <div class="wrap doc-layout">
+      <nav class="doc-toc" aria-label="On this page">
+        <p class="label">On this page</p>
+        <a href="#extension">Extension</a>
+        <a href="#cloud">Cloud</a>
+        <a href="#actions">Sending</a>
+        <a href="#report">Report an issue</a>
+      </nav>
+      <article class="prose">
+        <h2 id="extension">Extension</h2>
+        <ul>
+          <li>Keys and tokens live in the background worker, never the page.</li>
+          <li>The Gmail page can’t change settings or sign in.</li>
+          <li>Cloud errors stay errors. No silent fallback.</li>
+        </ul>
+
+        <h2 id="cloud">Cloud</h2>
+        <ul>
+          <li>Sign-in uses OAuth with PKCE.</li>
+          <li>Your account comes from a verified token, never the client.</li>
+          <li>Row-level security on every table.</li>
+          <li>Sensitive data sealed with AES-256-GCM. API tokens hashed.</li>
+          <li>Stripe webhooks verified. Outgoing webhooks signed.</li>
+        </ul>
+
+        <h2 id="actions">Sending</h2>
+        <p>Local can’t send, delete or mark spam without you. Cloud sends only what you approved, checked again before it goes. New rules start in Shadow Mode.</p>
+
+        <h2 id="report">Report an issue</h2>
+        <p>Follow <a href="https://github.com/aiden-guan/pigeonbox/blob/main/SECURITY.md">SECURITY.md</a>. Known limits are in the <a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/threat-model.md">threat model</a>.</p>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-art">
+      <canvas data-halftone="night" aria-hidden="true"></canvas>
+      <p class="footer-art-cap label" aria-hidden="true"><span>Night shift</span><span class="cap-hint"><span class="on-fine">Click</span><span class="on-touch">Tap</span> the sky to send Pidgy</span></p>
+    </div>
+    <div class="wrap footer-grid">
+      <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
+      <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>© 2026 PigeonBox</span>
+      <span>Extension · MIT license</span>
+      <span class="perch">
+        <button class="term-launch" type="button" data-term-open aria-haspopup="dialog" aria-expanded="false">PIDGY://<span class="caret" aria-hidden="true"></span></button>
+        <button class="perch-bird" type="button" data-coo aria-label="Say hello to Pidgy"><span class="pidgy" data-state="idle" aria-hidden="true"></span></button>
+      </span>
+    </div>
+  </footer>
+  <script type="module" src="/site.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

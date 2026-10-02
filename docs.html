@@ -1,1 +1,124 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="canonical" href="https://pigeonbox-site.vercel.app/docs"><meta property="og:url" content="https://pigeonbox-site.vercel.app/docs"><title>Docs · PigeonBox</title><meta name="description" content="Install PigeonBox and learn how Local, Cloud, privacy, and tracking work."><meta name="theme-color" content="#101114"><meta property="og:type" content="website"><meta property="og:title" content="Docs · PigeonBox"><meta property="og:description" content="Install PigeonBox and learn how Local, Cloud, privacy, and tracking work."><meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png"><meta name="twitter:card" content="summary_large_image"><link rel="icon" href="/brand/pigeon-icon.png"><link rel="stylesheet" href="/styles.css?v=courier-2"><link rel="stylesheet" href="/courier.css?v=5"></head><body data-page="docs"><a class="skip-link" href="#main">Skip to content</a><header class="site-header"><div class="nav-shell"><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="32" height="32">PigeonBox</a><button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button><nav class="site-nav" id="site-nav" aria-label="Main navigation"><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a class="nav-github" href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a class="account-link" href="/account" hidden>Sign in</a><a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Get PigeonBox ↗</a></nav></div></header><main id="main" class="inner-main wrap"><div class="inner-hero"><p class="eyebrow">DOCUMENTATION</p><h1>Learn how<br><em>PigeonBox works.</em></h1><p>Install the extension, compare modes, and read the technical guides.</p></div><div class="inner-grid"><div class="info-panel"><span class="label">START HERE</span><h2>Install the extension.</h2><p>Get a release or build from source.</p><a class="text-link" href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/local-setup.md">Local setup ↗</a></div><div class="info-panel"><span class="label">GO DEEPER</span><h2>Understand the details.</h2><p>Read about privacy, Cloud, tracking, and self-hosting.</p><p><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/architecture.md">Architecture ↗</a><br><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/privacy-model.md">Privacy model ↗</a><br><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/tracking.md">Tracking ↗</a><br><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/convex-self-hosting.md">Convex self-hosting ↗</a></p></div></div></main><footer class="site-footer"><div class="wrap footer-grid"><div><a class="brand" href="/"><img src="/brand/pigeon-icon.png" alt="" width="30" height="30">PigeonBox</a><p>Open source locally.<br>Cloud when you want it.</p></div><div><span>EXPLORE</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud</a><a href="/pricing">Pricing</a></div><div><span>MORE</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub</a></div><div><span>TRUST</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></div></div><div class="wrap footer-bottom"><span>© 2026 PigeonBox</span><span>Built to work inside Gmail.</span></div></footer><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docs · PigeonBox</title>
+  <meta name="description" content="Install guides, architecture and privacy docs.">
+  <link rel="canonical" href="https://pigeonbox-site.vercel.app/docs">
+  <meta property="og:url" content="https://pigeonbox-site.vercel.app/docs">
+  <meta name="theme-color" content="#f3f0e8">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PigeonBox">
+  <meta property="og:title" content="Docs · PigeonBox">
+  <meta property="og:description" content="Install guides, architecture and privacy docs.">
+  <meta property="og:image" content="https://pigeonbox-site.vercel.app/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/brand/pigeon-icon.png">
+  <link rel="preload" href="/brand/pidgy.webp" as="image" type="image/webp">
+  <link rel="stylesheet" href="/dispatch.css?v=2">
+</head>
+<body data-page="docs">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="/" aria-label="PigeonBox home"><span class="pidgy" data-state="idle" aria-hidden="true"></span><span class="wordmark">PigeonBox</span></a>
+      <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="/#product"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs" aria-current="page"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a class="account-link" href="/account" hidden>Sign in</a>
+        <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <header class="page-head">
+      <div class="wrap">
+        <div class="meta"><span class="label">Docs</span></div>
+        <h1 class="display">Read the routes.</h1>
+        <p class="lede">The docs live with the code, on GitHub.</p>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="guides-title">
+      <div class="wrap">
+        <div class="section-head" data-reveal>
+          <div class="index"><span class="label"><b>01</b> — Guides</span><span class="label">github.com/aiden-guan/pigeonbox</span></div>
+          <h2 class="h-section" id="guides-title">Guides.</h2>
+        </div>
+        <ul class="doc-index" data-reveal>
+          <li><a href="https://github.com/aiden-guan/pigeonbox#-install"><span class="n">01</span><strong>Install</strong><span>Three ways to get started.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/local-setup.md"><span class="n">02</span><strong>Local setup</strong><span>Choosing a model.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/INSTALL.md"><span class="n">03</span><strong>Install with an AI agent</strong><span>For your coding agent.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/architecture.md"><span class="n">04</span><strong>Architecture</strong><span>How it fits together.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/privacy-model.md"><span class="n">05</span><strong>Privacy model</strong><span>Every data flow.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/threat-model.md"><span class="n">06</span><strong>Threat model</strong><span>Boundaries and limits.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/tracking.md"><span class="n">07</span><strong>Tracking</strong><span>How opens are classified.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/self-hosting.md"><span class="n">08</span><strong>Self-hosting a tracker</strong><span>Run your own tracker.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/convex-self-hosting.md"><span class="n">09</span><strong>Convex self-hosting</strong><span>The default tracker.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/cloud-protocol.md"><span class="n">10</span><strong>Cloud protocol</strong><span>Extension ↔ Cloud contract.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/SECURITY.md"><span class="n">11</span><strong>Security policy</strong><span>Report a vulnerability.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/releases"><span class="n">12</span><strong>Releases &amp; changelog</strong><span>Downloads and changes.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="where-title">
+      <div class="wrap">
+        <div class="section-head" data-reveal>
+          <div class="index"><span class="label"><b>02</b> — Reference</span><span class="label">In the extension</span></div>
+          <h2 class="h-section" id="where-title">Where things are.</h2>
+        </div>
+        <ul class="ledger" data-reveal>
+          <li><span>Mode</span><span>Settings → How should PigeonBox run?</span></li>
+          <li><span>Tracking</span><span>Settings → Email Tracking</span></li>
+          <li><span>Clear data</span><span>Settings → Clear local mail index</span></li>
+          <li><span>Updates</span><span>Settings → Updates</span></li>
+          <li><span>Commands</span><span>Command palette inside Gmail</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="keys-title">
+      <div class="wrap">
+        <div class="section-head" data-reveal>
+          <div class="index"><span class="label"><b>03</b> — This site</span><span class="label">Keyboard</span></div>
+          <h2 class="h-section" id="keys-title">Keyboard.</h2>
+        </div>
+        <ul class="ledger keys-ledger" data-reveal>
+          <li><span><kbd data-mod-key>⌘K</kbd> <kbd>/</kbd></span><span>Open the command palette</span></li>
+          <li><span><kbd>P</kbd> <kbd>L</kbd> <kbd>C</kbd> <kbd>$</kbd> <kbd>D</kbd></span><span>Product, Local, Cloud, Pricing, Docs</span></li>
+          <li><span><kbd>`</kbd></span><span>PIDGY:// terminal</span></li>
+          <li><span><kbd>J</kbd> <kbd>K</kbd> <kbd>1–4</kbd></span><span>Threads and queues in the demos</span></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-art">
+      <canvas data-halftone="night" aria-hidden="true"></canvas>
+      <p class="footer-art-cap label" aria-hidden="true"><span>Night shift</span><span class="cap-hint"><span class="on-fine">Click</span><span class="on-touch">Tap</span> the sky to send Pidgy</span></p>
+    </div>
+    <div class="wrap footer-grid">
+      <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
+      <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>© 2026 PigeonBox</span>
+      <span>Extension · MIT license</span>
+      <span class="perch">
+        <button class="term-launch" type="button" data-term-open aria-haspopup="dialog" aria-expanded="false">PIDGY://<span class="caret" aria-hidden="true"></span></button>
+        <button class="perch-bird" type="button" data-coo aria-label="Say hello to Pidgy"><span class="pidgy" data-state="idle" aria-hidden="true"></span></button>
+      </span>
+    </div>
+  </footer>
+  <script type="module" src="/site.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

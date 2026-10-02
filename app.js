@@ -135,7 +135,10 @@ function initSiteNavigation() {
       link.href = '/account';
     });
   } else {
-    void fetch('/v1/health', { headers: PROTOCOL }).then((response) => {
+    // Only probe the Cloud API where one is routed (site-config.json "cloudApi": true);
+    // the static Vercel site has no /v1 rewrite yet and the probe would 404.
+    void loadSiteConfig().then(({ cloudApi }) => (cloudApi ? fetch('/v1/health', { headers: PROTOCOL }) : null)).then((response) => {
+      if (!response) return;
       if (!response.ok) return;
       document.querySelectorAll('.account-link').forEach((link) => {
         link.hidden = false;
@@ -146,24 +149,28 @@ function initSiteNavigation() {
   }
 }
 
+let siteConfig = null;
+function loadSiteConfig() {
+  siteConfig ||= fetch('/site-config.json').then((response) => (response.ok ? response.json() : {})).catch(() => ({}));
+  return siteConfig;
+}
+
 async function initInstallLinks() {
-  try {
-    const response = await fetch('/site-config.json');
-    if (!response.ok) return;
-    const { installUrl, installLabel } = await response.json();
-    if (!installUrl || !/^https:\/\//.test(installUrl)) return;
-    document.querySelectorAll('[data-install]').forEach((link) => {
-      link.href = installUrl;
-      if (installLabel && link.closest('.hero-copy')) link.firstChild.textContent = installLabel + ' ';
-    });
-  } catch {
-    // The static links already point to the public installation instructions.
-  }
+  const { installUrl, installLabel } = await loadSiteConfig();
+  if (!installUrl || !/^https:\/\//.test(installUrl)) return;
+  document.querySelectorAll('[data-install]').forEach((link) => {
+    link.href = installUrl;
+    if (installLabel && link.hasAttribute('data-install-label')) link.firstChild.textContent = installLabel + ' ';
+  });
 }
 
 async function renderPublicPrice() {
   const output = $('#cloud-price');
   if (!output) return;
+  // A configured Stripe price is not a public launch price (it may be test mode).
+  // Only show one once site-config.json explicitly declares live public billing.
+  const { cloudBilling } = await loadSiteConfig();
+  if (cloudBilling !== 'live') return;
   try {
     const response = await fetch('/v1/public/pricing', { headers: PROTOCOL });
     if (!response.ok) return;
@@ -175,56 +182,12 @@ async function renderPublicPrice() {
     const period = document.createElement('small');
     period.textContent = '/ ' + price.interval;
     output.append(period);
-    $('#cloud-price-detail').textContent = 'Hosted inference and tracking, billed through Stripe. Cancel from your account.';
+    $('#cloud-price-detail').textContent = 'Hosted AI, tracking and always-on work, billed through Stripe. Cancel from your account.';
     $('#cloud-cta').href = '/account';
-    $('#cloud-cta').textContent = 'Start Cloud ↗';
+    $('#cloud-cta').textContent = 'Subscribe from your account →';
   } catch {
     // Missing billing configuration is an early-access state, not a page error.
   }
-}
-
-function initProductDemo() {
-  const frame = $('[data-demo]');
-  const toggle = $('[data-demo-toggle]');
-  if (!frame || !toggle) return;
-  const stages = [
-    { title: 'Friday’s review', body: 'Maya likes the direction. She needs two small changes before Friday: the opening line and one screenshot.', label: 'Draft a reply' },
-    { title: 'The thread, caught up.', body: 'PigeonBox pulls the latest change and action from the opened thread, so you can decide what to do next.', label: 'Start the draft' },
-    { title: 'A reply to review.', body: 'Thanks for the clear notes. I’ll soften the opening line and update the screenshot before Friday.', label: 'Review in Gmail' },
-    { title: 'Ready in Gmail.', body: 'The draft is placed in Gmail’s composer. You check it, edit it, and press Send when it’s right.', label: 'Replay' },
-  ];
-  let step = 0;
-  let timer = null;
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  const render = () => {
-    frame.querySelector('.companion h3').textContent = stages[step].title;
-    frame.querySelector('.companion-inner > p:not(.companion-kicker)').textContent = stages[step].body;
-    frame.querySelector('[data-demo-next]').firstChild.textContent = stages[step].label + ' ';
-    frame.dataset.step = String(step);
-  };
-  const stop = () => {
-    clearInterval(timer);
-    timer = null;
-    toggle.setAttribute('aria-pressed', 'false');
-    toggle.innerHTML = step === stages.length - 1 ? 'Replay walkthrough <span aria-hidden="true">↺</span>' : 'Play walkthrough <span aria-hidden="true">▶</span>';
-  };
-  const advance = () => {
-    step = (step + 1) % stages.length;
-    render();
-    if (step === stages.length - 1) stop();
-  };
-  toggle.addEventListener('click', () => {
-    if (timer) { stop(); return; }
-    if (step === stages.length - 1) { step = 0; render(); }
-    if (reduced.matches) { advance(); return; }
-    toggle.setAttribute('aria-pressed', 'true');
-    toggle.innerHTML = 'Pause walkthrough <span aria-hidden="true">Ⅱ</span>';
-    advance();
-    if (step !== stages.length - 1) timer = setInterval(advance, 2200);
-  });
-  $('[data-demo-next]')?.addEventListener('click', advance);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
-  new IntersectionObserver(([entry]) => { if (!entry.isIntersecting) stop(); }, { threshold: 0.15 }).observe(frame);
 }
 
 export async function renderAccount() {
@@ -302,7 +265,6 @@ export async function renderAccount() {
 const page = document.body.dataset.page;
 initSiteNavigation();
 void initInstallLinks();
-if (page === 'home') initProductDemo();
 if (page === 'pricing') void renderPublicPrice();
 if (page === 'sign-in') {
   if (readSession()) location.replace('/account');

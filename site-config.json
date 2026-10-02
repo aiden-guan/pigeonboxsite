@@ -1,4 +1,6 @@
 {
-  "installUrl": "https://github.com/aiden-guan/pigeonbox#install",
-  "installLabel": "Get PigeonBox"
+  "installUrl": "https://github.com/aiden-guan/pigeonbox#-install",
+  "installLabel": "Install Local",
+  "cloudBilling": "early-access",
+  "cloudApi": false
 }
