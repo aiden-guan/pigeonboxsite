@@ -5,7 +5,6 @@
 const CELL = 112, FRAMES = 12, STEP = 2;          // sprite cell size, frame count, sample stride
 const N = CELL / STEP;                            // halftone grid is N × N; each dot owns one cell
 const FLAP = [3, 4, 7, 8, 9, 4];
-const INK = [11, 12, 16];
 
 export function startStage() {
   const stage = document.querySelector('.wl-stage');
@@ -84,8 +83,7 @@ export function startStage() {
       kick *= .9;
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = `rgb(${INK})`;
-      ctx.clearRect(0, 0, W, H);
+            ctx.clearRect(0, 0, W, H);
       const ox = cx, oy = cy + lift + Math.sin(now / 600) * 3;
       const k = mode === 'letter' ? .05 : .09;
       for (const d of dots) {
@@ -154,10 +152,9 @@ function sampleFrames(img) {
       r /= a; gg /= a; b /= a;
       const lum = (r * .3 + gg * .59 + b * .11) / 255;
       const warm = r - b > 38;
-      // Outline pixels become tiny dots; the lighter breast and face read as big ones.
-      const size = .34 + Math.pow(lum, .8) * 1.05;
-      const lift = warm ? .25 : .5;
-      const col = warm ? [Math.min(255, r * 1.5), gg * 1.2, b * 1.1] : [r + (236 - r) * lift, gg + (231 - gg) * lift, b + (222 - b) * lift];
+      // Printed on paper: dark feathers and outline become big dots, the pale breast stays fine.
+      const size = .3 + Math.pow(1 - lum, .7) * 1;
+      const col = warm ? [Math.min(255, r * 1.1), gg * .8, b * .7] : [r * .8, gg * .8, b * .85];
       pts[(y / STEP) * N + x / STEP] = { r: Math.min(1.25, size), c: col };
     }
     frames.push(pts);
@@ -166,13 +163,13 @@ function sampleFrames(img) {
 }
 
 function envelopeShape() {
-  const pts = new Array(N * N), w = 30, h = 20, paper = [236, 231, 222], fold = [190, 182, 168], seal = [224, 122, 82];
+  const pts = new Array(N * N), w = 30, h = 20, paper = [150, 140, 125], fold = [40, 42, 46], seal = [200, 90, 50];
   for (let y = 0; y <= h; y++) for (let x = 0; x <= w; x++) {
     const u = x / w, v = y / h;
     const edge = x === 0 || y === 0 || x === w || y === h;
     const flap = Math.abs(v - Math.min(u, 1 - u) * 1.15) < .05;
     const inSeal = Math.hypot(x - w / 2, y - h * .575) < 3.4;
-    pts[(y + 20) * N + x + 13] = { r: inSeal ? 1.15 : edge || flap ? 1 : .55 + v * .25, c: inSeal ? seal : edge || flap ? fold : paper };
+    pts[(y + 20) * N + x + 13] = { r: inSeal ? 1.15 : edge || flap ? .95 : .3 + v * .2, c: inSeal ? seal : edge || flap ? fold : paper };
   }
   return pts;
 }
