@@ -26,7 +26,7 @@
       <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
       <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-        <a href="/#product"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a href="/#product"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/waitlist"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
         <a class="account-link" href="/account" hidden>Sign in</a>
         <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
         <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
@@ -91,6 +91,7 @@
         <a href="#stores">What Cloud keeps</a>
         <a href="#tracking">Tracking</a>
         <a href="#analytics">Analytics</a>
+        <a href="#waitlist">Cloud waitlist</a>
         <a href="#delete">Deleting data</a>
       </nav>
       <article class="prose">
@@ -128,6 +129,9 @@
         <h2 id="analytics">Analytics</h2>
         <p>No ads. No analytics provider. Optional usage counters stay in your browser. This site sets no cookies.</p>
 
+        <h2 id="waitlist">Cloud waitlist</h2>
+        <p>Submitting the waitlist form stores your normalized email address, signup source (website or extension), and signup time in our Supabase project for Cloud launch access. Only the PigeonBox backend and project administrators can access these records. Duplicate emails are stored once. We send no automatic email and use no mailing service.</p>
+        <p>Opening the waitlist does not enable Cloud or authorize Gmail access. Rate limiting uses a salted IP hash. Signups are kept until launch access is handled or you request removal through <a href="https://github.com/aiden-guan/pigeonbox/issues">our contact page</a>.</p>
         <h2 id="delete">Deleting data</h2>
         <p>Clear the local index in Settings, or uninstall. Deleting a Cloud account is designed to remove its Cloud data.</p>
         <p class="note-plain">Describes the current architecture, not a final legal notice. Details: <a href="https://github.com/aiden-guan/pigeonbox/blob/main/PRIVACY.md">privacy policy</a>, <a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/privacy-model.md">privacy model</a>, <a href="/security">security</a>.</p>
@@ -142,7 +146,7 @@
     </div>
     <div class="wrap footer-grid">
       <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
-      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/cloud">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/waitlist">Cloud beta</a><a href="/pricing">Pricing</a></nav>
       <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
       <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
     </div>

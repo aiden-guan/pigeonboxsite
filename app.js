@@ -150,7 +150,7 @@ function initSiteNavigation() {
 }
 
 let siteConfig = null;
-function loadSiteConfig() {
+export function loadSiteConfig() {
   siteConfig ||= fetch('/site-config.json').then((response) => (response.ok ? response.json() : {})).catch(() => ({}));
   return siteConfig;
 }

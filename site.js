@@ -64,8 +64,8 @@ const ANSWERS = {
   },
   cloud: {
     title: 'What is Cloud?',
-    body: ['The same extension, hosted. Connect Google and it keeps sorting and preparing while Gmail is closed. Every send waits for you.', 'Private beta. Not open yet.'],
-    link: ['/cloud', 'Cloud beta'],
+    body: ['The same extension, hosted. Connect Google and it keeps sorting and preparing while Gmail is closed. Every send waits for you.', 'Cloud is on its way. Join the waitlist.'],
+    link: ['/waitlist', 'Cloud beta'],
   },
   send: {
     title: 'Does PigeonBox send email for me?',
@@ -91,7 +91,7 @@ function restoreFocus(previous, fallback) {
 const baseCommands = () => [
   { group: 'Go to', label: 'Product', glyph: '◇', hint: 'P', run: () => go('/#product') },
   { group: 'Go to', label: 'Local', glyph: '◇', hint: 'L', run: () => go('/local') },
-  { group: 'Go to', label: 'Cloud beta', glyph: '◇', hint: 'C', run: () => go('/cloud') },
+  { group: 'Go to', label: 'Cloud beta', glyph: '◇', hint: 'C', run: () => go('/waitlist') },
   { group: 'Go to', label: 'Pricing', glyph: '◇', hint: '$', run: () => go('/pricing') },
   { group: 'Go to', label: 'Docs', glyph: '◇', hint: 'D', run: () => go('/docs') },
   { group: 'Go to', label: 'Privacy', glyph: '◇', run: () => go('/privacy') },
@@ -250,7 +250,7 @@ function closePalette(restore = true) {
 
 let term = null;
 let termReturn = null;
-const TERM_PAGES = { product: '/', home: '/', local: '/local', cloud: '/cloud', pricing: '/pricing', docs: '/docs', privacy: '/privacy', security: '/security', terms: '/terms' };
+const TERM_PAGES = { product: '/', home: '/', local: '/local', cloud: '/waitlist', pricing: '/pricing', docs: '/docs', privacy: '/privacy', security: '/security', terms: '/terms' };
 
 function buildTerminal() {
   const log = el('div', { class: 'term-log', role: 'log', 'aria-live': 'polite' });
@@ -278,7 +278,7 @@ function buildTerminal() {
     },
     cloud: () => {
       print('CLOUD  private beta · hosted · works while Gmail is closed', 'ok');
-      printLink('       → ', '/cloud', '/cloud');
+      printLink('       → ', '/waitlist', '/waitlist');
     },
     privacy: () => {
       print('local   stays in your browser');
@@ -360,7 +360,7 @@ function closeTerminal() {
 
 /* ---------------- Keyboard ---------------- */
 
-const NAV_KEYS = { p: '/#product', l: '/local', c: '/cloud', $: '/pricing', d: '/docs' };
+const NAV_KEYS = { p: '/#product', l: '/local', c: '/waitlist', $: '/pricing', d: '/docs' };
 
 function typingTarget(target) {
   return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));

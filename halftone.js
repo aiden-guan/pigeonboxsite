@@ -934,7 +934,55 @@ export function sealed() {
 /* Mounting                                                            */
 /* ------------------------------------------------------------------ */
 
-const SCENES = { night: nightShift, always: alwaysOn, postmark, loft, sealed, ...glyphs };
+
+/* Static postage study: a pigeon carrying the next delivery. */
+export function waitlistPostmark() {
+  return {
+    static: true,
+    options: { cell: 5, dot: .38, color: [215, 215, 204], accent: [224, 122, 82], alphas: [.16, .5, .95], flashlight: .25, radius: 100 },
+    build(ctx, W, H) {
+      const size = Math.min(W / 500, H / 380);
+      ctx.save(); ctx.translate((W - 500 * size) / 2, (H - 380 * size) / 2); ctx.scale(size, size);
+      // Quiet cancellation waves behind the bird.
+      ctx.lineWidth = 3; ctx.strokeStyle = ink(.28);
+      for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        for (let x = 20; x < 475; x += 4) {
+          const y = 257 + i * 16 + Math.sin(x / 25) * 6;
+          if (x === 20) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      // Postmark, visibly copper, stamped into the right-hand corner.
+      ctx.save(); ctx.translate(365, 110); ctx.rotate(-.18);
+      ctx.strokeStyle = acc(.85); ctx.lineWidth = 4;
+      for (const r of [85, 64]) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke(); }
+      const ring = 'PIGEONBOX · NEXT DELIVERY · ';
+      ctx.fillStyle = acc(.95); ctx.font = '600 11px ui-monospace, Menlo, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let i = 0; i < ring.length; i++) {
+        const a = -Math.PI / 2 + i * TAU / ring.length;
+        ctx.save(); ctx.translate(Math.cos(a) * 74, Math.sin(a) * 74); ctx.rotate(a + Math.PI / 2); ctx.fillText(ring[i], 0, 0); ctx.restore();
+      }
+      ctx.font = '400 29px ui-serif, Georgia, serif'; ctx.fillText('Cloud', 0, -8);
+      ctx.font = '600 10px ui-monospace, Menlo, monospace'; ctx.fillText('ON ITS WAY', 0, 20); ctx.restore();
+      // Body, fanned tail, uplifted wings and the distinctive small pigeon head.
+      ctx.fillStyle = CUT;
+      const bird = new Path2D('M58 235 L128 203 C145 174 171 156 201 155 C208 116 229 82 266 48 C265 96 246 147 229 164 C262 164 288 151 307 135 C314 118 326 114 338 122 C344 127 345 134 344 143 L365 151 L344 156 C339 178 320 184 294 184 C265 192 253 218 214 227 L155 237 L97 265 L103 240 L58 250 Z');
+      ctx.fill(bird);
+      ctx.fillStyle = ink(.95); ctx.fill(bird);
+      const wing = new Path2D('M136 207 C119 175 102 136 83 92 C126 99 181 132 211 164 C196 187 168 200 136 207 Z');
+      ctx.fillStyle = ink(.58); ctx.fill(wing);
+      ctx.strokeStyle = CUT; ctx.lineWidth = 5;
+      for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(98 + i * 19, 118 + i * 8); ctx.quadraticCurveTo(117 + i * 18, 154, 143 + i * 10, 191); ctx.stroke(); }
+      ctx.fillStyle = CUT; ctx.beginPath(); ctx.arc(333, 136, 4, 0, TAU); ctx.fill();
+      ctx.strokeStyle = acc(.95); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(270, 190); ctx.lineTo(269, 218); ctx.moveTo(281, 188); ctx.lineTo(286, 218); ctx.stroke();
+      envelopeShape(ctx, 277, 235, 49, .95, true);
+      ctx.restore();
+    },
+  };
+}
+
+const SCENES = { waitlist: waitlistPostmark, night: nightShift, always: alwaysOn, postmark, loft, sealed, ...glyphs };
 
 export function mount(root = document) {
   const fields = [];
