@@ -1,175 +1,336 @@
-// Waitlist hero: Pidgy, printed in halftone dots. Every dot is a spring-loaded particle
-// that targets a sample of the real flight sprite, so the pigeon can assemble, flap,
-// scatter from the cursor and fold itself into an envelope.
+// Waitlist hero: a little world printed in halftone, with Pidgy at its centre.
+// Everything (sky, props, Pidgy himself) is painted as tone into a tiny buffer, one pixel
+// per dot, then printed as ink dots on paper. Props are real buttons: each one cues a
+// routine from Pidgy's sprite sheets, and the prop he's busy with blooms copper.
 
-const CELL = 112, FRAMES = 12, STEP = 2;          // sprite cell size, frame count, sample stride
-const N = CELL / STEP;                            // halftone grid is N × N; each dot owns one cell
-const FLAP = [3, 4, 7, 8, 9, 4];
+const CELL = 96;                                   // sprite cell on /brand/pidgy-world.webp
+const INK = '24,25,27', COPPER = '168,80,44';
+const BIRD = 44;                                   // Pidgy's size in world units
+const RES = 1.6;                                   // dots per world unit
+
+// row on the sheet, frame order, ms per frame; `hide` lifts a prop while Pidgy holds it.
+const ROUTINES = {
+  route:   { row: 1, frames: [0, 1, 2, 3, 0, 1, 2, 3], ms: 240 },
+  draft:   { row: 2, frames: [0, 1, 2, 3], ms: 230 },
+  search:  { row: 3, frames: [0, 1, 2, 3, 0, 1, 2, 3], ms: 280 },
+  alert:   { row: 4, frames: [0, 1, 2, 3, 0, 1, 2, 3], ms: 190 },
+  tea:     { row: 5, frames: [0, 1, 2, 2, 1, 2, 3, 0], ms: 430, hide: 'tea' },
+  sleep:   { row: 6, frames: [0, 1, 2, 1, 2, 1, 2, 1, 2, 3], ms: 620, night: true },
+  parcel:  { row: 7, frames: [0, 1, 2, 3, 1, 2, 3, 0], ms: 380, hide: 'parcel' },
+  plane:   { row: 8, frames: [0, 1, 2, 3, 0, 1, 2, 3], ms: 300, hide: 'plane' },
+  wave:    { row: 9, frames: [0, 1, 2, 1, 2, 1, 3], ms: 260 },
+  stars:   { row: 10, frames: [0, 1, 2, 1, 2, 1, 2, 3], ms: 330, sparkle: true },
+  map:     { row: 11, frames: [0, 1, 2, 3, 1, 2, 3, 0], ms: 430 },
+  lantern: { row: 12, frames: [0, 1, 2, 3, 1, 2, 3, 0], ms: 430, hide: 'lantern' },
+};
+
+// Props in dot units around Pidgy's feet (y grows downward, 0 is the ground).
+const PROPS = [
+  { id: 'map',     label: 'Read the map',      box: [-38, -27, 13, 27] },
+  { id: 'tea',     label: 'Tea break',         box: [-27, -18, 15, 18] },
+  { id: 'pidgy',   label: 'Say hello',         box: [-15, -38, 30, 38], routine: 'wave' },
+  { id: 'parcel',  label: 'Open a parcel',     box: [14, -13, 12, 13] },
+  { id: 'mail',    label: 'Check the mail',    box: [25, -21, 11, 21], routine: 'alert' },
+  { id: 'laptop',  label: 'Run the inbox',     box: [36, -16, 13, 16], routine: 'route' },
+  { id: 'lantern', label: 'Light the lantern', box: [44, -39, 12, 39] },
+  { id: 'moon',    label: 'Goodnight',         box: [30, -68, 15, 15], routine: 'sleep' },
+  { id: 'star',    label: 'Make a wish',       box: [-14, -76, 46, 12], routine: 'stars' },
+  { id: 'plane',   label: 'Catch the plane',   box: [0, 0, 9, 7], moving: true },
+];
+const STARS = [[-10, -70], [4, -66], [16, -73], [27, -67]];
+const AMBIENT = ['tea', 'map', 'stars', 'parcel', 'lantern', 'plane', 'search', 'wave', 'route', 'draft'];
 
 export function startStage() {
   const stage = document.querySelector('.wl-stage');
   const canvas = stage?.querySelector('.wl-dots');
-  if (!canvas) return null;
+  const layer = stage?.querySelector('.wl-props');
+  const tip = stage?.querySelector('.wl-tip');
+  if (!canvas || !layer) return null;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const ctx = canvas.getContext('2d');
-  const api = { hop() {}, peck() {}, shake() {}, deliver() {} };
+  const out = canvas.getContext('2d');
+  const buf = document.createElement('canvas'), g = buf.getContext('2d', { willReadFrequently: true });
+  const acc = document.createElement('canvas'), a = acc.getContext('2d', { willReadFrequently: true });
+  const sheet = new Image();
+  sheet.src = '/brand/pidgy-world.webp';
 
-  const img = new Image();
-  img.src = '/brand/pidgy-flight.webp';
-  img.decode().then(() => run(sampleFrames(img))).catch(() => {});
+  let W = 0, H = 0, dpr = 1, cell = 7, dot = 4, cols = 0, rows = 0, ax = 0, gy = 0, fade = [], tone = new Float32Array(0);
+  let routine = null, routineAt = 0, queue = [], lastPlay = performance.now(), hovered = null, focusProp = null;
+  let night = 0, plane = { x: -30, y: -48, dir: 1 }, planeAway = 0;
+  const mouse = { x: -1e4, y: -1e4 }, ripples = [], sparks = [], steam = [];
 
-  function run(frames) {
-    const envelope = envelopeShape();
-    const dots = Array.from({ length: N * N }, (_, i) => {
-      const hx = i % N - N / 2, hy = Math.floor(i / N) - N / 2 - 6;
-      return { x: hx, y: hy, hx, hy, vx: 0, vy: 0, r: 0, tr: 0, c: [200, 200, 200], tc: [200, 200, 200] };
-    });
-    let W = 0, H = 0, dpr = 1, gap = 6, cx = 0, cy = 0;
-    let shape = null, mode = 'idle', modeAt = 0, lift = 0, liftV = 0, kick = 0;
-    let mouse = { x: -1e4, y: -1e4, down: false };
+  // One focusable button per prop, laid over the dots.
+  const buttons = new Map(PROPS.map(p => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'wl-prop'; b.setAttribute('aria-label', p.label);
+    b.addEventListener('click', () => trigger(p));
+    b.addEventListener('pointerenter', () => { hovered = p.id; showTip(p); });
+    b.addEventListener('pointerleave', () => { if (hovered === p.id) hovered = null; hideTip(); });
+    b.addEventListener('focus', () => { hovered = p.id; showTip(p); });
+    b.addEventListener('blur', () => { hovered = null; hideTip(); });
+    layer.append(b);
+    return [p.id, b];
+  }));
 
-    function layout() {
-      const r = stage.getBoundingClientRect();
-      W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1);
-      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
-      const narrow = W < 900;
-      gap = narrow ? Math.max(3.4, Math.min(5, W / 110)) : Math.max(5, Math.min(10, W / 125));
-      cx = narrow ? W / 2 : W * .76;
-      cy = narrow ? Math.min(W * .42, 210) + 10 : H * .5;
-    }
+  function layout() {
+    const r = stage.getBoundingClientRect();
+    W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1);
+    const narrow = W < 900;
+    cell = narrow ? Math.max(3.4, W / 104) : Math.max(4.4, Math.min(8.5, W / 172, H / 100));
+    dot = cell / RES; cols = Math.ceil(W / dot); rows = Math.ceil(H / dot);
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    buf.width = acc.width = cols; buf.height = acc.height = rows;
+    tone = new Float32Array(cols * rows);
+    ax = narrow ? Math.round(W / cell / 2 - 7) : Math.round(W / cell * .64);
+    gy = narrow ? Math.round((Math.min(W * .86, 380) - 18) / cell) : Math.round(H / cell * .8);
+    // The world fades out before it reaches the headline on wide screens.
+    fade = Array.from({ length: cols }, (_, x) => narrow ? 1 : smooth(ax - 66, ax - 42, x / RES));
+    for (const p of PROPS) if (!p.moving) place(p, p.box[0], p.box[1]);
+  }
 
-    // Each dot keeps its grid cell; a frame only changes how big and what colour it is.
-    function target(points, spread = 0) {
-      if (points === shape && !spread) return;
-      shape = points;
-      dots.forEach((d, i) => {
-        const p = points[i];
-        d.tr = p ? p.r : 0; if (p) d.tc = p.c;
-        if (spread && d.r > .05) { d.vx += (Math.random() - .5) * spread; d.vy += (Math.random() - .5) * spread; }
+  function place(p, x, y) {
+    const b = buttons.get(p.id), [, , w, h] = p.box;
+    b.style.transform = `translate(${(ax + x) * cell}px, ${(gy + y) * cell}px)`;
+    b.style.width = `${w * cell}px`; b.style.height = `${h * cell}px`;
+  }
+
+  function showTip(p) {
+    if (!tip) return;
+    tip.textContent = p.label;
+    const [x, y, w] = p.moving ? [plane.x - 4, plane.y - 3, 9] : p.box;
+    tip.style.transform = `translate(${(ax + x + w / 2) * cell}px, ${(gy + y) * cell - 10}px) translate(-50%, -100%)`;
+    tip.dataset.show = 'true';
+  }
+  function hideTip() { if (tip) tip.dataset.show = 'false'; }
+
+  function play(name, now = performance.now()) {
+    if (routine?.name === name) return;
+    routine = { name, ...ROUTINES[name] }; routineAt = now; lastPlay = now;
+  }
+
+  function trigger(p) {
+    const name = p.routine || p.id;
+    const [x, y, w, h] = p.moving ? [plane.x - 4, plane.y - 3, 9, 7] : p.box;
+    if (!reduced) ripples.push({ x: x + w / 2, y: y + h / 2, at: performance.now() });
+    if (name === 'plane') planeAway = performance.now();
+    queue = []; routine = null; play(name);
+  }
+
+  // ---------- Painting (into the 1-pixel-per-dot buffer) ----------
+
+  const rect = (c, x, y, w, h, t) => { c.fillStyle = `rgba(0,0,0,${t})`; c.fillRect(x, y, w, h); };
+  const disc = (c, x, y, r, t) => { c.fillStyle = `rgba(0,0,0,${t})`; c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill(); };
+  const clear = (c, x, y, w, h) => { c.fillStyle = '#fff'; c.fillRect(x, y, w, h); };
+  const glow = (c, x, y, r, k) => {
+    const gr = c.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, `rgba(255,255,255,${k})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = gr; c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
+  };
+  const holding = id => routine?.hide === id;
+
+  const painters = {
+    map(c) {
+      rect(c, -32.5, -26, 1.4, 26, .85);
+      c.fillStyle = 'rgba(0,0,0,.62)';
+      c.beginPath(); c.moveTo(-38, -25); c.lineTo(-27, -25); c.lineTo(-25, -23); c.lineTo(-27, -21); c.lineTo(-38, -21); c.fill();
+      c.beginPath(); c.moveTo(-26, -19); c.lineTo(-36, -19); c.lineTo(-38, -17); c.lineTo(-36, -15); c.lineTo(-26, -15); c.fill();
+      rect(c, -36, -23.4, 7, .6, .95); rect(c, -34.5, -17.4, 6, .6, .95);
+    },
+    tea(c, t) {
+      rect(c, -26, -11.5, 14, 1.4, .85); rect(c, -24.5, -10, 1, 10, .75); rect(c, -14.5, -10, 1, 10, .75);
+      if (holding('tea')) return;
+      rect(c, -22.5, -12.4, 7.5, .9, .55);
+      rect(c, -21.6, -16.4, 5, 4, .72); clear(c, -21, -16.2, 3.8, .7);
+      c.strokeStyle = 'rgba(0,0,0,.72)'; c.lineWidth = .9; c.beginPath(); c.arc(-16.2, -14.6, 1.3, -1.4, 1.4); c.stroke();
+      for (const s of steam) disc(c, -19 + s.x, -17 - s.y, .55, .35 * (1 - s.y / 9));
+    },
+    parcel(c) {
+      if (holding('parcel')) { rect(c, 15, -.8, 10, .8, .3); return; }
+      rect(c, 15, -7, 10, 7, .5); rect(c, 19.4, -7, 1.2, 7, .95); rect(c, 15, -4, 10, 1, .95);
+      rect(c, 17, -12, 6.5, 5, .4); rect(c, 19.7, -12, 1, 5, .9);
+      disc(c, 19.2, -12.8, 1.1, .9); disc(c, 21.4, -12.8, 1.1, .9);
+    },
+    mail(c) {
+      rect(c, 29.6, -12, 1.5, 12, .85);
+      c.fillStyle = 'rgba(0,0,0,.7)'; c.beginPath(); c.moveTo(25.5, -12); c.lineTo(25.5, -17); c.arc(30.3, -17, 4.8, Math.PI, 0); c.lineTo(35.1, -12); c.fill();
+      rect(c, 27, -15.5, 6, .8, .98);
+      const up = routine?.name === 'alert';
+      rect(c, 34.6, up ? -21 : -16, .9, up ? 7 : 4, .9); rect(c, 35.2, up ? -21 : -13.2, up ? 3 : 2.6, 1.7, .9);
+    },
+    laptop(c, t) {
+      rect(c, 37, -8, 11, 8, .42); for (let y = -6.5; y < 0; y += 2.4) rect(c, 37, y, 11, .5, .7); rect(c, 37, -8, .7, 8, .8); rect(c, 47.3, -8, .7, 8, .8);
+      rect(c, 38.3, -9, 8.8, 1, .88); rect(c, 39, -15.4, 7.4, 6.4, .92);
+      clear(c, 40, -14, .8, .8); clear(c, 40.8, -13.2, .8, .8); clear(c, 40, -12.4, .8, .8);
+      if (Math.floor(t / 500) % 2) clear(c, 42.2, -12.2, 1.8, .6);
+    },
+    lantern(c, t, n) {
+      rect(c, 52, -38, 1.6, 38, .85); rect(c, 47, -38.4, 6.4, 1.2, .85); rect(c, 51, -1.4, 3.6, 1.4, .9);
+      if (holding('lantern')) return;
+      rect(c, 47.9, -37.4, .7, 2, .85); rect(c, 46.2, -35.6, 4.2, 6, .82); rect(c, 45.8, -36, 5, 1, .9); rect(c, 45.8, -30, 5, 1, .9);
+      clear(c, 47, -34.6, 2.6, 4);
+      if (n > .05) glow(c, 48.3, -32.6, 9 + Math.sin(t / 130) * .6, .9 * n);
+    },
+    moon(c, t, n) {
+      if (n > .05) glow(c, 37, -60, 13, .85 * n);
+      disc(c, 37, -60, 5, .38 * (1 - n));
+      if (n > .05) { c.globalAlpha = n; c.fillStyle = '#fff'; c.beginPath(); c.arc(37, -60, 5, 0, 6.2832); c.fill(); c.globalAlpha = 1; }
+      c.fillStyle = n > .5 ? `rgba(0,0,0,${.5 * n})` : '#fff';
+      c.beginPath(); c.arc(39.4, -61.4, 4.3, 0, 6.2832); c.fill();
+    },
+    star(c, t, n) {
+      STARS.forEach(([x, y], i) => {
+        const tw = .55 + .45 * Math.sin(t / 380 + i * 1.7), s = 1.4 + tw * .9;
+        c.fillStyle = n > .5 ? '#fff' : `rgba(0,0,0,${.35 + tw * .4})`;
+        c.beginPath(); c.moveTo(x, y - s * 1.6); c.lineTo(x + s * .35, y - s * .35); c.lineTo(x + s * 1.6, y); c.lineTo(x + s * .35, y + s * .35);
+        c.lineTo(x, y + s * 1.6); c.lineTo(x - s * .35, y + s * .35); c.lineTo(x - s * 1.6, y); c.lineTo(x - s * .35, y - s * .35); c.fill();
       });
+    },
+    plane(c) {
+      if (holding('plane') || planeAway) return;
+      const { x, y, dir } = plane;
+      c.save(); c.translate(x, y); c.scale(dir, 1);
+      c.fillStyle = 'rgba(0,0,0,.78)';
+      c.beginPath(); c.moveTo(4.5, 0); c.lineTo(-4, -2.6); c.lineTo(-2.2, 0); c.lineTo(-4, 2); c.fill();
+      clear(c, -2, -.25, 5.5, .5);
+      c.restore();
+    },
+  };
+
+  function paintWorld(c, t) {
+    // Hills and a dotted ground that thins toward the bottom.
+    c.fillStyle = 'rgba(0,0,0,.07)'; c.beginPath(); c.ellipse(-12, 2, 58, 13, 0, Math.PI, 0); c.fill();
+    c.fillStyle = 'rgba(0,0,0,.05)'; c.beginPath(); c.ellipse(40, 2, 40, 9, 0, Math.PI, 0); c.fill();
+    const gr = c.createLinearGradient(0, 0, 0, 14);
+    gr.addColorStop(0, 'rgba(0,0,0,.22)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = gr; c.fillRect(-70, 0, 140, 14);
+    rect(c, -80, 0, 160, .7, .55);
+    for (let i = 0; i < 18; i++) { const x = -60 + i * 7.3 + (i % 3) * 1.7; rect(c, x, -1.2, .6, 1.2, .5); rect(c, x + 1, -1.8, .6, 1.8, .5); }
+    // Clouds drift; the plane loops and leaves a dashed trail.
+    for (const [cx0, cy, k] of [[-30, -52, .006], [20, -44, .004], [60, -58, .005]]) {
+      const x = ((cx0 + t * k * .1 + 45) % 115) - 45;
+      c.fillStyle = 'rgba(0,0,0,.08)';
+      c.beginPath(); c.ellipse(x, cy, 9, 2.4, 0, 0, 6.2832); c.ellipse(x + 5, cy - 1.6, 5, 2.4, 0, 0, 6.2832); c.fill();
     }
-
-    function scatterIn() {
-      dots.forEach(d => {
-        const a = Math.random() * Math.PI * 2, dist = 300 + Math.random() * 600;
-        d.x = d.hx + Math.cos(a) * dist / 6; d.y = d.hy + Math.sin(a) * dist / 10; d.r = 0;
-        d.c = [224, 122, 82];
-      });
-      target(frames[0]);
+    if (!holding('plane') && !planeAway) for (let i = 1; i < 9; i++) {
+      const p = planeAt(t - i * 140);
+      if (i % 2) disc(c, p.x - p.dir * 2, p.y, .45, .4 - i * .035);
     }
-
-    function setMode(m, now = performance.now()) { mode = m; modeAt = now; }
-
-    const tick = now => {
-      const t = now - modeAt;
-      // Choreography: perch, then a burst of flight with a hover, then land.
-      if (mode === 'idle') {
-        target(t % 3600 > 3420 ? frames[1] : frames[0]);
-        if (t > 5200) setMode('flap', now);
-      } else if (mode === 'flap') {
-        target(frames[FLAP[Math.floor(t / 85) % FLAP.length]]);
-        liftV += (-34 - lift) * .02;
-        if (t > 2200) setMode('land', now);
-      } else if (mode === 'land') {
-        target(t < 160 ? frames[11] : frames[0]);
-        liftV += (0 - lift) * .03;
-        if (t > 900) setMode('idle', now);
-      } else if (mode === 'letter') {
-        target(envelope);
-        liftV += (-10 - lift) * .02;
-        if (t > 2400) { setMode('flap', now); target(frames[3], 1.5); }
-      }
-      liftV *= .86; lift += liftV;
-      kick *= .9;
-
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.clearRect(0, 0, W, H);
-      const ox = cx, oy = cy + lift + Math.sin(now / 600) * 3;
-      const k = mode === 'letter' ? .05 : .09;
-      for (const d of dots) {
-        const gx = ox + d.hx * gap, gy = oy + d.hy * gap;
-        let ax = (gx - (ox + d.x * gap)) * k, ay = (gy - (oy + d.y * gap)) * k;
-        // Cursor pushes dots away, like a hand through birdseed.
-        const sx = ox + d.x * gap, sy = oy + d.y * gap, dx = sx - mouse.x, dy = sy - mouse.y, dd = dx * dx + dy * dy;
-        const R = mouse.down ? 190 : 110;
-        if (dd < R * R) { const f = (1 - Math.sqrt(dd) / R) * (mouse.down ? 9 : 4); const m = Math.sqrt(dd) || 1; ax += dx / m * f; ay += dy / m * f; }
-        d.vx = (d.vx + ax / gap) * .78; d.vy = (d.vy + ay / gap) * .78;
-        d.x += d.vx; d.y += d.vy;
-        d.r += (d.tr - d.r) * (mode === 'flap' ? .45 : .14);
-        for (let j = 0; j < 3; j++) d.c[j] += (d.tc[j] - d.c[j]) * .08;
-        if (d.r < .03) continue;
-        // Speed tints dots copper, so motion leaves a warm shimmer.
-        const sp = Math.min(1, Math.hypot(d.vx, d.vy) * .9 + kick);
-        ctx.fillStyle = `rgb(${d.c[0] + (224 - d.c[0]) * sp | 0},${d.c[1] + (122 - d.c[1]) * sp | 0},${d.c[2] + (82 - d.c[2]) * sp | 0})`;
-        ctx.beginPath(); ctx.arc(ox + d.x * gap, oy + d.y * gap, d.r * gap * .5, 0, 6.2832); ctx.fill();
-      }
-      if (!reduced) requestAnimationFrame(tick);
-    };
-
-    stage.addEventListener('pointermove', e => { const r = stage.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
-    stage.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; mouse.down = false; });
-    canvas.addEventListener('pointerdown', () => { mouse.down = true; kick = .6; if (mode === 'idle') setMode('flap'); });
-    addEventListener('pointerup', () => { mouse.down = false; });
-    new ResizeObserver(layout).observe(stage);
-    layout();
-
-    if (reduced) {
-      dots.forEach((d, i) => { const p = frames[0][i]; if (p) { d.r = d.tr = p.r; d.c = [...p.c]; d.tc = p.c; } });
-      new ResizeObserver(() => requestAnimationFrame(tick)).observe(stage);
-      requestAnimationFrame(tick);
-      return;
-    }
-    scatterIn();
-    setMode('idle');
-    modeAt = performance.now() - 2600;   // first flap comes soon after assembly
-    requestAnimationFrame(tick);
-
-    api.hop = () => { liftV -= 6; kick = .4; };
-    api.peck = () => { liftV -= 1.5; };
-    api.shake = () => { kick = 1; dots.forEach(d => { d.vx += (Math.random() - .5) * .9; }); };
-    api.deliver = () => { kick = 1; setMode('letter'); target(envelope, 2.5); };
   }
 
-  return { hop: () => api.hop(), peck: () => api.peck(), shake: () => api.shake(), deliver: () => api.deliver() };
-}
+  function planeAt(t) {
+    const s = t / 5200;
+    return { x: 6 + Math.sin(s) * 44, y: -47 + Math.sin(s * 2) * 5, dir: Math.cos(s) >= 0 ? 1 : -1 };
+  }
 
-// Sample each sprite frame on a grid: dot size from coverage and lightness, colour from the pixels.
-function sampleFrames(img) {
-  const c = document.createElement('canvas');
-  c.width = img.width; c.height = img.height;
-  const g = c.getContext('2d', { willReadFrequently: true });
-  g.drawImage(img, 0, 0);
-  const frames = [];
-  for (let f = 0; f < FRAMES; f++) {
-    const data = g.getImageData(f * CELL, 0, CELL, CELL).data, pts = new Array(N * N);
-    for (let y = 0; y < CELL; y += STEP) for (let x = 0; x < CELL; x += STEP) {
-      let r = 0, gg = 0, b = 0, a = 0;
-      for (let j = 0; j < STEP; j++) for (let i = 0; i < STEP; i++) {
-        const k = ((y + j) * CELL + x + i) * 4, al = data[k + 3] / 255;
-        r += data[k] * al; gg += data[k + 1] * al; b += data[k + 2] * al; a += al;
-      }
-      if (a < STEP * STEP * .45) continue;
-      r /= a; gg /= a; b /= a;
-      const lum = (r * .3 + gg * .59 + b * .11) / 255;
-      const warm = r - b > 38;
-      // Printed on paper: dark feathers and outline become big dots, the pale breast stays fine.
-      const size = .3 + Math.pow(1 - lum, .7) * 1;
-      const col = warm ? [Math.min(255, r * 1.1), gg * .8, b * .7] : [r * .8, gg * .8, b * .85];
-      pts[(y / STEP) * N + x / STEP] = { r: Math.min(1.25, size), c: col };
+  function paintBird(c, now) {
+    let row = 0, col = idleFrame(now - lastPlay);
+    if (routine) {
+      const i = Math.floor((now - routineAt) / routine.ms);
+      if (i >= routine.frames.length) { finish(routine, now); return paintBird(c, now); }
+      row = routine.row; col = reduced ? 0 : routine.frames[i];
     }
-    frames.push(pts);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, -.2, 12, 1.4, 0, 0, 6.2832); c.fill();
+    if (sheet.complete && sheet.naturalWidth) c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, -BIRD / 2, -BIRD * 95 / 96, BIRD, BIRD);
   }
-  return frames;
+
+  function finish(done, now) {
+    if (done.name === 'plane') planeAway = now;
+    routine = null; lastPlay = now;
+    if (queue.length) play(queue.shift(), now);
+  }
+
+  // ---------- Printing ----------
+
+  function frame(now) {
+    const t = reduced ? 0 : now;
+    // Pidgy finds something to do on his own when nobody's clicking.
+    if (!routine && !reduced && now - lastPlay > 7000) play(AMBIENT[Math.floor(now / 7000) % AMBIENT.length], now);
+    night += ((routine?.night ? 1 : 0) - night) * .07;
+    if (planeAway && now - planeAway > 2600) planeAway = 0;
+    plane = planeAt(t);
+    const planeBtn = buttons.get('plane');
+    planeBtn.hidden = !!planeAway || holding('plane');
+    if (!planeBtn.hidden) place(PROPS.at(-1), plane.x - 4.5, plane.y - 3.5);
+    for (const s of steam) { s.y += .07; s.x = Math.sin(s.y * 1.3 + s.p) * .8; if (s.y > 9) { s.y = 0; s.p = Math.random() * 6; } }
+    if (steam.length < 3) steam.push({ x: 0, y: steam.length * 3, p: Math.random() * 6 });
+    if (routine?.sparkle && !reduced && Math.random() < .35) sparks.push({ x: 8 + Math.random() * 4, y: -34, vx: (Math.random() - .3) * .5, vy: -.2 - Math.random() * .4, life: 1 });
+
+    // Tone buffer: the world, then night, then Pidgy and particles on top.
+    g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#fff'; g.fillRect(0, 0, cols, rows);
+    g.setTransform(RES, 0, 0, RES, ax * RES, gy * RES);
+    paintWorld(g, t);
+    if (night > .02) {
+      const gr = g.createRadialGradient(10, -36, 4, 10, -36, 78);
+      gr.addColorStop(0, `rgba(0,0,0,${.62 * night})`); gr.addColorStop(.6, `rgba(0,0,0,${.3 * night})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(-90, -90, 180, 90);
+    }
+    for (const p of PROPS) if (p.id !== 'pidgy') painters[p.id](g, t, night);
+    paintBird(g, now);
+    for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.vy += .012; s.life -= .02; disc(g, s.x, s.y, .7, s.life * .8); }
+    while (sparks.length && sparks[0].life <= 0) sparks.shift();
+
+    // Accent mask: whatever is hovered, or the prop Pidgy is busy with.
+    const lit = hovered || (routine && (PROPS.find(p => (p.routine || p.id) === routine.name)?.id));
+    a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, cols, rows);
+    if (lit && lit !== 'pidgy' && painters[lit]) { a.setTransform(RES, 0, 0, RES, ax * RES, gy * RES); painters[lit](a, t, 0); }
+
+    const d = g.getImageData(0, 0, cols, rows).data, m = a.getImageData(0, 0, cols, rows).data;
+    out.setTransform(dpr, 0, 0, dpr, 0, 0); out.clearRect(0, 0, W, H);
+    const live = ripples.filter(r => now - r.at < 1400);
+    ripples.length = 0; ripples.push(...live);
+    const inkPath = new Path2D(), copperPath = new Path2D();
+    for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+      const i = y * cols + x;
+      let v = (1 - d[i * 4] / 255) * fade[x];
+      // Flashlight: dots swell a little near the cursor, like the home page.
+      const px = (x + .5) * dot, py = (y + .5) * dot, dx = px - mouse.x, dy = py - mouse.y, dd = dx * dx + dy * dy;
+      if (dd < 14400) v += (1 - Math.sqrt(dd) / 120) * (v > .02 ? .18 : .05);
+      for (const r of live) {
+        const age = (now - r.at) / 1400, dist = Math.hypot(x / RES - ax - r.x, y / RES - gy - r.y), ring = age * 46;
+        if (Math.abs(dist - ring) < 2.2) v += .28 * (1 - age) * fade[x];
+      }
+      tone[i] += (v - tone[i]) * (reduced ? 1 : .55);
+      const k = tone[i];
+      if (k < .045) continue;
+      const rad = Math.min(.62, .05 + Math.pow(k, .72) * .6) * dot, cx = px, cy = py;
+      const path = m[i * 4 + 3] > 30 ? copperPath : inkPath;
+      path.moveTo(cx + rad, cy); path.arc(cx, cy, rad, 0, 6.2832);
+    }
+    out.fillStyle = `rgb(${INK})`; out.fill(inkPath);
+    out.fillStyle = `rgb(${COPPER})`; out.fill(copperPath);
+  }
+
+  let visible = true, last = 0;
+  const loop = now => {
+    if (visible && now - last > 32) { last = now; frame(now); }
+    requestAnimationFrame(loop);
+  };
+
+  stage.addEventListener('pointermove', e => { const r = stage.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
+  stage.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; });
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(stage);
+  new ResizeObserver(layout).observe(stage);
+  layout();
+  sheet.decode().catch(() => {}).finally(() => {
+    // Open with a wave, so the first thing a visitor sees is Pidgy saying hello.
+    if (!reduced) play('wave');
+    requestAnimationFrame(loop);
+  });
+
+  return {
+    peck() { if (!routine || routine.name === 'draft') { routine = null; play('draft'); } },
+    hop() { queue = []; routine = null; play('route'); },
+    shake() { queue = []; routine = null; play('alert'); },
+    deliver() {
+      routine = null; play('parcel'); queue = ['stars', 'wave'];
+      if (!reduced) ripples.push({ x: 0, y: -18, at: performance.now() });
+    },
+  };
 }
 
-function envelopeShape() {
-  const pts = new Array(N * N), w = 30, h = 20, paper = [150, 140, 125], fold = [40, 42, 46], seal = [200, 90, 50];
-  for (let y = 0; y <= h; y++) for (let x = 0; x <= w; x++) {
-    const u = x / w, v = y / h;
-    const edge = x === 0 || y === 0 || x === w || y === h;
-    const flap = Math.abs(v - Math.min(u, 1 - u) * 1.15) < .05;
-    const inSeal = Math.hypot(x - w / 2, y - h * .575) < 3.4;
-    pts[(y + 20) * N + x + 13] = { r: inSeal ? 1.15 : edge || flap ? .95 : .3 + v * .2, c: inSeal ? seal : edge || flap ? fold : paper };
-  }
-  return pts;
+// Mostly still, with the sheet's blink and glance frames sprinkled in.
+function idleFrame(t) {
+  const c = t % 3600;
+  return c > 2100 && c < 2220 ? 2 : c > 2800 && c < 3100 ? 1 : c > 3300 ? 3 : 0;
 }
+
+function smooth(e0, e1, x) { const k = Math.max(0, Math.min(1, (x - e0) / (e1 - e0))); return k * k * (3 - 2 * k); }
