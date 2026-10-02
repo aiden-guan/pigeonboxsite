@@ -160,7 +160,11 @@ async function flightMode() {
 
   world.start();
   root.classList.add('world-ready');
-  if (new URLSearchParams(location.search).has('debug')) window.__pb = { world, holds: () => holds, keys: () => keys };
+  if (new URLSearchParams(location.search).has('debug')) {
+    window.__pb = { world, holds: () => holds, keys: () => keys };
+    const { mountDebug } = await import('./debug.js');
+    mountDebug(world);
+  }
 }
 
 if (root.classList.contains('journey-3d')) {

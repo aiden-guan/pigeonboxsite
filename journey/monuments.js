@@ -1,8 +1,10 @@
 // Hand-built landmarks. Each returns the absolute height the pigeon perches on.
 import * as THREE from '../vendor/three.min.js';
 import { STOPS, heightAt, LAND } from './layout.js';
-import { prismGeometry, pyramidGeometry } from './geometry.js';
-import { lambert, shared, windowMaterial } from './materials.js';
+import { prismGeometry, pyramidGeometry, beveledBox, weatheredRock, beveledPrism, beveledFrustum } from './geometry.js';
+import { stylizedMat as lambert, shared, windowMaterial } from './materials.js';
+import { windowFrame, batchStatic, bench } from './craft.js';
+import { addLandmarkDetails } from './landmark-details.js';
 
 const shadowed = (obj) => {
   obj.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -13,7 +15,7 @@ const mesh = (geo, mat, x = 0, y = 0, z = 0) => {
   m.position.set(x, y, z);
   return m;
 };
-const box = (w, h, d, mat, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), mat, x, y + h / 2, z);
+const box = (w, h, d, mat, x, y, z) => mesh(beveledBox(w, h, d, Math.min(.10, w*.1, h*.1, d*.1)), mat, x, y + h / 2, z);
 
 function rooftop(stop) {
   const g = LAND;
@@ -21,7 +23,7 @@ function rooftop(stop) {
   const walls = windowMaterial({ spacing: [1.8, 2.4] });
   walls.color.set('#f1dfc0');
   group.add(box(7, 7.5, 10, walls, 0, g, 0));
-  const roof = mesh(prismGeometry({ caps: false }), lambert('#c7664a', { side: THREE.DoubleSide }), 0, g + 7.5, 0);
+  const roof = mesh(beveledPrism(), lambert('#c7664a', { side: THREE.DoubleSide }), 0, g + 7.5, 0);
   roof.scale.set(7.9, 3.4, 10.9);
   group.add(roof);
   const gable = mesh(prismGeometry(), walls, 0, g + 7.48, 0);
@@ -29,9 +31,6 @@ function rooftop(stop) {
   group.add(gable);
   group.add(box(1, 2.8, 1, lambert('#a6553f'), 2, g + 8.6, -3.2));
   group.add(box(1.3, 0.3, 1.3, lambert('#7d4030'), 2, g + 11.4, -3.2));
-  // A little rooftop garden on the neighbour's flat roof.
-  const planter = lambert('#6f9a4a');
-  for (let i = 0; i < 4; i++) group.add(mesh(new THREE.IcosahedronGeometry(0.7, 0), planter, -6.2 + (i % 2) * 1.2, g + 6.4, 6 + i * 1.1));
   group.position.set(stop.x, 0, stop.z - 4.3);
   return { group: shadowed(group), perchY: g + 7.5 + 3.4, update() {} };
 }
@@ -44,14 +43,15 @@ function clockTower(stop) {
   group.add(box(7.2, 22, 7.2, stone, 0, g + 2, 0));
   for (const y of [9, 16]) group.add(box(7.8, 0.6, 7.8, trim, 0, g + y, 0));
   // Tall arched windows.
-  const dark = lambert('#34414f');
-  for (const [dx, dz, ry] of [[0, 3.62, 0], [0, -3.62, 0], [3.62, 0, Math.PI / 2], [-3.62, 0, Math.PI / 2]]) {
+  const windows = new THREE.Group();
+  for (const [dx, dz, ry] of [[0, 3.62, 0], [0, -3.62, Math.PI], [3.62, 0, Math.PI / 2], [-3.62, 0, -Math.PI / 2]]) {
     for (const y of [4, 11, 18]) {
-      const w = box(1.4, 3.6, 0.2, dark, dx, g + y, dz);
+      const w = windowFrame(windows, dx, g + y, dz, 1.25, 3.3);
       w.rotation.y = ry;
-      group.add(w);
+      windows.add(w);
     }
   }
+  group.add(batchStatic(windows));
   group.add(box(8.4, 6.4, 8.4, lambert('#f2e6cc'), 0, g + 24, 0));
   group.add(box(9.2, 0.8, 9.2, trim, 0, g + 30.4, 0));
   const faceMat = lambert('#fbf6ea'), ink = lambert('#1d2a3a');
@@ -73,7 +73,7 @@ function clockTower(stop) {
     group.add(face);
   }
   for (const [cx, cz] of [[4, 4], [-4, 4], [4, -4], [-4, -4]]) {
-    const t = mesh(new THREE.ConeGeometry(0.8, 2.6, 6), copper, cx, g + 32.5, cz);
+    const t = mesh(new THREE.ConeGeometry(0.8, 2.6, 16), copper, cx, g + 32.5, cz);
     group.add(t);
   }
   const roof = mesh(pyramidGeometry(), copper, 0, g + 31.2, 0);
@@ -98,13 +98,13 @@ function clockTower(stop) {
 function windmill(stop) {
   const g = heightAt(stop.x, stop.z) - 0.3;
   const group = new THREE.Group();
-  group.add(mesh(new THREE.CylinderGeometry(4, 4.4, 1.2, 10), lambert('#b9ab93'), 0, g + 0.6, 0));
-  group.add(mesh(new THREE.CylinderGeometry(2.4, 3.5, 12.5, 8), lambert('#f4ecdb'), 0, g + 1.2 + 6.25, 0));
-  group.add(mesh(new THREE.CylinderGeometry(3.1, 3.1, 0.5, 8), lambert('#8b5a3c'), 0, g + 13.7, 0));
+  group.add(mesh(new THREE.CylinderGeometry(4, 4.4, 1.2, 32), lambert('#b9ab93'), 0, g + 0.6, 0));
+  group.add(mesh(new THREE.CylinderGeometry(2.4, 3.5, 12.5, 32,4), lambert('#f4ecdb'), 0, g + 1.2 + 6.25, 0));
+  group.add(mesh(new THREE.CylinderGeometry(3.1, 3.1, 0.5, 32), lambert('#8b5a3c'), 0, g + 13.7, 0));
   const dark = lambert('#3b3a3f');
   group.add(box(1.4, 2.4, 0.3, dark, 0, g + 1.2, 3.35));
   for (const y of [6, 10]) group.add(box(0.8, 1.1, 0.3, dark, 0, g + y, 3.0 - (y - 6) * 0.1));
-  const cap = mesh(new THREE.ConeGeometry(3, 3.4, 8), lambert('#a84c36'), 0, g + 13.95 + 1.7, 0);
+  const cap = mesh(new THREE.LatheGeometry([new THREE.Vector2(3,0),new THREE.Vector2(3.05,.18),new THREE.Vector2(2.8,.5),new THREE.Vector2(2.35,1.1),new THREE.Vector2(1.65,1.85),new THREE.Vector2(.75,2.55),new THREE.Vector2(0,3.4)],32).translate(0,-1.7,0), lambert('#a84c36'), 0, g + 13.95 + 1.7, 0);
   group.add(cap);
   const top = g + 13.95 + 3.4;
   const sails = new THREE.Group();
@@ -116,7 +116,8 @@ function windmill(stop) {
     blade.add(box(0.28, 8.8, 0.28, spar, 0, 0, 0));
     const sail = box(1.9, 6.6, 0.08, cloth, 1.15, 2.2, 0);
     blade.add(sail);
-    for (let k = 0; k < 5; k++) blade.add(box(2.2, 0.1, 0.14, spar, 1.1, 2.3 + k * 1.6, 0.06));
+    for (let k = 0; k < 5; k++) blade.add(box(2.2, 0.1, 0.14, spar, 1.1, 2.3 + k * 1.6, -0.11));
+    blade.add(box(.12,6.6,.14,spar,2.12,2.2,-.11));
     sails.add(blade);
   }
   sails.add(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.8, 8), spar).rotateX(Math.PI / 2));
@@ -146,7 +147,7 @@ function lighthouse(stop) {
   const bands = 6, bandH = 2.8;
   for (let i = 0; i < bands; i++) {
     const r0 = 2.3 - (i / bands) * 0.8, r1 = 2.3 - ((i + 1) / bands) * 0.8;
-    group.add(mesh(new THREE.CylinderGeometry(r1, r0, bandH, 16), i % 2 ? red : white, 0, g + i * bandH + bandH / 2, 0));
+    group.add(mesh(new THREE.CylinderGeometry(r1, r0, bandH, 32), i % 2 ? red : white, 0, g + i * bandH + bandH / 2, 0));
   }
   const top = g + bands * bandH;
   const iron = lambert('#2b3440');
@@ -156,7 +157,7 @@ function lighthouse(stop) {
   group.add(rail);
   const glass = new THREE.MeshLambertMaterial({ color: '#fff4c8', emissive: '#ffd66b', emissiveIntensity: 0.5 });
   group.add(mesh(new THREE.CylinderGeometry(1.15, 1.15, 2, 12), glass, 0, top + 1.4, 0));
-  const dome = mesh(new THREE.SphereGeometry(1.4, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), red, 0, top + 2.4, 0);
+  const dome = mesh(new THREE.SphereGeometry(1.4, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), red, 0, top + 2.4, 0);
   group.add(dome);
   group.add(mesh(new THREE.SphereGeometry(0.28, 8, 6), iron, 0, top + 3.85, 0));
   const beam = new THREE.Group();
@@ -172,7 +173,7 @@ function lighthouse(stop) {
   // Keeper's cottage and rocks.
   const cottage = new THREE.Group();
   cottage.add(box(5, 3, 4, lambert('#f4efe6'), 0, 0, 0));
-  const cr = mesh(prismGeometry({ caps: false }), lambert('#d24b3e', { side: THREE.DoubleSide }), 0, 3, 0); cr.scale.set(4.5, 1.8, 5.6); cr.rotation.y = Math.PI / 2;
+  const cr = mesh(beveledPrism(), lambert('#d24b3e', { side: THREE.DoubleSide }), 0, 3, 0); cr.scale.set(4.5, 1.8, 5.6); cr.rotation.y = Math.PI / 2;
   const cw = mesh(prismGeometry(), white, 0, 2.98, 0); cw.scale.set(4, 1.75, 5); cw.rotation.y = Math.PI / 2;
   cottage.add(cr, cw);
   cottage.position.set(5.5, g, 4.5);
@@ -181,7 +182,7 @@ function lighthouse(stop) {
   for (let i = 0; i < 16; i++) {
     const a = i * 0.41 + 0.2, rr = 13 + (i % 3) * 2;
     const s = 0.9 + (i % 4) * 0.5;
-    const m = mesh(new THREE.DodecahedronGeometry(s, 0), rock, Math.cos(a) * rr, 0, Math.sin(a) * rr);
+    const m = mesh(weatheredRock(i).scale(s,s,s), rock, Math.cos(a) * rr, 0, Math.sin(a) * rr);
     m.position.y = Math.max(-0.3, heightAt(stop.x + m.position.x, stop.z + m.position.z));
     m.rotation.set(i, i * 2, 0);
     group.add(m);
@@ -192,7 +193,7 @@ function lighthouse(stop) {
     perchY: top + 4.1,
     update(t, env) {
       beam.rotation.y = t * 0.8;
-      beamMat.opacity = 0.05 + env.night * 0.2;
+      beamMat.opacity = env.night * 0.16;
       glass.emissiveIntensity = 0.5 + env.night * 1.6;
     },
   };
@@ -206,8 +207,8 @@ function pyramid(stop) {
   let y = g;
   for (let i = 0; i < layers; i++) {
     const half0 = 17 - i * 1.45, half1 = half0 - 1.1;
-    const layer = mesh(new THREE.CylinderGeometry(half1 * Math.SQRT2, half0 * Math.SQRT2, h, 4), i % 2 ? a : b, 0, y + h / 2, 0);
-    layer.rotation.y = Math.PI / 4;
+    const layer = mesh(beveledFrustum(half0*2,half1*2,h,.13), i % 2 ? a : b, 0, y + h / 2, 0);
+    layer.rotation.y = 0;
     group.add(layer);
     y += h;
   }
@@ -237,7 +238,7 @@ function summit(stop) {
   const sizes = [1.8, 1.4, 1.05, 0.7];
   let y = g;
   sizes.forEach((s, i) => {
-    const m = mesh(new THREE.DodecahedronGeometry(s, 0), stone, (i % 2 ? 0.15 : -0.1), y + s * 0.7, 0);
+    const m = mesh(weatheredRock(i).scale(s,s,s), stone, (i % 2 ? 0.15 : -0.1), y + s * 0.7, 0);
     m.scale.y = 0.72;
     m.rotation.y = i * 1.3;
     group.add(m);
@@ -247,6 +248,7 @@ function summit(stop) {
   const flagGeo = new THREE.PlaneGeometry(2.6, 1.5, 10, 4);
   flagGeo.translate(1.3, 0, 0);
   const flag = mesh(flagGeo, lambert('#ffd95e', { side: THREE.DoubleSide, flatShading: true }), 2.45, g + 5.7, 0.4);
+  flag.userData.runtimeGeometry = true;
   group.add(flag);
   const base = flagGeo.attributes.position.array.slice();
   // Prayer-style bunting down to a boulder.
@@ -282,7 +284,7 @@ function mailbox(stop) {
   for (const [x, z] of [[-2, -1.5], [2, -1.5], [-2, 1.5], [2, 1.5]]) group.add(box(0.6, 1.4, 0.6, ink, x, g + 0.6, z));
   const body = box(5, 5.8, 4.2, blue, 0, g + 2, 0);
   group.add(body);
-  const top = mesh(new THREE.CylinderGeometry(2.5, 2.5, 4.2, 20, 1, false, 0, Math.PI), blue, 0, g + 7.8, 0);
+  const top = mesh(new THREE.CylinderGeometry(2.5, 2.5, 4.2, 40, 1, false, 0, Math.PI), blue, 0, g + 7.8, 0);
   top.geometry.rotateZ(Math.PI / 2);
   top.geometry.rotateY(Math.PI / 2);
   group.add(top);
@@ -308,9 +310,9 @@ function mailbox(stop) {
     const bulb = mesh(new THREE.SphereGeometry(0.45, 8, 6), lampGlass, x, g + 5.2, z);
     lamps.push(bulb);
     group.add(bulb);
-    const bench = box(2.4, 0.5, 0.8, lambert('#8a5a3c'), Math.cos(a + 0.2) * 12, g, Math.sin(a + 0.2) * 12);
-    bench.rotation.y = -a;
-    group.add(bench);
+    const seating = new THREE.Group();
+    bench(seating, Math.cos(a + 0.2) * 12, g, Math.sin(a + 0.2) * 12, -a);
+    group.add(batchStatic(seating));
   }
   group.position.set(stop.x, 0, stop.z);
   let flagUp = 0;
@@ -331,6 +333,7 @@ const BUILDERS = { rooftop, clock: clockTower, windmill, lighthouse, pyramid, su
 export function buildMonuments(scene) {
   return STOPS.map((stop) => {
     const m = BUILDERS[stop.id](stop);
+    addLandmarkDetails(stop, m);
     stop.y = m.perchY;
     scene.add(m.group);
     return m;

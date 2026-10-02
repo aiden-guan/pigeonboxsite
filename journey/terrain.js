@@ -1,10 +1,10 @@
-// Ground chunks: faceted low-poly heightfield plus a hand-painted canvas map.
+// Continuous smooth heightfield with a hand-painted miniature ground map.
 import * as THREE from '../vendor/three.min.js';
 import { X_HALF, Z_MIN, Z_MAX, LAND, heightAt, biome, riverX, duneShape, dunePhase, STOPS, OASIS } from './layout.js';
 import { clamp, hash2, hexToRgb, mixRgb, noise, smoothstep, fbm, rng } from './util.js';
 
 const CHUNK = 240;
-const STEP = 2;
+const STEP = 1.25;
 
 const C = Object.fromEntries(Object.entries({
   pave: '#d8c7aa', pave2: '#cbb796', grass: '#9cc063', grass2: '#7ba64b', dry: '#bcc36c',
@@ -228,8 +228,8 @@ function paintHarbour(ctx) {
 
 export function buildTerrain({ scene, cityPlans, fields, textureSize, anisotropy }) {
   const chunks = [];
-  // Faceted mountains; smooth everywhere else so shorelines stay clean.
-  const material = (map, flat) => new THREE.MeshLambertMaterial({ map, flatShading: flat });
+  // Shared smooth material across biome boundaries.
+  const material = (map) => new THREE.MeshStandardMaterial({ map, roughness: .98, flatShading: false });
   const cols = Math.round((X_HALF * 2) / STEP) + 1;
   const pending = [];
   for (let z0 = Z_MIN; z0 < Z_MAX; z0 += CHUNK) {
@@ -245,14 +245,21 @@ export function buildTerrain({ scene, cityPlans, fields, textureSize, anisotropy
       pos.setY(k, heights[j * cols + i]);
       pos.setZ(k, z);
     }
-    geo.computeVertexNormals();
+    // Sample across chunk boundaries so shared edges have identical normals.
+    const normals=geo.attributes.normal;
+    for(let k=0;k<pos.count;k++){
+      const x=pos.getX(k),z=pos.getZ(k),e=.7;
+      const nx=heightAt(x-e,z)-heightAt(x+e,z),nz=heightAt(x,z-e)-heightAt(x,z+e);
+      const length=Math.hypot(nx,2*e,nz);
+      normals.setXYZ(k,nx/length,2*e/length,nz/length);
+    }
     geo.computeBoundingSphere();
     const canvas = document.createElement('canvas');
     canvas.width = canvas.height = textureSize;
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = anisotropy;
-    const mesh = new THREE.Mesh(geo, material(tex, z0 >= 960 && z0 < 1280));
+    const mesh = new THREE.Mesh(geo, material(tex));
     mesh.receiveShadow = true;
     mesh.castShadow = z0 >= 720 && z0 < 1280;
     scene.add(mesh);
@@ -302,6 +309,14 @@ export function buildTerrain({ scene, cityPlans, fields, textureSize, anisotropy
     if (inRange(200, 520)) paintFields(ctx, fields);
     if (inRange(730, 1000)) paintDesert(ctx);
     if (inRange(1270, 1580)) paintHarbour(ctx);
+    // Painted contact under landmark foundations; no fullscreen AO pass.
+    for(const [i,stop] of STOPS.entries()){
+      if(!inRange(stop.z-20,stop.z+20))continue;
+      const radius=[7,8,5,3.5,18,2.5,5][i];
+      const shadow=ctx.createRadialGradient(stop.x,stop.z,0,stop.x,stop.z,radius);
+      shadow.addColorStop(0,'rgba(57,43,35,.25)');shadow.addColorStop(.6,'rgba(57,43,35,.12)');shadow.addColorStop(1,'rgba(57,43,35,0)');
+      ctx.fillStyle=shadow;ctx.fillRect(stop.x-radius,stop.z-radius,radius*2,radius*2);
+    }
     // Fine grain so close-ups do not look airbrushed.
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     const grain = rng(z0 + 999);
@@ -356,8 +371,8 @@ export function buildWater(scene) {
   normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
   normalMap.repeat.set(12, 96);
   const mat = new THREE.MeshPhongMaterial({
-    color: '#3fb0c8', specular: '#ffffff', shininess: 70, transparent: true, opacity: 0.62,
-    normalMap, normalScale: new THREE.Vector2(0.55, 0.55), depthWrite: false,
+    color: '#65afb4', specular: '#8bb2b4', shininess: 24, transparent: true, opacity: 0.48,
+    normalMap, normalScale: new THREE.Vector2(0.22, 0.22), depthWrite: false,
   });
   const geo = new THREE.PlaneGeometry(X_HALF * 2 + 400, Z_MAX - Z_MIN + 400);
   geo.rotateX(-Math.PI / 2);
@@ -369,7 +384,7 @@ export function buildWater(scene) {
   return {
     mesh: water,
     update(t) {
-      normalMap.offset.set(t * 0.004, t * 0.011);
+      normalMap.offset.set(t * 0.002, t * 0.005);
     },
   };
 }

@@ -1,0 +1,57 @@
+[
+  {
+    "file": "pigeon/courier.glb",
+    "bytes": 197724,
+    "triangles": 19020,
+    "draws": 31
+  },
+  {
+    "file": "landmarks/rooftop.glb",
+    "bytes": 817832,
+    "triangles": 17204,
+    "draws": 19,
+    "perchY": 11.5
+  },
+  {
+    "file": "landmarks/clock.glb",
+    "bytes": 958648,
+    "triangles": 19244,
+    "draws": 40,
+    "perchY": 41.05
+  },
+  {
+    "file": "landmarks/windmill.glb",
+    "bytes": 594364,
+    "triangles": 11256,
+    "draws": 55,
+    "perchY": 31.18420449948886
+  },
+  {
+    "file": "landmarks/lighthouse.glb",
+    "bytes": 399276,
+    "triangles": 9304,
+    "draws": 40,
+    "perchY": 24.14675800027586
+  },
+  {
+    "file": "landmarks/pyramid.glb",
+    "bytes": 167936,
+    "triangles": 2532,
+    "draws": 20,
+    "perchY": 27.200000000000003
+  },
+  {
+    "file": "landmarks/summit.glb",
+    "bytes": 122172,
+    "triangles": 4218,
+    "draws": 22,
+    "perchY": 43.3475
+  },
+  {
+    "file": "landmarks/home.glb",
+    "bytes": 688616,
+    "triangles": 14828,
+    "draws": 53,
+    "perchY": 10.9
+  }
+]

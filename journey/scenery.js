@@ -1,15 +1,33 @@
 // Everything that fills the world between landmarks.
 import * as THREE from '../vendor/three.min.js';
 import { STOPS, X_HALF, heightAt, biome, riverX, OASIS, corridorX, LEG_CRUISE } from './layout.js';
-import { boxGeometry, prismGeometry, pyramidGeometry, cloudGeometry, palmCrownGeometry } from './geometry.js';
+import { boxGeometry, prismGeometry, pyramidGeometry, cloudGeometry, palmCrownGeometry, canopyGeometry, pineGeometry, weatheredRock, beveledBox, beveledPrism, merge, boatGeometry } from './geometry.js';
 import { lambert, windowMaterial, glowMap, shared } from './materials.js';
 import { rng, fbm, noise, clamp } from './util.js';
 
 const dummy = new THREE.Object3D();
 const tint = new THREE.Color();
 
-function instanced(geo, material, items, { cast = true, receive = true } = {}) {
+function instanced(geo, material, items, { cast = true, receive = true, variants = true, regions = true } = {}) {
   if (!items.length) return null;
+  if(regions&&items.length>80){
+    const buckets=new Map();
+    for(const item of items){const key=Math.floor(item.z/160);if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(item);}
+    if(buckets.size>1){
+      const group=new THREE.Group();
+      for(const list of buckets.values())group.add(instanced(geo,material,list,{cast,receive,variants,regions:false}));
+      return group;
+    }
+  }
+  const kit = variants && (geo === GEO.blob ? CANOPIES : geo === GEO.pine ? PINES_GEO : geo === GEO.rock ? ROCKS : null);
+  if (kit) {
+    const group = new THREE.Group();
+    kit.forEach((geometry, k) => {
+      const part = instanced(geometry, material, items.filter((_, i) => i % kit.length === k), {cast, receive, variants:false,regions:false});
+      if (part) group.add(part);
+    });
+    return group;
+  }
   const m = new THREE.InstancedMesh(geo, material, items.length);
   items.forEach((it, i) => {
     dummy.position.set(it.x, it.y, it.z);
@@ -19,6 +37,7 @@ function instanced(geo, material, items, { cast = true, receive = true } = {}) {
     m.setMatrixAt(i, dummy.matrix);
     if (it.color) m.setColorAt(i, tint.set(it.color));
   });
+  m.userData.optionalVegetation = CANOPIES.includes(geo) || PINES_GEO.includes(geo) || ROCKS.includes(geo) || geo === GEO.trunk || geo === GEO.palm;
   m.castShadow = cast;
   m.receiveShadow = receive;
   m.computeBoundingSphere();
@@ -26,18 +45,22 @@ function instanced(geo, material, items, { cast = true, receive = true } = {}) {
 }
 
 const GEO = {
-  box: boxGeometry(),
+  box: beveledBox(1,1,1,.012).translate(0,.5,0),
   prism: prismGeometry(),
-  roof: prismGeometry({ caps: false }),
+  roof: beveledPrism(),
   pyramid: pyramidGeometry(),
-  blob: (() => { const g = new THREE.IcosahedronGeometry(1, 0); g.translate(0, 1, 0); return g; })(),
-  pine: (() => { const g = new THREE.ConeGeometry(1, 2.8, 7); g.translate(0, 1.9, 0); return g; })(),
-  trunk: (() => { const g = new THREE.CylinderGeometry(0.16, 0.22, 1, 5); g.translate(0, 0.5, 0); return g; })(),
+  blob: (() => { return canopyGeometry(); })(),
+  pine: (() => { return pineGeometry(); })(),
+  trunk: (() => { const g = new THREE.CylinderGeometry(0.13, 0.22, 1, 10, 3); g.translate(0, 0.5, 0); return g; })(),
   palm: (() => { const g = palmCrownGeometry(); return g; })(),
-  rock: new THREE.DodecahedronGeometry(1, 0),
+  rock: weatheredRock(),
   mesa: (() => { const g = new THREE.CylinderGeometry(1, 1.18, 1, 7); g.translate(0, 0.5, 0); return g; })(),
-  car: (() => { const g = new THREE.BoxGeometry(1.1, 0.7, 2.2); g.translate(0, 0.35, 0); return g; })(),
+  car: (() => { return merge([beveledBox(1.1,.42,2.2,.14).translate(0,.28,0),beveledBox(.90,.38,1.1,.12).translate(0,.64,-.1)]); })(),
 };
+
+const CANOPIES = [GEO.blob, canopyGeometry(1), canopyGeometry(2)];
+const PINES_GEO = [GEO.pine, pineGeometry(1)];
+const ROCKS = [GEO.rock, weatheredRock(2)];
 
 const FACADES_OLD = ['#f2e3c6', '#ecc9b0', '#f1d9a2', '#c9dbe0', '#f3eee5', '#e7c2a6', '#dfe2c3', '#f0d0c0'];
 const ROOFS_OLD = ['#c4643f', '#b85a3b', '#d27a52', '#a95237', '#cf8a5c', '#9b5a48', '#7a7f8c'];
@@ -122,6 +145,12 @@ function buildCity(plan, out, env) {
       trees.push({ x, y: heightAt(x, z), z, sx: 1.3, sy: 1.5, sz: 1.3, color: r.pick(GREENS) });
       trunks.push({ x, y: heightAt(x, z), z, sx: 1.3, sy: 1.5, sz: 1.3 });
     }
+  }
+  // The same kit supplies a base course and eave to every lot. These remain
+  // in the shared detail batch rather than becoming individual scene objects.
+  for (const b of bodies) {
+    details.push({x:b.x,y:b.y+.06,z:b.z,sx:b.sx+.12,sy:.22,sz:b.sz+.12,color:'#c9baa2'});
+    details.push({x:b.x,y:b.y+b.sy-.2,z:b.z,sx:b.sx+.22,sy:.24,sz:b.sz+.22,color:'#e4d7bd'});
   }
   const wallMat = windowMaterial({ spacing: plan.style === 'old' ? [1.9, 2.5] : [1.5, 2.2], glass: plan.style === 'old' ? '#3d4a5a' : '#2a3b52' });
   out.push(instanced(GEO.box, wallMat, bodies));
@@ -250,7 +279,7 @@ function buildFields(cells, out) {
   out.push(instanced(GEO.blob, lambert('#ffffff'), bushes));
   out.push(instanced(GEO.blob, lambert('#ffffff'), trees));
   out.push(instanced(GEO.trunk, lambert('#6b4b35'), trunks));
-  out.push(instanced(new THREE.IcosahedronGeometry(1, 0), lambert('#ffffff'), sheep));
+  out.push(instanced(new THREE.SphereGeometry(1, 10, 7), lambert('#ffffff'), sheep));
   out.push(instanced(GEO.box, lambert('#ffffff'), houses));
   out.push(instanced(GEO.roof, lambert('#ffffff', { side: THREE.DoubleSide }), gables));
   out.push(instanced(GEO.prism, lambert('#ffffff'), walls));
@@ -311,7 +340,7 @@ function buildOcean(scene, out) {
     const g = new THREE.Group();
     const cargo = i === 0;
     const len = cargo ? 16 : r.range(2.6, 3.6);
-    const hull = new THREE.Mesh(new THREE.BoxGeometry(cargo ? 3.6 : 1.2, 0.8, len), lambert(cargo ? '#2f3a4a' : r.pick(['#f4f1ea', '#f4f1ea', '#2f5d8a', '#e2574c'])));
+    const hull = new THREE.Mesh(boatGeometry(cargo ? 3.6 : 1.2, 0.8, len), lambert(cargo ? '#2f3a4a' : r.pick(['#f4f1ea', '#f4f1ea', '#2f5d8a', '#e2574c'])));
     hull.position.y = 0.3;
     g.add(hull);
     if (cargo) {
@@ -345,7 +374,7 @@ function buildOcean(scene, out) {
   // Harbour boats at the final city.
   for (let i = 0; i < 12; i++) {
     const g = new THREE.Group();
-    const hull = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.8, 3.4), lambert(r.pick(['#f4f1ea', '#2f5d8a', '#e2574c', '#ffd95e'])));
+    const hull = new THREE.Mesh(boatGeometry(1.3, 0.8, 3.4), lambert(r.pick(['#f4f1ea', '#2f5d8a', '#e2574c', '#ffd95e'])));
     hull.position.y = 0.3;
     g.add(hull);
     const mast = new THREE.Mesh(new THREE.BoxGeometry(0.1, 4, 0.1), lambert('#d9d4cc'));
@@ -541,7 +570,7 @@ function buildClouds(scene) {
   return { update, material: mat };
 }
 
-export function buildScenery(scene, { cityPlans, fields }) {
+export function buildScenery(scene, { cityPlans, fields, density = 1 }) {
   const out = [];
   const env = {};
   const traffic = cityPlans.map((plan) => buildCity(plan, out, env));
@@ -552,14 +581,34 @@ export function buildScenery(scene, { cityPlans, fields }) {
   buildMountains(out);
   const streetGlow = buildStreetGlow(cityPlans[1], scene);
   const clouds = buildClouds(scene);
-  for (const m of out) if (m) scene.add(m);
+  for (const m of out) if (m) {
+    if(density<1)m.traverse(part=>{
+      if(!part.isInstancedMesh||!part.userData.optionalVegetation)return;
+      const matrix=new THREE.Matrix4(),color=new THREE.Color();let kept=0;
+      for(let i=0;i<part.count;i++){
+        part.getMatrixAt(i,matrix);
+        const x=matrix.elements[12],z=matrix.elements[14];
+        // Coordinate-based selection keeps matching foliage and trunks together.
+        const nearHero=STOPS.some(s=>Math.hypot(s.x-x,s.z-z)<30);
+        const hash=Math.sin(Math.round(x*10)*12.9898+Math.round(z*10)*78.233)*43758.5453;
+        if(!nearHero&&hash-Math.floor(hash)>density)continue;
+        part.setMatrixAt(kept,matrix);
+        if(part.instanceColor){part.getColorAt(i,color);part.setColorAt(kept,color);}
+        kept++;
+      }
+      part.count=kept;part.instanceMatrix.needsUpdate=true;
+      if(part.instanceColor)part.instanceColor.needsUpdate=true;
+      part.computeBoundingSphere();
+    });
+    scene.add(m);
+  }
   return {
     clouds,
-    update(t, dt, night) {
-      for (const tr of traffic) tr.update(dt, night);
+    update(t, dt, night, focusZ = 0, range = 360) {
+      traffic.forEach((tr,i)=>{if(Math.abs(focusZ-(i?1420:0))<range+240)tr.update(dt,night);});
       balloons(t);
-      ocean(t, dt);
-      desert(t);
+      if(Math.abs(focusZ-620)<range)ocean(t, dt);
+      if(Math.abs(focusZ-870)<range)desert(t);
       streetGlow.material.opacity = clamp(night * 1.2);
       clouds.update(t);
     },

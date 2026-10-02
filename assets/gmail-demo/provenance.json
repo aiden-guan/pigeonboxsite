@@ -1,0 +1,13 @@
+{
+  "source": "https://github.com/aiden-guan/pigeonbox",
+  "commit": "edc3cdb1459caa0d7e6d6d1e4410f2f39ad19c0f",
+  "workingTree": "modified",
+  "sourceSnapshotSha256": "96b681d5b4c28aef23f2b5b35dc55d4cc437f3d25531dfb597e8454f3afe3e33",
+  "components": [
+    "apps/extension/src/workspace/PigeonBoxWorkspace.tsx",
+    "apps/extension/src/workspace/CurrentThread.tsx",
+    "apps/extension/src/content/thread/ThreadPanel.tsx",
+    "apps/extension/src/ui/DispatchThreads.tsx"
+  ],
+  "mail": "Fictional fixture. Gmail chrome is recreated; PigeonBox components and styles are built directly from the extension source."
+}

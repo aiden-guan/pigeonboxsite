@@ -90,7 +90,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid var(--yellow); outlin
 .hero-copy { position: relative; max-width: 620px; }
 .hero-copy::before {
   content: ""; position: absolute; inset: -18% -30% -18% -24%; z-index: -1;
-  background: radial-gradient(closest-side, rgba(255, 246, 238, 0.72), rgba(255, 246, 238, 0));
+  background: radial-gradient(closest-side, rgba(255, 246, 238, 0.92), rgba(255, 246, 238, 0));
   filter: blur(8px); pointer-events: none;
 }
 .eyebrow {
@@ -106,7 +106,7 @@ h1 {
   color: var(--ink);
 }
 h1 span {
-  background: linear-gradient(95deg, #e3764f 0%, #d0567a 55%, #7a64c2 100%);
+  background: linear-gradient(95deg, #b64f33 0%, #a95137 55%, #895a40 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   padding-bottom: 0.08em;
 }
@@ -451,3 +451,6 @@ li[data-cat="note"] .cat { background: #ebe7f6; color: #5b4f99; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
+
+/* Only enabled by the opt-in courier inspection tool. */
+.inspect-courier main, .inspect-courier .tether, .inspect-courier .journey-route, .inspect-courier .journey-hud { visibility: hidden; }

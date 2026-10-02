@@ -3,7 +3,8 @@
 (function () {
   var root = document.documentElement;
   try {
-    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var reduced = new URLSearchParams(location.search).has('static') ||
+      (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     var canvas = document.createElement('canvas');
     var gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
     if (gl && !reduced) root.classList.add('journey-3d');

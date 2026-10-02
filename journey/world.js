@@ -7,21 +7,23 @@ import { buildScenery } from './scenery.js';
 import { createPigeon } from './pigeon.js';
 import { createSky } from './sky.js';
 import { shared } from './materials.js';
+import { createAssetStore, adoptModelGeometry } from './assets.js';
+import { initialQuality } from './quality.js';
 import { clamp, lerp, smoothstep, easeInOut, damp, rng } from './util.js';
 
 const DEG = Math.PI / 180;
 
 // Camera framing at each perch. az is measured from +z toward +x.
 export const STOP_CAMS = [
-  { az: -24, el: 9, dist: 12.5, look: [0, 1.2, 0], side: 'left', fov: 36, orbit: 8, mobileOffY: -0.16 },
-  { az: 30, el: 13, dist: 42, look: [0, -8, 0], side: 'right', fov: 36, orbit: 14 },
-  { az: -34, el: 12, dist: 30, look: [0, -4.5, 0], side: 'left', fov: 36, orbit: 14 },
-  { az: 38, el: 12, dist: 34, look: [0, -6, 0], side: 'right', fov: 36, orbit: 14 },
-  { az: -40, el: 15, dist: 50, look: [0, -8, 0], side: 'left', fov: 36, orbit: 12 },
-  { az: 30, el: 11, dist: 22, look: [0, -2, 0], side: 'right', fov: 36, orbit: 14 },
-  { az: -24, el: 13, dist: 25, look: [0, -2.5, 0], side: 'left', fov: 36, orbit: 10 },
+  { az: 35, el: 25, dist: 28, look: [0, -2.8, -1], side: 'left', fov: 36, orbit: 4, mobileOffY: -.18 },
+  { az: -32, el: 22, dist: 76, look: [0, -17, 0], side: 'right', fov: 36, orbit: 5 },
+  { az: 120, el: 24, dist: 50, look: [0, -7.5, 0], side: 'left', fov: 36, orbit: 5 },
+  { az: 35, el: 25, dist: 52, look: [0, -8, 0], side: 'right', fov: 36, orbit: 5 },
+  { az: -35, el: 26, dist: 78, look: [0, -10, 0], side: 'left', fov: 36, orbit: 4 },
+  { az: 35, el: 18, dist: 28, look: [0, -1.8, 0], side: 'right', fov: 36, orbit: 4 },
+  { az: 35, el: 25, dist: 38, look: [0, -3.5, 0], side: 'left', fov: 36, orbit: 4 },
 ];
-export const PIGEON_SCALE = 1.4;
+export const PIGEON_SCALE = 2.1;
 const PERCH_LIFT = 0.64 * PIGEON_SCALE;
 const STOP_MINUTES = [372, 462, 598, 742, 905, 1088, 1232];
 const METERS_PER_UNIT = 4;
@@ -64,14 +66,32 @@ function wrapAngle(a) {
 export async function createWorld(canvas, { mobile, onProgress }) {
   const debug = new URLSearchParams(location.search).has('debug');
   const mark = (label) => { if (debug) console.log('[pb]', label, Math.round(performance.now())); };
+  let openingAssets = true;
+  const assets = createAssetStore({ onProgress(records) {
+    if (!openingAssets) return;
+    const first = records.filter(r => r.url.includes('/pigeon/') || r.url.endsWith('/rooftop.glb'));
+    const fraction = first.reduce((sum,r) => sum + (r.status !== 'loading' ? 1 : r.total ? r.loaded / r.total : 0),0) / 2;
+    onProgress?.(.5 + fraction * .25);
+  } });
+  const loadModel = async (root, file) => {
+    try {
+      const model = await assets.preload(new URL(`../assets/models/${file}`, import.meta.url).href);
+      adoptModelGeometry(root, model.scene);
+      return true;
+    } catch {
+      root.userData.authoredModel = false;
+      return false; // Complete procedural fallback, including its animation rig.
+    }
+  };
   mark('start');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, stencil: true, powerPreference: 'high-performance' });
-  let pixelRatio = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.75);
+  const quality = initialQuality(mobile);
+  let pixelRatio = Math.min(window.devicePixelRatio || 1, quality.dpr);
   renderer.setPixelRatio(pixelRatio);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
-  renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const scene = new THREE.Scene();
@@ -82,9 +102,10 @@ export async function createWorld(canvas, { mobile, onProgress }) {
   scene.add(hemi);
   const sun = new THREE.DirectionalLight('#fff0d8', 2.6);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
+  sun.shadow.mapSize.set(quality.shadow, quality.shadow);
   sun.shadow.bias = -0.0004;
-  sun.shadow.normalBias = 0.06;
+  sun.shadow.normalBias = 0.03;
+  sun.shadow.radius = 3;
   scene.add(sun, sun.target);
   // Soft fill from the viewer so the courier never reads as a silhouette.
   const fill = new THREE.DirectionalLight('#fff4ea', 0.45);
@@ -105,11 +126,19 @@ export async function createWorld(canvas, { mobile, onProgress }) {
   await tick();
   const monuments = buildMonuments(scene);
   mark('monuments');
-  const scenery = buildScenery(scene, { cityPlans, fields });
+  const scenery = buildScenery(scene, { cityPlans, fields, density: quality.foliageDensity });
   mark('scenery');
   onProgress?.(0.5);
   await tick();
   const pigeon = createPigeon();
+  const [birdAsset, flightTexture, flightDownTexture] = await Promise.all([
+    assets.preload(new URL('../assets/models/pigeon/gascogne-pigeon.glb', import.meta.url).href).catch(() => null),
+    new THREE.TextureLoader().loadAsync(new URL('../assets/models/pigeon/flight.png', import.meta.url).href).catch(() => null),
+    new THREE.TextureLoader().loadAsync(new URL('../assets/models/pigeon/flight-down.png', import.meta.url).href).catch(() => null),
+    loadModel(monuments[0].group, 'landmarks/rooftop.glb'),
+  ]);
+  if (birdAsset) pigeon.useModel(birdAsset.scene);
+  openingAssets = false;
   pigeon.root.scale.setScalar(PIGEON_SCALE);
   scene.add(pigeon.root);
   // Drop shadow: the bird's own silhouette flattened onto the ground below it.
@@ -124,6 +153,16 @@ export async function createWorld(canvas, { mobile, onProgress }) {
   flattener.renderOrder = 3;
   flattener.add(dropShadow.root);
   scene.add(flattener);
+  if (birdAsset && flightTexture && flightDownTexture) {
+    flightTexture.colorSpace = THREE.SRGBColorSpace;
+    flightDownTexture.colorSpace = THREE.SRGBColorSpace;
+    const flightSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: flightTexture, transparent: true, depthWrite: false, toneMapped: false,
+    }));
+    flightSprite.scale.set(2.8, 2.8, 1);
+    flightSprite.position.y = 0.12;
+    pigeon.useFlightSprite(flightSprite, flightDownTexture);
+  }
   // Warm lamplight for the night-time plaza.
   const plazaLamp = new THREE.PointLight('#ffb870', 0, 60, 1.6);
   plazaLamp.position.set(STOPS[6].x + 6, STOPS[6].y + 6, STOPS[6].z + 8);
@@ -162,33 +201,33 @@ export async function createWorld(canvas, { mobile, onProgress }) {
     const c = STOP_CAMS[k];
     const s = STOPS[k];
     const mob = state.aspect < 0.85;
-    into.target.set(s.x + c.look[0], s.y + c.look[1] * (mob ? 0.8 : 1), s.z + c.look[2]);
+    into.target.set(s.x + c.look[0], s.y + c.look[1] * (mob ? 0.25 : 1), s.z + c.look[2]);
     into.az = (c.az + lerp(-c.orbit, c.orbit, h)) * DEG;
     into.el = c.el * DEG;
-    into.dist = c.dist * (mob ? 1.45 : state.aspect < 1.2 ? 1.2 : 1);
-    into.fov = mob ? c.fov + 14 : c.fov;
+    into.dist = c.dist * (mob ? 1.05 : state.aspect < 1.2 ? 1.2 : 1);
+    into.fov = mob ? c.fov + 6 : c.fov;
     const shift = c.side === 'left' ? -1 : 1;
     into.offX = mob ? 0 : shift * 0.2;
     into.offY = mob ? (c.mobileOffY ?? 0.2) : 0;
     return into;
   }
-  function flightCamera(pos, tangent, f, into) {
+  function flightCamera(pos, tangent, f, into, legIndex) {
     const mob = state.aspect < 0.85;
     const lead = mob ? 3 : 5;
     tmp.set(tangent.x, 0, tangent.z).normalize();
     into.target.set(pos.x + tmp.x * lead, pos.y - 2, pos.z + tmp.z * lead);
-    const H = (mob ? 40 : 31) + 8 * Math.sin(Math.PI * f);
-    into.az = 0;
-    into.el = Math.atan2(1, 0.28);
+    const H = (mob ? 48 : 38) + 5 * Math.sin(Math.PI * f);
+    into.az = (STOP_CAMS[legIndex].az + wrapAngle((STOP_CAMS[legIndex+1].az-STOP_CAMS[legIndex].az)*DEG)/DEG*f)*DEG;
+    into.el = 32 * DEG;
     into.dist = H * 1.04;
-    into.fov = mob ? 52 : 40;
+    into.fov = mob ? 46 : 38;
     into.offX = 0;
     into.offY = 0;
     return into;
   }
   const blendCam = (a, b, w, into) => {
     into.target.lerpVectors(a.target, b.target, w);
-    into.az = lerp(a.az, b.az, w);
+    into.az = a.az + wrapAngle(b.az-a.az)*w;
     into.el = lerp(a.el, b.el, w);
     into.dist = lerp(a.dist, b.dist, w);
     into.fov = lerp(a.fov, b.fov, w);
@@ -233,7 +272,6 @@ export async function createWorld(canvas, { mobile, onProgress }) {
   resize();
 
   const pigeonState = { flap: 0, fold: 1, landing: 0, legs: 1, look: 0 };
-  perchHeading[0] = 0;
   let heading = perchHeading[0];
   let debugCamera = null;
   let prevHeading = heading;
@@ -266,8 +304,8 @@ export async function createWorld(canvas, { mobile, onProgress }) {
       const leg = legs[k];
       const u = lerp(frac, easeInOut(frac), 0.65);
       P.copy(leg.curve.getPointAt(u));
+      P.y += PERCH_LIFT;
       tangent = leg.curve.getTangentAt(Math.min(0.995, Math.max(0.005, u)));
-      P.y += PERCH_LIFT * (1 - smoothstep(0.02, 0.06, u)) + PERCH_LIFT * smoothstep(0.94, 1, u);
       const target = headingOf(tangent);
       const toTarget = u < 0.05 ? lerp(perchHeading[k], target, smoothstep(0, 0.05, u)) : u > 0.96 ? lerp(target, perchHeading[k + 1], smoothstep(0.96, 1, u)) : target;
       heading = heading + wrapAngle(toTarget - heading) * (1 - Math.exp(-dt * 8));
@@ -282,7 +320,7 @@ export async function createWorld(canvas, { mobile, onProgress }) {
       // Camera: leave the last perch, cruise, then settle on the next one.
       stopCamera(k, 1, camA);
       stopCamera(k + 1, 0, camB);
-      flightCamera(P, tangent, frac, camF);
+      flightCamera(P, tangent, frac, camF, k);
       const wOut = 1 - smoothstep(0, 0.3, frac), wIn = smoothstep(0.66, 1, frac);
       camera$ = frac < 0.5 ? blendCam(camF, camA, wOut, cam) : blendCam(camF, camB, wIn, cam);
     }
@@ -313,13 +351,13 @@ export async function createWorld(canvas, { mobile, onProgress }) {
 
     // Look at the viewer while perched.
     const toCam = Math.atan2(camera.position.x - P.x, camera.position.z - P.z);
-    pigeonState.look = out.perched ? clamp(wrapAngle(toCam - heading), -0.9, 0.9) * 0.8 : 0;
+    pigeonState.look = out.perched ? Math.sin(state.time * .5) * .12 : 0;
     pigeon.update(dt, pigeonState);
     const groundY = Math.max(heightAt(P.x, P.z), 0) + 0.12;
     const above = P.y - PERCH_LIFT - groundY;
     dropShadow.sync();
     flattener.matrix.set(1, 0, 0, 0, 0, 0, 0, groundY, 0, 0, 1, 0, 0, 0, 0, 1);
-    flattener.visible = !out.perched && above > 1.5;
+    flattener.visible = above > 1.5;
     shadowMat.opacity = 0.26 * (1 - smoothstep(20, 90, above)) * smoothstep(1.5, 6, above);
 
     // Environment.
@@ -335,12 +373,15 @@ export async function createWorld(canvas, { mobile, onProgress }) {
     sky.dome.position.copy(camera.position);
     fill.position.copy(camera.position);
     fill.target.position.copy(focus);
-    fill.intensity = 0.45 + env.night * 0.5;
-    plazaLamp.intensity = env.night * 900 * smoothstep(1300, 1380, P.z);
+    fill.intensity = .38 + env.night * .12;
+    plazaLamp.intensity = env.night * 240 * smoothstep(1300, 1380, P.z);
 
     const tEnv = { night: env.night, clockMinutes: out.minutes, arrived: T > 2 * N - 2.4 };
-    monuments.forEach((m) => m.update(state.time, tEnv));
-    scenery.update(state.time, dt, env.night);
+    monuments.forEach((m,i) => {
+      m.group.visible = Math.abs(STOPS[i].z-camera.position.z)<460;
+      if(Math.abs(STOPS[i].z-P.z)<quality.animationRange)m.update(state.time,tEnv);
+    });
+    scenery.update(state.time, dt, env.night, P.z, quality.animationRange);
     water.update(state.time);
     terrain.ensurePainted(P.z);
 
@@ -357,9 +398,19 @@ export async function createWorld(canvas, { mobile, onProgress }) {
   let last = performance.now();
   let slow = 0, frames = 0, running = true, idleHandle = 0;
   const listeners = [];
+  let frameSample = null;
   function loop(now) {
     if (!running) return;
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const elapsed = now - last;
+    if (frameSample) {
+      frameSample.times.push(elapsed);
+      if (now >= frameSample.until) {
+        const sorted = frameSample.times.sort((a,b)=>a-b);
+        frameSample.resolve({frames:sorted.length, meanMs:sorted.reduce((a,b)=>a+b,0)/sorted.length,p95Ms:sorted[Math.floor(sorted.length*.95)],over33ms:sorted.filter(t=>t>33.3).length,dpr:pixelRatio,quality:quality.name});
+        frameSample = null;
+      }
+    }
+    const dt = Math.min(0.05, elapsed / 1000);
     last = now;
     update(dt);
     renderer.render(scene, camera);
@@ -380,6 +431,14 @@ export async function createWorld(canvas, { mobile, onProgress }) {
     const more = terrain.paintNext(out.pigeon.z || 0);
     if (more) idleHandle = (window.requestIdleCallback || setTimeout)(paintIdle, { timeout: 600 });
   };
+  // Later sets decode serially after first paint. Their fallback has exactly
+  // the same silhouette, so even a fast route jump never reveals an empty set.
+  async function loadLaterModels() {
+    for (let i = 1; i < monuments.length; i++) {
+      await tick();
+      await loadModel(monuments[i].group, `landmarks/${STOPS[i].id}.glb`);
+    }
+  }
 
   return {
     start() {
@@ -387,6 +446,7 @@ export async function createWorld(canvas, { mobile, onProgress }) {
       renderer.render(scene, camera);
       requestAnimationFrame((n) => { last = n; loop(n); });
       idleHandle = setTimeout(paintIdle, 400);
+      setTimeout(loadLaterModels, 600);
     },
     setTarget(T, jump = false) {
       state.targetT = T;
@@ -404,11 +464,19 @@ export async function createWorld(canvas, { mobile, onProgress }) {
         gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
       }
       for (const l of listeners) l(out, state);
-      return { ms: (performance.now() - t0) / n, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, programs: renderer.info.programs.length };
+      return { ms: (performance.now() - t0) / n, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, programs: renderer.info.programs.length, geometries: renderer.info.memory.geometries, textures: renderer.info.memory.textures, dpr: pixelRatio, models: [pigeon.root, ...monuments.map(m=>m.group)].filter(g=>g.userData.authoredModel).length };
+    },
+    sampleFrames(duration = 3000) {
+      if (frameSample) return Promise.reject(new Error('Sampling already active'));
+      return new Promise(resolve => { frameSample = {times:[],until:performance.now()+duration,resolve}; });
+    },
+    capture() {
+      renderer.render(scene,camera);
+      return {url:canvas.toDataURL('image/png'),name:`pigeonbox-${STOPS[out.stop].id}.png`};
     },
     onFrame(fn) { listeners.push(fn); },
     setDebugCamera(fn) { debugCamera = fn; },
-    debugInfo() { return { camera: camera.position.toArray().map((v) => +v.toFixed(2)), pigeon: pigeon.root.position.toArray().map((v) => +v.toFixed(2)), heading: +heading.toFixed(3), T: state.T }; },
+    debugInfo() { return { camera: camera.position.toArray().map((v) => +v.toFixed(2)), pigeon: pigeon.root.position.toArray().map((v) => +v.toFixed(2)), heading: +heading.toFixed(3), T: state.T, pose:pigeon.debugPose() }; },
     pause() { running = false; },
     resume() { if (!running) { running = true; last = performance.now(); requestAnimationFrame(loop); } },
     get state() { return state; },

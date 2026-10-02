@@ -1,203 +1,180 @@
-// The courier: a low-poly rock pigeon with the PigeonBox satchel. It faces +z.
+// A continuous articulated flight silhouette of overlapping sculpted feathers.
 import * as THREE from '../vendor/three.min.js';
 import { lerp } from './util.js';
-
-const mat = (color, extra = {}) => new THREE.MeshLambertMaterial({ color, flatShading: true, ...extra });
-
-// Shape points are (x, z) in the wing plane; Shape uses y = -z.
-function planar(points) {
-  const shape = new THREE.Shape(points.map(([x, z]) => new THREE.Vector2(x, -z)));
-  const g = new THREE.ShapeGeometry(shape);
-  g.rotateX(-Math.PI / 2);
-  return g;
+import { stylizedMat } from './materials.js';
+import { beveledBox } from './geometry.js';
+const material = stylizedMat;
+const silver=material('#aebfd0'),blue=material('#7c96b0'),charcoal=material('#435971');
+const orb=new THREE.SphereGeometry(1,20,14), featherGeo=new THREE.SphereGeometry(1,12,8);
+function sculpt(parent,mat,at,scale){const m=new THREE.Mesh(orb,mat);m.position.set(...at);m.scale.set(...scale);parent.add(m);return m;}
+function plumage(parent,mat,feathers){
+ const mesh=new THREE.InstancedMesh(featherGeo,mat,feathers.length),obj=new THREE.Object3D();
+ feathers.forEach((f,i)=>{obj.position.set(...f.p);obj.scale.set(...f.s);obj.rotation.set(f.rx||0,f.a||0,f.rz||0);obj.updateMatrix();mesh.setMatrixAt(i,obj.matrix);});
+ mesh.castShadow=true;mesh.receiveShadow=true;parent.add(mesh);return mesh;
+}
+function wing(side){
+ const shoulder=new THREE.Group(),inner=new THREE.Group(),outer=new THREE.Group();
+ // Broad overlapping feather masses form a single soft airfoil.
+ sculpt(inner,silver,[.48*side,0,-.04],[.62,.105,.39]);
+ sculpt(outer,blue,[.30*side,0,-.12],[.47,.085,.31]);
+ plumage(outer,charcoal,Array.from({length:4},(_,i)=>({
+   p:[(.25+i*.22)*side,-.025,-.24-i*.055],s:[.22,.065,.38-i*.025],a:-.35*side
+ })));
+ outer.position.x=.8*side;inner.add(outer);shoulder.add(inner);
+ const folded=new THREE.Group();
+ const cover=new THREE.Mesh(foldedWingGeometry(side),material('#ffffff',{vertexColors:true}));
+ folded.add(cover);
+ return {shoulder,inner,outer,folded,side};
 }
 
-function wing(side) {
-  const shoulder = new THREE.Group();
-  const inner = new THREE.Group();
-  inner.rotation.order = 'YZX';
-  const outer = new THREE.Group();
-  const double = { side: THREE.DoubleSide };
-  // Top-view outline: the wrist juts forward, the hand sweeps back to a point.
-  const innerGeo = planar([[0, 0.3], [0.5, 0.36], [0.96, 0.44], [0.98, -0.3], [0.82, -0.42], [0.72, -0.36], [0.6, -0.48], [0.48, -0.41], [0.36, -0.52], [0.22, -0.45], [0.08, -0.54], [0, -0.46]]);
-  const outerGeo = planar([[0, 0.44], [0.45, 0.38], [0.95, 0.16], [1.38, -0.34], [1.14, -0.44], [1.1, -0.36], [0.92, -0.5], [0.88, -0.42], [0.68, -0.52], [0.64, -0.45], [0.44, -0.52], [0.22, -0.42], [0, -0.3]]);
-  const tipGeo = planar([[0.8, 0.22], [0.95, 0.16], [1.38, -0.34], [1.14, -0.44], [1.1, -0.36], [0.92, -0.5], [0.88, -0.42], [0.72, -0.48], [0.66, 0.0]]);
-  const bar = (z) => planar([[0.34, z], [0.9, z + 0.02], [0.9, z - 0.055], [0.34, z - 0.07]]);
-  const pieces = [
-    [inner, new THREE.Mesh(innerGeo, mat('#bcc4ce', double))],
-    [inner, new THREE.Mesh(bar(-0.12), mat('#4a515b', double))],
-    [inner, new THREE.Mesh(bar(-0.28), mat('#4a515b', double))],
-    [outer, new THREE.Mesh(outerGeo, mat('#a5aeb9', double))],
-    [outer, new THREE.Mesh(tipGeo, mat('#646d79', double))],
-  ];
-  pieces.forEach(([parent, m], i) => {
-    m.position.y = i === 0 || i === 3 ? 0 : 0.012;
-    if (side < 0) m.geometry.scale(-1, 1, 1);
-    m.castShadow = true;
-    parent.add(m);
-  });
-  outer.position.x = 0.96 * side;
-  inner.add(outer);
-  shoulder.add(inner);
-  return { shoulder, inner, outer, side };
+function foldedWingGeometry(side){
+ const rows=30,radial=24,p=[],c=[],idx=[];
+ const grey=new THREE.Color('#9da9b1'),dark=new THREE.Color('#45535f');
+ for(let j=0;j<=rows;j++){
+   const t=j/rows,z=.23-t*.98;
+   const fullness=Math.sin(Math.PI*t)**.65;
+   const height=.30*fullness*(1-t*.35),thickness=.12*fullness;
+   for(let i=0;i<=radial;i++){
+     const a=i/radial*Math.PI*2;
+     const feather=.008*Math.cos(t*40+a*2)*Math.sin(Math.PI*t);
+     p.push(side*(.365+Math.cos(a)*(thickness+feather)),.11-t*.28+Math.sin(a)*height,z);
+     const band=(t>.46&&t<.52)||(t>.66&&t<.72);
+     const edge=Math.max(0,(t-.79)/.21);
+     const shade=grey.clone().lerp(dark,band?.9:edge*.65);
+     shade.multiplyScalar(1+feather*3);c.push(shade.r,shade.g,shade.b);
+     if(j<rows&&i<radial){const k=j*(radial+1)+i;const f=[k,k+radial+1,k+1,k+1,k+radial+1,k+radial+2];if(side<0)f.reverse();idx.push(...f);}
+   }
+ }
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(c,3));g.setIndex(idx);g.computeVertexNormals();return g;
+}
+function beakGeometry(){
+ const g=new THREE.SphereGeometry(1,20,10),p=g.attributes.position;
+ for(let i=0;i<p.count;i++){
+   const z=p.getZ(i),t=(z+1)*.5;
+   p.setXYZ(i,p.getX(i)*.067*(1-t*.65),p.getY(i)*.048*(1-t*.5)-t*t*.035,z*.105);
+ }
+ g.computeVertexNormals();return g;
 }
 
-export function createPigeon() {
-  const root = new THREE.Group();
-  const body = new THREE.Group();
-  root.add(body);
+function bodyGeometry(){
+ const profile=[[-.49,.015,-.02],[-.40,.24,-.03],[-.24,.375,0],[0,.445,.035],[.22,.38,.10],[.40,.255,.23],[.54,.205,.34],[.65,.215,.43],[.76,.225,.47],[.87,.175,.47],[.94,.08,.46],[.96,.005,.45]];
+ const curve=new THREE.CatmullRomCurve3(profile.map(([y,r,z])=>new THREE.Vector3(r,y,z)));
+ const points=curve.getPoints(32),positions=[],colors=[],indices=[];
+ const grey=new THREE.Color('#94a3ad'),ivory=new THREE.Color('#e5e0d3'),teal=new THREE.Color('#4c7774');
+ for(let j=0;j<points.length;j++)for(let i=0;i<=32;i++){
+   const q=points[j],a=i/32*Math.PI*2,x=Math.sin(a)*q.x,z=Math.cos(a)*q.x*.91+q.z;
+   positions.push(x,q.y,z);
+   const front=Math.max(0,Math.cos(a));
+   const chest=front*front*Math.max(0,1-Math.abs(q.y+.02)/.5);
+   const collar=Math.exp(-(((q.y-.47)/.13)**2));
+   const c=grey.clone().lerp(ivory,chest*.95).lerp(teal,collar*.72);colors.push(c.r,c.g,c.b);
+   if(j<points.length-1&&i<32){const k=j*33+i;indices.push(k,k+1,k+33,k+1,k+34,k+33);}
+ }
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.setIndex(indices);g.computeVertexNormals();return g;
+}
+export function createPigeon(){
+ const root=new THREE.Group(),body=new THREE.Group();root.add(body);
+ let realBird=null, flightSprite=null, flightDownSprite=null, realMeshes=[], modelBaseY=0;
+ const torso=new THREE.Mesh(bodyGeometry(),material('#ffffff',{vertexColors:true}));body.add(torso);
+ const head=new THREE.Group();head.position.set(0,.73,.47);body.add(head);
+ const eyeMaterial=material('#0c1d30',{roughness:.12});
+ for(const s of [-1,1]){
+  sculpt(head,material('#8d9290'),[.199*s,.033,.084],[.033,.036,.032]);
+  sculpt(head,eyeMaterial,[.221*s,.038,.087],[.021,.025,.021]);
+  sculpt(head,material('#f7faf7',{emissive:'#ffffff',emissiveIntensity:.2}),[.235*s,.048,.092],[.006,.007,.006]);
+ }
+ sculpt(head,material('#e1ddd1'),[0,-.005,.207],[.048,.028,.045]);
+ const beak=new THREE.Mesh(beakGeometry(),material('#72695f'));beak.position.set(0,-.046,.282);head.add(beak);
+ const tail=new THREE.Group();tail.position.set(0,-.16,-.34);body.add(tail);
+ plumage(tail,charcoal,Array.from({length:6},(_,i)=>({p:[(i-2.5)*.065,0,-.24],s:[.082,.04,.24],a:-(i-2.5)*.09})));
+ plumage(tail,blue,Array.from({length:5},(_,i)=>({p:[(i-2)*.065,.025,-.12],s:[.085,.035,.17],a:-(i-2)*.08})));
+ const leather=material('#926340',{roughness:.9});
+ const satchel=new THREE.Group(); satchel.position.set(.45,-.15,.15); satchel.rotation.z=.14;
+ const bag=new THREE.Mesh(beveledBox(.18,.30,.34,.045),leather);
+ const flap=new THREE.Mesh(beveledBox(.21,.13,.36,.025),material('#af7c50'));
+ flap.position.y=.12;
+ const buckle=new THREE.Mesh(beveledBox(.035,.072,.085,.01),material('#d9b879',{metalness:.5,roughness:.4}));
+ buckle.position.set(.125,.045,.04); satchel.add(bag,flap,buckle); body.add(satchel);
+ const strapCurve=new THREE.CatmullRomCurve3([[.48,-.06,.19],[.37,.23,.31],[.10,.40,.39],[-.23,.32,.37],[-.37,.03,.22],[-.20,-.31,.12],[.24,-.36,.13],[.48,-.06,.19]].map(p=>new THREE.Vector3(...p)));
+ const strap=new THREE.Mesh(new THREE.TubeGeometry(strapCurve,40,.023,6,false),leather);body.add(strap);
+ const legs=new THREE.Group(),feet=material('#e69b78');
+ for(const side of [-1,1]){
+   sculpt(legs,feet,[side*.15,-.45,.10],[.037,.15,.04]);
+   for(const angle of [-.5,0,.5]){
+     const toe=sculpt(legs,feet,[side*.15+Math.sin(angle)*.075,-.615,.18],[.025,.025,.12]);
+     toe.rotation.y=angle;
+   }
+ }
+ body.add(legs);
+ const left=wing(1),right=wing(-1);body.add(left.shoulder,right.shoulder,left.folded,right.folded);
+ root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
+ let phase=0,time=0,amplitude=0;
+ return {
+  root,head,
+  useModel(scene){
+   const bounds=new THREE.Box3().setFromObject(scene),size=new THREE.Vector3(),center=new THREE.Vector3();
+   bounds.getSize(size);bounds.getCenter(center);
+   if(!Number.isFinite(size.y)||size.y<=0)return false;
+   const scale=2.1/size.y;
+   scene.scale.setScalar(scale);
+   scene.position.set(-center.x*scale,-.64-bounds.min.y*scale,-center.z*scale);
+   scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;o.material.color.setScalar(1.45);realMeshes.push(o);}});
+   modelBaseY=scene.position.y;
+   root.add(scene);realBird=scene;body.visible=false;
+   return true;
+  },
+  useFlightSprite(sprite,downTexture){
+   const down=new THREE.Sprite(sprite.material.clone());down.material.map=downTexture;
+   down.scale.copy(sprite.scale);down.position.y=.27;
+   root.add(sprite,down);flightSprite=sprite;flightDownSprite=down;
+  },
+  debugPose(){return {phase:+Math.sin(phase).toFixed(2),up:flightSprite?.visible,down:flightDownSprite?.visible};},
+  makeShadow(mat){
+   const copy=root.clone(true),src=[],dst=[];root.traverse(o=>src.push(o));copy.traverse(o=>{dst.push(o);if(o.isMesh){o.material=mat;o.castShadow=false;o.receiveShadow=false;}});
+   return {root:copy,sync(){src.forEach((o,i)=>{dst[i].visible=o.visible;dst[i].position.copy(o.position);dst[i].quaternion.copy(o.quaternion);dst[i].scale.copy(o.scale);});}};
+  },
+  update(dt,state){
+   time+=dt;
+   const fold=state.fold,land=state.landing*(1-fold);
+   if(realBird){
+    realBird.visible=fold>.01||!flightSprite;
+    for(const mesh of realMeshes){mesh.material.opacity=flightSprite?Math.max(.01,fold):1;mesh.material.transparent=true;mesh.material.depthWrite=fold>.5;}
+    realBird.position.y=modelBaseY+Math.sin(time*2)*.006*fold;
+   }
+   const glide=state.flap<.9&&(time%3.8)>2.5;
+   amplitude=lerp(amplitude,state.flap*(glide?.15:1),1-Math.exp(-dt*6));
+   phase+=dt*(4.8+state.flap*1.8)*Math.PI*2*Math.max(.25,amplitude);
+   if(flightSprite){
+    const down=Math.sin(phase)<-.1;
+    flightSprite.visible=fold<.99&&!down;
+    flightDownSprite.visible=fold<.99&&down;
+    flightSprite.material.opacity=1-fold;
+    flightDownSprite.material.opacity=1-fold;
+    flightSprite.material.rotation=Math.sin(time*9)*.035*(1-fold);
+    flightDownSprite.material.rotation=flightSprite.material.rotation;
+   }
+   for(const w of [left,right]){
+     const side=w.side;
+     const stroke=Math.sin(phase)*.86*amplitude+.08;
+     const wrist=Math.sin(phase-.7)*.46*amplitude+.025;
+     w.shoulder.position.set(.32*side,.16,.05);
+     w.inner.rotation.set(0,-Math.cos(phase)*.1*amplitude*side-land*.3*side,lerp(stroke,.9,land)*side);
+     w.outer.rotation.set(0,0,lerp(wrist,-.3,land)*side);
+     const spread=1-fold;
+     w.shoulder.scale.setScalar(Math.max(.001,spread));w.shoulder.visible=spread>.001;
+     w.folded.scale.setScalar(Math.max(.001,fold));w.folded.visible=fold>.001;
 
-  const torso = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10), mat('#a7b0bb'));
-  torso.scale.set(0.47, 0.41, 0.8);
-  body.add(torso);
-  const chest = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), mat('#b3aebd'));
-  chest.scale.set(0.38, 0.34, 0.42);
-  chest.position.set(0, -0.02, 0.36);
-  body.add(chest);
-  const neck = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 8), mat('#6c9e8d'));
-  neck.position.set(0, 0.16, 0.5);
-  body.add(neck);
-  const neckSheen = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 6), mat('#8f84ab'));
-  neckSheen.position.set(0, 0.2, 0.5);
-  body.add(neckSheen);
+   }
+   body.position.y=-Math.sin(phase)*.035*amplitude;
+   body.rotation.x=.45*(1-fold);
+   const feetOut=Math.max(state.legs,fold);
+   legs.scale.y=lerp(.05,1,feetOut); legs.position.y=lerp(.25,0,feetOut);
+   legs.position.z=lerp(-.2,0,feetOut);
+   head.position.z=.47; head.rotation.x=0;
+   body.rotation.y=lerp(body.rotation.y,(state.look||0)*.15,1-Math.exp(-dt*3));
+   tail.rotation.x=-.12+land*.4+Math.sin(time*1.3)*.025*fold;
+   torso.scale.y=1+Math.sin(time*2)*.006*fold;
 
-  const head = new THREE.Group();
-  head.position.set(0, 0.3, 0.7);
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 9), mat('#8e98a5'));
-  head.add(skull);
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.28, 6), mat('#f0954a'));
-  beak.rotation.x = Math.PI / 2;
-  beak.position.set(0, -0.03, 0.38);
-  head.add(beak);
-  const cere = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 4), mat('#f4efe6'));
-  cere.position.set(0, 0.03, 0.27);
-  head.add(cere);
-  for (const s of [1, -1]) {
-    const ring = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), mat('#f28d3c'));
-    ring.position.set(0.2 * s, 0.07, 0.14);
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), mat('#141414'));
-    eye.position.set(0.235 * s, 0.075, 0.16);
-    head.add(ring, eye);
-  }
-  body.add(head);
-
-  const tail = new THREE.Group();
-  tail.position.set(0, 0.1, -0.62);
-  const tailFan = new THREE.Mesh(planar([[-0.18, 0.08], [0.18, 0.08], [0.44, -0.74], [0.3, -0.8], [0.15, -0.76], [0, -0.82], [-0.15, -0.76], [-0.3, -0.8], [-0.44, -0.74]]), mat('#98a1ac', { side: THREE.DoubleSide }));
-  const tailBand = new THREE.Mesh(planar([[-0.41, -0.64], [0.41, -0.64], [0.44, -0.74], [0.3, -0.8], [0.15, -0.76], [0, -0.82], [-0.15, -0.76], [-0.3, -0.8], [-0.44, -0.74]]), mat('#373d45', { side: THREE.DoubleSide }));
-  tailBand.position.y = 0.01;
-  tail.add(tailFan, tailBand);
-  tail.rotation.x = -0.12;
-  body.add(tail);
-
-  // The satchel and its strap — the courier's uniform.
-  const satchel = new THREE.Group();
-  const bag = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.34, 0.42), mat('#8b5a34'));
-  const flap = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 0.44), mat('#a8703f'));
-  flap.position.y = 0.12;
-  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, 0.1), mat('#ffe17c'));
-  buckle.position.set(0.12, 0.08, 0);
-  satchel.add(bag, flap, buckle);
-  satchel.position.set(0.47, -0.2, 0.02);
-  satchel.rotation.z = 0.18;
-  body.add(satchel);
-  const strapSpace = new THREE.Group();
-  strapSpace.scale.set(0.47, 0.41, 0.8);
-  const strap = new THREE.Mesh(new THREE.TorusGeometry(1.03, 0.045, 4, 28), mat('#6a4226'));
-  strap.rotation.y = -0.62;
-  strap.scale.z = 0.4;
-  strapSpace.add(strap);
-  body.add(strapSpace);
-
-  const legs = new THREE.Group();
-  for (const s of [1, -1]) {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.3, 5), mat('#e9814a'));
-    leg.position.set(0.14 * s, -0.47, 0.06);
-    legs.add(leg);
-    for (const a of [-0.45, 0, 0.45]) {
-      const toe = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.035, 0.2), mat('#e9814a'));
-      toe.position.set(0.14 * s + Math.sin(a) * 0.08, -0.62, 0.14 + Math.cos(a) * 0.04);
-      toe.rotation.y = a;
-      legs.add(toe);
-    }
-  }
-  body.add(legs);
-
-  const left = wing(1), right = wing(-1);
-  body.add(left.shoulder, right.shoulder);
-
-  root.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-
-  let phase = 0;
-  let glideTimer = 0;
-  let idle = 0;
-  const pose = { flapAmp: 0 };
-
-  return {
-    root,
-    head,
-    // A flat, flapping copy of the bird for the drop shadow.
-    makeShadow(material) {
-      const copy = root.clone(true);
-      copy.traverse((o) => { if (o.isMesh) { o.material = material; o.castShadow = false; } });
-      const src = [], dst = [];
-      root.traverse((o) => src.push(o));
-      copy.traverse((o) => dst.push(o));
-      return {
-        root: copy,
-        sync() {
-          for (let i = 0; i < src.length; i++) {
-            dst[i].position.copy(src[i].position);
-            dst[i].quaternion.copy(src[i].quaternion);
-            dst[i].scale.copy(src[i].scale);
-          }
-        },
-      };
-    },
-    // state: { flap 0..1, fold 0..1, landing 0..1, legs 0..1, look rad, dt, speed }
-    update(dt, s) {
-      idle += dt;
-      glideTimer += dt;
-      // Pigeons alternate bursts of flapping with short glides.
-      const gliding = s.flap < 0.9 && (glideTimer % 3.2) > 2.1 ? 1 : 0;
-      const targetAmp = s.flap * (1 - gliding * 0.85);
-      pose.flapAmp = lerp(pose.flapAmp, targetAmp, 1 - Math.exp(-dt * 6));
-      const freq = 5.2 + s.flap * 2.4;
-      phase += dt * freq * Math.PI * 2 * Math.max(0.25, pose.flapAmp);
-      const a = pose.flapAmp;
-      const flapZ = Math.sin(phase) * 0.95 * a + 0.1;
-      const outerZ = Math.sin(phase - 0.8) * 0.55 * a + 0.04;
-      const sweep = Math.cos(phase) * 0.18 * a;
-      const fold = s.fold, land = s.landing * (1 - fold);
-
-      for (const w of [left, right]) {
-        const sd = w.side;
-        let iz = flapZ, oz = outerZ, iy = -sweep * sd, oy = 0;
-        // Landing: wings high and cupped forward to brake.
-        iz = lerp(iz, 0.95 + Math.sin(idle * 14) * 0.12, land);
-        iy = lerp(iy, -0.45 * sd, land);
-        oz = lerp(oz, -0.35, land);
-        // Folded: swept back, rolled upright against the flank and compressed.
-        iz = lerp(iz, 0.08, fold);
-        iy = lerp(iy, 1.52 * sd, fold);
-        oz = lerp(oz, 0, fold);
-        oy = lerp(oy, 0.08 * sd, fold);
-        w.shoulder.position.set((0.3 + fold * 0.17) * sd, 0.22 + fold * 0.05, 0.24 - fold * 0.04);
-        w.inner.rotation.set(-1.42 * fold, iy, iz * sd);
-        w.outer.rotation.set(0, oy, oz * sd);
-        w.inner.scale.set(lerp(1, 0.62, fold), 1, lerp(1, 0.56, fold));
-      }
-      body.position.y = -Math.sin(phase) * 0.06 * a;
-      legs.scale.y = lerp(0.05, 1, Math.max(s.legs, fold));
-      legs.position.y = lerp(0.3, 0, Math.max(s.legs, fold));
-      legs.position.z = lerp(-0.25, 0, Math.max(s.legs, fold));
-      tail.rotation.x = -0.12 + land * 0.5 + Math.sin(idle * 1.7) * 0.04 * fold;
-      // Perched: small nods and a look toward the viewer.
-      const nod = fold * Math.max(0, Math.sin(idle * 2.4)) ** 6 * 0.18;
-      head.position.z = 0.7 + nod * 0.4;
-      head.rotation.x = nod * 0.6;
-      head.rotation.y = lerp(head.rotation.y, s.look ?? 0, 1 - Math.exp(-dt * 3));
-      torso.scale.y = 0.41 + Math.sin(idle * 2) * 0.008 * fold;
-    },
-  };
+  },
+ };
 }

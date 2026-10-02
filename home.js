@@ -1,3 +1,4 @@
+import { initGmailDemo } from './gmail-demo.js';
 // Homepage interactions. Example mail only; nothing here talks to a server.
 import { toast } from '/site.js';
 import { initFlow } from '/flow.js';
@@ -131,140 +132,6 @@ const ASKS = [
   { q: 'What did Priya ask me to do?', a: 'Review the next sprint budget before Thursday’s 2:00 meeting. Line 4, contractor spend, is the open question.', src: ['Priya Shah', 'Budget for the next sprint', '“Can you review these numbers before we meet?”'] },
   { q: 'Who hasn’t replied to me?', a: 'Sam Ortiz (Q4 proposal, sent Tuesday) and Rio Tanaka (contract renewal, last week). Sam’s thread shows an open detected; Rio’s shows no signal.', src: ['Follow-ups', '2 threads', 'Activity signals are not proof a message was read.'] },
 ];
-
-/* ---------------- A. Hero console ---------------- */
-
-function initConsole() {
-  const root = $('[data-console]');
-  if (!root) return;
-  const list = $('[data-console-list]', root);
-  const tabs = $$('[data-queue]', root);
-  const status = $('[data-console-status]', root);
-  const bird = $('[data-console-bird]', root);
-  const summary = $('[data-console-summary]', root);
-  const meta = $('[data-console-meta]', root);
-  const next = $('[data-console-next]', root);
-  const draftBtn = $('[data-console-draft]', root);
-  const askBtn = $('[data-console-ask]', root);
-  const drawer = $('[data-console-drawer]', root);
-  let queue = 'respond';
-  let selected = 'maya';
-  let drawerMode = null;
-
-  const setStatus = (text, state) => {
-    status.replaceChildren(document.createTextNode('Pidgy · '), Object.assign(h('em'), { textContent: text }));
-    bird.dataset.state = state;
-  };
-  const need = TOTALS.respond + TOTALS.followups;
-
-  const closeDrawer = () => {
-    drawerMode = null;
-    drawer.hidden = true;
-    draftBtn.setAttribute('aria-expanded', 'false');
-    askBtn.setAttribute('aria-expanded', 'false');
-  };
-  const openDrawer = (mode) => {
-    if (drawerMode === mode) { closeDrawer(); setStatus(`${need} need you`, 'idle'); return; }
-    const mail = MAIL[selected];
-    drawerMode = mode;
-    draftBtn.setAttribute('aria-expanded', String(mode === 'draft'));
-    askBtn.setAttribute('aria-expanded', String(mode === 'ask'));
-    drawer.replaceChildren();
-    if (mode === 'draft') {
-      const label = h('p', 'label', 'Draft · ');
-      label.append(h('span', 'tag tag-copper', 'In Gmail composer · not sent'));
-      drawer.append(label, h('p', null, mail.drafts.warm.replace(/\n+/g, ' ')));
-      setStatus('drafting in your voice', 'draft');
-    } else {
-      const ask = ASKS.find((a) => a.src[0] === mail.from) || ASKS[2];
-      drawer.append(h('p', 'label', `Ask Pigeon · ${ask.q}`), h('p', null, ask.a));
-      const cite = h('cite', null, `↳ ${ask.src[0]} · ${ask.src[1]}`);
-      drawer.append(cite);
-      setStatus('searching the index', 'search');
-    }
-    drawer.hidden = false;
-    animateIn(drawer, 'is-open', 300);
-  };
-
-  const select = (id, focus = false) => {
-    selected = id;
-    const mail = MAIL[id];
-    meta.textContent = `${mail.from} · ${mail.time}`;
-    summary.textContent = mail.summary;
-    next.textContent = mail.next;
-    draftBtn.disabled = !mail.drafts;
-    $$('.c-row', list).forEach((row) => {
-      const on = row.dataset.id === id;
-      row.setAttribute('aria-pressed', String(on));
-      if (on && focus) row.focus();
-    });
-    if (drawerMode === 'draft' && !mail.drafts) closeDrawer();
-    else if (drawerMode) { const m = drawerMode; drawerMode = null; openDrawer(m); }
-    animateIn(summary.parentElement, 'is-entering', 300);
-  };
-
-  const show = (next, { stagger = false } = {}) => {
-    queue = next;
-    tabs.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.queue === next)));
-    list.replaceChildren(...QUEUES[next].map((id, i) => {
-      const mail = MAIL[id];
-      const row = h('button', 'c-row');
-      row.type = 'button';
-      row.dataset.id = id;
-      row.setAttribute('aria-pressed', 'false');
-      row.append(h('strong', null, mail.from), h('time', null, mail.time), h('span', null, mail.subject));
-      if (stagger && !reduced()) { row.classList.add('is-arriving'); row.style.animationDelay = `${i * 70}ms`; }
-      row.addEventListener('click', () => select(id));
-      return row;
-    }));
-    const more = TOTALS[next] - QUEUES[next].length;
-    if (more > 0) list.append(h('p', 'c-more', `+ ${more} more in ${next === 'fyi' ? 'FYI' : next}`));
-    select(QUEUES[next][0]);
-  };
-
-  tabs.forEach((t) => t.addEventListener('click', () => { closeDrawer(); show(t.dataset.queue, { stagger: true }); setStatus(`${need} need you`, 'idle'); }));
-  draftBtn.addEventListener('click', () => openDrawer('draft'));
-  askBtn.addEventListener('click', () => openDrawer('ask'));
-
-  root.addEventListener('keydown', (event) => {
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
-    if (event.target instanceof HTMLInputElement) return;
-    const k = event.key.toLowerCase();
-    const ids = QUEUES[queue];
-    if (k === 'j' || k === 'k') {
-      event.preventDefault();
-      const i = ids.indexOf(selected);
-      select(ids[(i + (k === 'j' ? 1 : -1) + ids.length) % ids.length], true);
-    } else if (/^[1-4]$/.test(k)) {
-      event.preventDefault();
-      closeDrawer();
-      show(ORDER[Number(k) - 1], { stagger: true });
-      tabs[Number(k) - 1].focus();
-    } else if (k === 'r' && !draftBtn.disabled) { event.preventDefault(); openDrawer('draft'); }
-    else if (k === 'a') { event.preventDefault(); openDrawer('ask'); }
-    else if (k === 'escape' && drawerMode) { event.preventDefault(); closeDrawer(); }
-  });
-
-  // Opening routine: mail arrives, counts tick, Pidgy settles.
-  const counts = $$('[data-count]', root);
-  if (reduced()) {
-    counts.forEach((c) => { c.textContent = TOTALS[c.dataset.count]; });
-    show('respond');
-    setStatus(`${need} need you`, 'idle');
-    return;
-  }
-  setStatus('routing inbox…', 'route');
-  show('respond', { stagger: true });
-  const start = performance.now();
-  const tick = (now) => {
-    const p = Math.min(1, (now - start) / 900);
-    const e = 1 - (1 - p) ** 3;
-    counts.forEach((c) => { c.textContent = Math.round(TOTALS[c.dataset.count] * e); });
-    if (p < 1) requestAnimationFrame(tick);
-    else setTimeout(() => setStatus(`${need} need you · routed`, 'idle'), 220);
-  };
-  requestAnimationFrame(tick);
-}
 
 /* ---------------- B. Dispatch route ---------------- */
 
@@ -529,7 +396,7 @@ function initCityClock() {
   setInterval(tick, 30_000);
 }
 
-initConsole();
+initGmailDemo();
 initRoute();
 initLab();
 initCityClock();

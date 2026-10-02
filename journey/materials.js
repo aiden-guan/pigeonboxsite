@@ -9,6 +9,7 @@ export const shared = {
 // can hold buildings of every size. Windows glow warmly after dusk.
 export function windowMaterial({ spacing = [1.7, 2.3], glass = '#26384a', flat = false } = {}) {
   const mat = new THREE.MeshLambertMaterial({ vertexColors: false, flatShading: flat });
+  mat.userData.window = { spacing, glass, flat };
   const glassColor = new THREE.Color(glass);
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uNight = shared.uNight;
@@ -69,4 +70,16 @@ export function glowMap() {
   return glowTexture;
 }
 
-export const lambert = (color, extra = {}) => new THREE.MeshLambertMaterial({ color, flatShading: true, ...extra });
+// Repeated scenery keeps a cheap diffuse shader. Richer hero surfaces opt in.
+export const lambert = (color, extra = {}) => new THREE.MeshLambertMaterial({ color, flatShading: false, ...extra });
+export const stylizedMat = (color, extra = {}) => new THREE.MeshStandardMaterial({
+  color, roughness: 0.86, metalness: 0, flatShading: false, ...extra,
+});
+export const stylizedFlatMat = (color, extra = {}) => stylizedMat(color, { ...extra, flatShading: true });
+export const emissiveMat = (color, intensity = 1, extra = {}) => stylizedMat(color, {
+  emissive: color, emissiveIntensity: intensity, ...extra,
+});
+export const glassMat = (color = '#8caeb5', extra = {}) => stylizedMat(color, {
+  roughness: 0.26, metalness: 0.18, ...extra,
+});
+export const foliageMat = (color = '#749263', extra = {}) => lambert(color, extra);

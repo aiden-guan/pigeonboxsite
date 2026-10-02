@@ -108,13 +108,13 @@ export function heightAt(x, z) {
 
 // Lighting and colour by position along the route: dawn to dusk.
 export const SKY_KEYS = [
-  { z: -40, top: '#7d95c9', horizon: '#f7c3a2', sun: '#ffc08e', sunI: 2.4, hemiSky: '#ffe2cf', hemiGround: '#6a5f7a', hemiI: 1.3, el: 8, az: -48, night: 0.15 },
+  { z: -40, top: '#7d95c9', horizon: '#f7c3a2', sun: '#ffc08e', sunI: 2.2, hemiSky: '#ffe2cf', hemiGround: '#797080', hemiI: 1.1, el: 22, az: -48, night: 0.15 },
   { z: 190, top: '#6fa6db', horizon: '#d6e8f0', sun: '#fff0d8', sunI: 2.8, hemiSky: '#eaf5ff', hemiGround: '#7d8466', hemiI: 1.15, el: 30, az: 70, night: 0 },
   { z: 420, top: '#5f9fdc', horizon: '#d2eaf4', sun: '#fffaf0', sunI: 3.0, hemiSky: '#eef8ff', hemiGround: '#7b8a5f', hemiI: 1.1, el: 46, az: 88, night: 0 },
   { z: 640, top: '#4f99dc', horizon: '#cdeaf6', sun: '#ffffff', sunI: 3.1, hemiSky: '#e8f6ff', hemiGround: '#5f8a8a', hemiI: 1.1, el: 58, az: 105, night: 0 },
   { z: 900, top: '#7aa8d6', horizon: '#f2d9ae', sun: '#ffdca0', sunI: 3.0, hemiSky: '#fff1dc', hemiGround: '#9a7a5a', hemiI: 0.95, el: 24, az: 122, night: 0 },
   { z: 1160, top: '#58619f', horizon: '#ff9d6e', sun: '#ff9458', sunI: 2.6, hemiSky: '#ffc9b0', hemiGround: '#5a4a6a', hemiI: 1.0, el: 11, az: 150, night: 0.25 },
-  { z: 1420, top: '#1d2250', horizon: '#c86b78', sun: '#ff7c5c', sunI: 1.1, hemiSky: '#8a7fc0', hemiGround: '#231f3a', hemiI: 0.95, el: 4, az: 290, night: 1 },
+  { z: 1420, top: '#17243b', horizon: '#52647b', sun: '#afc5e1', sunI: .65, hemiSky: '#a5b9d2', hemiGround: '#263047', hemiI: .65, el: 24, az: 290, night: 1 },
 ];
 
 // Deterministic plans shared by the ground painter and the scenery builder.
