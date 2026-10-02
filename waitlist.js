@@ -1,4 +1,7 @@
 import { loadSiteConfig } from './app.js';
+import { startStage } from './waitlist-stage.js';
+
+const stage = startStage();
 
 const form = document.querySelector('#waitlist-form');
 const email = document.querySelector('#waitlist-email');
@@ -16,6 +19,7 @@ form.addEventListener('submit', async event => {
     email.setAttribute('aria-invalid', 'true');
     status.dataset.state = 'error';
     status.textContent = 'Enter a valid email address to join.';
+    stage?.shake();
     email.focus();
     return;
   }
@@ -23,6 +27,7 @@ form.addEventListener('submit', async event => {
   button.disabled = true;
   form.setAttribute('aria-busy', 'true');
   button.textContent = 'Joining…';
+  stage?.hop();
   status.dataset.state = 'pending';
   status.textContent = 'Saving your place…';
   try {
@@ -39,10 +44,12 @@ form.addEventListener('submit', async event => {
     status.textContent = 'You’re on the list. Thanks for coming along.';
     button.textContent = 'You’re on the list ✓';
     email.readOnly = true;
+    stage?.deliver();
   } catch (error) {
     status.dataset.state = 'error';
     status.textContent = error.message === 'rate_limited' ? 'Too many attempts. Wait a minute, then try again.' : 'We couldn’t save your place. Your email is still here—please try again.';
-    button.textContent = 'Try again ↗';
+    button.textContent = 'Try again';
+    stage?.shake();
     button.disabled = false;
   } finally {
     submitting = false;
