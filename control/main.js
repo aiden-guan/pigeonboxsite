@@ -35,10 +35,16 @@ const nav = document.getElementById('cp-nav');
 const marker = nav.querySelector('.cp-nav-marker');
 const announcer = document.getElementById('cp-announce');
 const params = new URLSearchParams(location.search);
+// Providers may return failures in the query or fragment. Keep only codes for
+// fixed notices; never display their raw description, and clean callback URLs.
+const errorFragment = new URLSearchParams(location.hash.slice(1));
+const hasErrorFragment = errorFragment.has('error') || errorFragment.has('error_code');
+const hasSignInError = params.has('error') || params.has('error_code') || hasErrorFragment;
+const signInErrorCode = params.get('error_code') ?? (hasErrorFragment ? errorFragment.get('error_code') : null);
 // One-time landing parameters (Google consent result, team invitation, Stripe return, sign-in return). Keep them, then clean the URL.
 const landing = Object.fromEntries(['connected', 'missing', 'error', 'invite', 'checkout'].filter((name) => params.has(name)).map((name) => [name, params.get(name)]));
 const signInReturn = params.has('code') || params.has('state') ? new URLSearchParams(params) : null;
-if (Object.keys(landing).length || signInReturn) history.replaceState(null, '', `${location.pathname}${location.hash}`);
+if (Object.keys(landing).length || signInReturn || hasSignInError) history.replaceState(null, '', `${location.pathname}${hasErrorFragment ? '' : location.hash}`);
 
 let ctx = null;
 let renderToken = 0;
@@ -256,6 +262,16 @@ function signedOut() {
   const head = masthead({ n: '00', path: 'PigeonBox Cloud / Sign in', heading: 'Your Cloud desk', lede: 'Connections, approvals, automations and privacy for PigeonBox Cloud, in one place.', scene: 'connections' });
   paint(
     head,
+    [hasSignInError ? notice(signInErrorCode === 'signup_disabled' ? {
+      label: 'Cloud beta',
+      title: 'An invitation is needed',
+      text: 'Cloud beta is currently invite-only. Sign in with an invited account, or join the waitlist for access.',
+      actions: [arrowLink('Join the waitlist', 'https://usepigeonbox.com/waitlist')],
+    } : {
+      label: 'Sign in',
+      title: 'Sign-in was not completed',
+      text: 'You can try signing in again. Use the Google account from your invitation if you are joining the Cloud beta.',
+    }) : null,
     h(
       'div',
       { class: 'grid-2' },
@@ -272,7 +288,7 @@ function signedOut() {
         h('p', { class: 'muted' }, 'PigeonBox works locally in Gmail without an account. Cloud adds sync while Gmail is closed, hosted AI, and approvals from anywhere.'),
         h('div', { class: 'row' }, arrowLink('Compare plans', '/pricing')),
       ),
-    ),
+    )],
   );
   document.getElementById('cp-signout').hidden = true;
 }
@@ -336,7 +352,7 @@ window.addEventListener('resize', () => placeMarker(marker, nav.querySelector('a
 // ---------------------------------------------------------------------------
 
 async function start() {
-  if (signInReturn) {
+  if (signInReturn && !hasSignInError) {
     try {
       const back = await finishSignIn(signInReturn);
       if (back) history.replaceState(null, '', `${location.pathname}${back}`);

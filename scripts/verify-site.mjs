@@ -11,9 +11,10 @@ const config = JSON.parse(await readFile(resolve(root, 'vercel.json')));
 const output = process.env.PIGEONBOX_SITE_QA_OUT || '/tmp/pigeonbox-site-qa';
 await mkdir(output, { recursive: true });
 const server = createServer(async (req, res) => {
-  const pathname = new URL(req.url, 'http://localhost').pathname;
+  const requestUrl = new URL(req.url, 'http://localhost');
+  const pathname = requestUrl.pathname;
   const redirect = config.redirects.find(row => row.source === pathname);
-  if (redirect) { res.writeHead(307, { Location: redirect.destination }); res.end(); return; }
+  if (redirect) { res.writeHead(307, { Location: redirect.destination + requestUrl.search }); res.end(); return; }
   let file = resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
   if (!file.startsWith(root + '/')) { res.writeHead(403); res.end(); return; }
   if (!extname(file)) file += '.html';
@@ -28,12 +29,19 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ headless: true });
 const errors = [];
+const cspErrors = [];
 const results = [];
+function observe(page) {
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => {
+    if (message.type() === 'error' && message.text().includes('Content Security Policy') && !cspErrors.includes(message.text())) cspErrors.push(message.text());
+  });
+}
 try {
   for (const width of [1440, 768, 390, 320]) {
     const context = await browser.newContext({ viewport: { width, height: 1000 }, isMobile: width <= 768, hasTouch: width <= 768, reducedMotion: 'reduce' });
     const page = await context.newPage();
-    page.on('pageerror', error => errors.push(error.message));
+    observe(page);
     let requests = 0, mode = 'failure', submitted;
     await page.route('https://pigeonbox-cloud-api.pigeonbox.workers.dev/v1/waitlist', async route => {
       if (route.request().method() === 'OPTIONS') { await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'content-type', 'Access-Control-Allow-Methods': 'POST' } }); return; }
@@ -77,6 +85,8 @@ try {
     await page.goto(origin + '/');
     for (let stop = 1; stop <= 5; stop++) {
       await page.locator(`#stop-${stop}`).click();
+      assert.equal(await page.locator(`#stop-${stop}`).getAttribute('aria-selected'), 'true');
+      assert.equal(await page.locator(`#stage-${stop}`).isVisible(), true, `dispatch stop ${stop} must show its panel`);
       // Compare with the requested width: mobile engines can widen innerWidth to fit overflow.
       assert.equal(await page.evaluate(width => document.documentElement.scrollWidth <= width, width), true, `dispatch overflow at ${width}, stop ${stop}`);
     }
@@ -87,26 +97,60 @@ try {
     }), true, `expanded demo clipped at ${width}`);
     await page.locator('[data-demo-expand]').click();
     assert.equal(await page.locator('[data-demo-dialog]').evaluate(dialog => dialog.open), false, 'expanded demo must close by tapping its control');
-    for (const category of ['respond', 'waiting', 'fyi', 'followups']) {
-      const tab = page.locator(`[data-lab-cat="${category}"]`);
-      await tab.click();
-      assert.equal(await tab.getAttribute('aria-pressed'), 'true');
+    // The source-built Gmail walkthrough replaced the old homepage inbox lab.
+    // Exercise the actual workspace category control inside its two frames.
+    const demo = page.frameLocator('[data-gmail-demo] iframe');
+    const workspace = demo.frameLocator('.gm-workspace-frame');
+    const categorySelect = workspace.getByRole('combobox', { name: 'Inbox category' });
+    await categorySelect.waitFor();
+    assert.equal(await categorySelect.evaluate(() => getComputedStyle(document.getElementById('root')).animationPlayState), 'paused', 'reduced motion must pause the embedded workspace under the production CSP');
+    for (const category of ['RESPOND', 'WAITING', 'FYI', 'FOLLOW_UPS']) {
+      await categorySelect.selectOption(category);
+      assert.equal(await categorySelect.inputValue(), category);
     }
-    results.push({ width, layout: 'pass', reducedMotion: 'pass', invalid: 'pass', persistenceFailureRetry: 'pass', rateLimit: 'pass', signup: 'pass', dispatchViewport: 'pass', expandedDemo: 'pass', inboxTabs: 'pass' });
+    results.push({ width, layout: 'pass', reducedMotion: 'pass', invalid: 'pass', persistenceFailureRetry: 'pass', rateLimit: 'pass', signup: 'pass', dispatchViewport: 'pass', expandedDemo: 'pass', inboxCategories: 'pass', workspacePause: 'pass' });
     await context.close();
   }
   const page = await browser.newPage();
+  observe(page);
   for (const path of ['/', '/local', '/cloud', '/pricing', '/docs', '/privacy', '/security', '/terms']) {
     const response = await page.goto(origin + path); assert.equal(response.status(), 200);
     for (const link of await page.locator('a[href="/waitlist"]').all()) assert.equal(await link.getAttribute('href'), '/waitlist');
     assert.ok(await page.locator('.site-nav a[href="/waitlist"]').count(), `${path} Cloud nav`);
   }
+  for (const path of ['/dashboard', '/account', '/sign-in', '/app']) {
+    await page.goto(origin + path);
+    await page.getByRole('button', { name: 'Sign in', exact: true }).waitFor();
+    assert.equal(new URL(page.url()).pathname, '/dashboard');
+    assert.equal(await page.locator('body').getAttribute('data-auth'), 'out');
+  }
+  await page.goto(origin + '/auth/callback?code=release-invalid-code&state=release-invalid-state');
+  await page.getByText('Sign-in could not be verified. Start again.', { exact: true }).waitFor();
+  assert.equal(new URL(page.url()).search, '', 'invalid callback credentials must be removed from the URL');
+  await page.goto(origin + '/dashboard?error=access_denied&error_code=signup_disabled&error_description=PRIVATE_PROVIDER_CANARY');
+  await page.getByText('An invitation is needed', { exact: true }).waitFor();
+  assert.equal(new URL(page.url()).search, '');
+  assert.equal((await page.locator('#view').innerText()).includes('PRIVATE_PROVIDER_CANARY'), false);
+  assert.equal(await page.getByRole('link', { name: 'Join the waitlist', exact: true }).getAttribute('href'), 'https://usepigeonbox.com/waitlist');
   await page.goto(origin + '/');
+  const autoplay = page.frameLocator('[data-gmail-demo] iframe');
+  for (const stage of ['inbox', 'brief', 'summary', 'drafting', 'compose', 'ask', 'answer', 'source']) {
+    await autoplay.locator(`.gm-demo[data-stage="${stage}"]`).waitFor();
+  }
+  await page.locator('[data-demo-pause]').click();
+  await autoplay.locator('html.is-paused').waitFor();
+  const pausedTime = await autoplay.locator('.gm-recording').getAttribute('data-time');
+  await page.waitForTimeout(300);
+  assert.equal(await autoplay.locator('.gm-recording').getAttribute('data-time'), pausedTime, 'Pause must stop the walkthrough clock');
+  await page.locator('[data-demo-pause]').click();
+  await page.waitForTimeout(300);
+  assert.notEqual(await autoplay.locator('.gm-recording').getAttribute('data-time'), pausedTime, 'Play must resume the walkthrough clock');
   await page.getByRole('button', { name: 'Open command palette' }).last().click();
   await page.getByRole('option').filter({ hasText: 'Cloud beta' }).click();
   await page.waitForURL('**/waitlist');
   assert.deepEqual(errors, []);
+  assert.deepEqual(cspErrors, [], 'pages and their embedded walkthrough must obey the production CSP');
   await page.close();
   await readFile(resolve(root, 'waitlist.js')); // all scripts were exercised in browser
-  console.log(JSON.stringify({ results, cloudNavigation: 'pass', pageErrors: errors, screenshots: output }, null, 2));
+  console.log(JSON.stringify({ results, cloudNavigation: 'pass', walkthroughAutoplay: 'pass', pageErrors: errors, cspErrors, screenshots: output }, null, 2));
 } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }

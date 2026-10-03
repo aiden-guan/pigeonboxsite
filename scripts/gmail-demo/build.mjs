@@ -25,6 +25,7 @@ try {
   await cp(resolve(source, 'index.html'), resolve(staging, 'index.html'));
   await cp(resolve(source, 'sidepanel.html'), resolve(staging, 'sidepanel.html'));
   await cp(resolve(source, 'gmail.css'), resolve(staging, 'gmail.css'));
+  await cp(resolve(source, 'workspace.css'), resolve(staging, 'workspace.css'));
   await cp(resolve(source, 'motion.ts'), resolve(staging, 'motion.ts'));
   const main = (await readFile(resolve(source, 'main.tsx'), 'utf8')).replaceAll('@extension/', `${app}/apps/extension/src/`);
   await writeFile(resolve(staging, 'main.tsx'), main);

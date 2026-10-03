@@ -1,8 +1,8 @@
 {
   "source": "https://github.com/aiden-guan/pigeonbox",
-  "commit": "120faf9ac91a97e165ee48be75e1312bcb950808",
+  "commit": "02266275ea32fa15eaf170540b4ebae07cbe15c8",
   "workingTree": "modified",
-  "sourceSnapshotSha256": "a5587152194cdebd84fd932dcb9e928c1ec5275541dda4c4ed4f93f29333968c",
+  "sourceSnapshotSha256": "7d9084d278a516aa9dfe6648bf761be011b14b28924c9771e7feceaa8bc66f8c",
   "components": [
     "apps/extension/src/workspace/PigeonBoxWorkspace.tsx",
     "apps/extension/src/workspace/CurrentThread.tsx",
