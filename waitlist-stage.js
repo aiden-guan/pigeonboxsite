@@ -36,10 +36,10 @@ const PROPS = [
   { id: 'laptop',  label: 'Run the inbox',     box: [36, -16, 13, 16], routine: 'route' },
   { id: 'lantern', label: 'Light the lantern', box: [44, -39, 12, 39] },
   { id: 'moon',    label: 'Goodnight',         box: [30, -68, 15, 15], routine: 'sleep' },
-  { id: 'star',    label: 'Make a wish',       box: [0, -46, 38, 20], routine: 'stars' },
+  { id: 'star',    label: 'Make a wish',       box: [-14, -76, 46, 12], routine: 'stars' },
   { id: 'plane',   label: 'Catch the plane',   box: [0, 0, 14, 11], moving: true },
 ];
-const STARS = [[4, -31], [13, -37], [24, -34], [33, -41]];
+const STARS = [[-10, -70], [4, -66], [16, -73], [27, -67]];
 const AMBIENT = ['tea', 'map', 'stars', 'parcel', 'lantern', 'plane', 'search', 'wave', 'route', 'draft'];
 
 export function startStage() {
@@ -60,6 +60,7 @@ export function startStage() {
   let routine = null, routineAt = 0, queue = [], lastPlay = performance.now(), hovered = null, focusProp = null;
   let night = 0, plane = { x: -30, y: -48, dir: 1 }, flight = null, launchOnFinish = false;
   const mouse = { x: -1e4, y: -1e4 }, ripples = [], sparks = [], steam = [];
+  let lastWishSparkAt = -Infinity;
 
   // One focusable button per prop, laid over the dots.
   const buttons = new Map(PROPS.map(p => {
@@ -282,15 +283,16 @@ export function startStage() {
   }
 
   function makeWishSpark(now) {
-    if (!routine?.sparkle || reduced || Math.random() >= .48) return;
+    if (!routine?.sparkle || reduced || now - lastWishSparkAt < 360 || sparks.filter(s => s.wish).length >= 2) return;
     const frame = Math.floor((now - routineAt) / routine.ms);
     const col = routine.frames[frame];
     if (col !== 1 && col !== 2) return;
     // The raised star is at a different atlas position in each pose.
     const point = col === 1 ? spritePoint(10, 1, 72, 41) : spritePoint(10, 2, 70, 44);
-    sparks.push({ x: point.x + (Math.random() - .5) * 1.4,
-      y: point.y + (Math.random() - .5) * 1.4,
-      vx: (Math.random() - .5) * .28, vy: -.16 - Math.random() * .2,
+    lastWishSparkAt = now;
+    sparks.push({ x: point.x + (Math.random() - .5) * .6,
+      y: point.y + (Math.random() - .5) * .6,
+      vx: .1 + Math.random() * .12, vy: -.12 - Math.random() * .1,
       life: 1, wish: true });
   }
 
@@ -465,7 +467,7 @@ export function startStage() {
     }
     makeWishSpark(now);
 
-    // Tone buffer: the world, then night, then Pidgy and particles on top.
+    // Tone buffer: the world, then particles behind Pidgy so his held star stays visible.
     g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#fff'; g.fillRect(0, 0, cols, rows);
     g.setTransform(RES, 0, 0, RES, ax * RES, gy * RES);
     paintWorld(g, t);
@@ -475,18 +477,18 @@ export function startStage() {
       g.fillStyle = gr; g.fillRect(-90, -90, 180, 90);
     }
     for (const p of PROPS) if (p.id !== 'pidgy') painters[p.id](g, t, night);
-    paintBird(g, now);
-    for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.vy += s.wish ? .008 : .012; s.life -= s.wish ? .028 : .02; disc(g, s.x, s.y, .7, s.life * .8); }
+    for (const s of sparks) {
+      s.x += s.vx; s.y += s.vy; s.vy += s.wish ? .006 : .012;
+      s.life -= s.wish ? .055 : .02;
+      disc(g, s.x, s.y, s.wish ? .52 : .7, s.life * (s.wish ? .58 : .8));
+    }
     for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life <= 0) sparks.splice(i, 1);
+    paintBird(g, now);
 
     // Accent mask: whatever is hovered, or the prop Pidgy is busy with.
     const lit = hovered || (routine && (PROPS.find(p => (p.routine || p.id) === routine.name)?.id));
     a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, cols, rows);
     if (lit && lit !== 'pidgy' && painters[lit]) { a.setTransform(RES, 0, 0, RES, ax * RES, gy * RES); painters[lit](a, t, 0); }
-    if (sparks.some(s => s.wish)) {
-      a.setTransform(RES, 0, 0, RES, ax * RES, gy * RES);
-      for (const s of sparks) if (s.wish) disc(a, s.x, s.y, .7, s.life * .8);
-    }
 
     const d = g.getImageData(0, 0, cols, rows).data, m = a.getImageData(0, 0, cols, rows).data;
     out.setTransform(dpr, 0, 0, dpr, 0, 0); out.clearRect(0, 0, W, H);
