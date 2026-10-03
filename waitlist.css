@@ -6,8 +6,7 @@ body[data-page=waitlist]{background:var(--paper)}
 .wl-prop{position:absolute;left:0;top:0;padding:0;border:0;background:transparent;cursor:pointer;pointer-events:auto;border-radius:8px}
 .wl-prop:focus-visible{outline:1.5px dashed var(--copper);outline-offset:4px}
 .wl-prop[hidden]{display:none}
-.wl-tip{position:absolute;left:0;top:0;z-index:3;pointer-events:none;white-space:nowrap;font:500 11px/1 var(--mono);letter-spacing:.04em;color:var(--sheet);background:var(--ink);padding:7px 10px;border-radius:6px;opacity:0;transition:opacity var(--t-hover) var(--ease)}
-.wl-tip[data-show=true]{opacity:1}
+.wl-tip{display:none}
 .wl-content{z-index:2}
 .wl-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:radial-gradient(circle,#d9d3c6 1px,transparent 1.5px) 0 0/14px 14px;mask-image:radial-gradient(ellipse at 72% 50%,#000 5%,transparent 60%);-webkit-mask-image:radial-gradient(ellipse at 72% 50%,#000 5%,transparent 60%)}
 .wl-content{position:relative;max-width:620px;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none}
