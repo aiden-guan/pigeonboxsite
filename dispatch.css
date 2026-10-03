@@ -332,6 +332,7 @@ main:focus { outline: none; }
 .page-head .display { font-size: clamp(44px, 6.6vw, 92px); max-width: 15ch; }
 .page-head .lede { margin-top: 28px; }
 .page-head .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; align-items: center; }
+.page-head .invite-line { margin-top: 18px; font-size: 14.5px; }
 .page-head-split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: clamp(32px, 6vw, 96px); align-items: center; }
 @media (max-width: 920px) { .page-head-split { grid-template-columns: 1fr; } }
 

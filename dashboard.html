@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PigeonBox · Account</title>
+    <meta name="description" content="Manage PigeonBox connections, billing, privacy, team and API access." />
+    <meta name="robots" content="noindex" />
+    <!-- Empty: same-origin API. The website copy names the API origin here. -->
+    <meta name="pigeonbox-api" content="https://pigeonbox-cloud-api.pigeonbox.workers.dev" />
+    <meta name="theme-color" content="#f4f1e9" />
+    <link rel="icon" href="/control/pigeon-icon.png" />
+    <link rel="stylesheet" href="/control/control.css" />
+  </head>
+  <body data-page="control">
+    <a class="skip-link" href="#view">Skip to content</a>
+    <div class="cp">
+      <aside class="cp-side" id="cp-side" aria-label="PigeonBox Cloud">
+        <div class="cp-brand">
+          <a class="brand" href="/"><img src="/control/pigeon-icon.png" alt="" width="28" height="28" />PigeonBox</a>
+          <span class="cp-badge">Cloud</span>
+        </div>
+        <nav class="cp-nav" id="cp-nav" aria-label="Sections">
+          <p class="cp-group">Account</p>
+          <a href="#overview" data-section="overview">Account overview</a>
+          <a href="#billing" data-section="billing">Billing &amp; subscription</a>
+          <a href="#connections" data-section="connections">Connected accounts</a>
+          <a href="#privacy" data-section="privacy">Privacy &amp; data</a>
+          <a href="#team" data-section="team">Team</a>
+          <a href="#developers" data-section="developers">API &amp; MCP</a>
+          <p class="cp-group">Preferences</p>
+          <a href="#preferences" data-section="preferences">Sync &amp; execution</a>
+          <a href="#memory" data-section="memory">Memory</a>
+          <a href="#activity" data-section="activity">Audit &amp; activity</a>
+          <details class="cp-advanced"><summary>Advanced workflows</summary>
+            <a href="#automations" data-section="automations">Automations</a>
+            <a href="#sequences" data-section="sequences">Sequences</a>
+            <a href="#views" data-section="views">Smart Views</a>
+            <a href="#contacts" data-section="contacts">Contacts</a>
+            <a href="#documents" data-section="documents">Documents</a>
+            <a href="#approvals" data-section="approvals">Approvals <span class="count" data-count="approvals" hidden></span></a>
+            <a href="#briefings" data-section="briefings">Briefings</a>
+          </details>
+        </nav>
+        <div class="cp-user">
+          <span id="cp-email" class="cp-email"></span>
+          <button type="button" id="cp-signout" class="btn btn-ghost btn-small" hidden>Sign out</button>
+        </div>
+      </aside>
+      <div class="cp-body">
+        <header class="cp-top">
+          <button type="button" class="cp-menu" aria-expanded="false" aria-controls="cp-side" aria-label="Open sections"><span></span><span></span></button>
+          <a class="brand" href="/"><img src="/control/pigeon-icon.png" alt="" width="24" height="24" />PigeonBox</a>
+        </header>
+        <main id="view" class="cp-main" tabindex="-1" aria-live="polite">
+          <p class="loading" role="status">Loading…</p>
+        </main>
+      </div>
+    </div>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+    <script type="module" src="/control/main.js"></script>
+  </body>
+</html>

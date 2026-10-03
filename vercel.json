@@ -5,17 +5,22 @@
   "redirects": [
     {
       "source": "/account",
-      "destination": "/waitlist",
+      "destination": "/dashboard",
       "permanent": false
     },
     {
       "source": "/sign-in",
-      "destination": "/waitlist",
+      "destination": "/dashboard",
       "permanent": false
     },
     {
       "source": "/auth/callback",
-      "destination": "/waitlist",
+      "destination": "/dashboard",
+      "permanent": false
+    },
+    {
+      "source": "/app",
+      "destination": "/dashboard",
       "permanent": false
     }
   ],
@@ -42,6 +47,19 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    },
+    {
+      "source": "/dashboard",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
         }
       ]
     }

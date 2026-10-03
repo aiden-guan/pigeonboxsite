@@ -2,7 +2,8 @@
   "installUrl": "https://github.com/aiden-guan/pigeonbox#-install",
   "installLabel": "Install Local",
   "cloudBilling": "early-access",
-  "cloudApi": false,
   "cloudWaitlistUrl": "/waitlist",
-  "waitlistApiUrl": "https://pigeonbox-cloud-api.pigeonbox.workers.dev/v1/waitlist"
+  "waitlistApiUrl": "https://pigeonbox-cloud-api.pigeonbox.workers.dev/v1/waitlist",
+  "cloudApiUrl": "https://pigeonbox-cloud-api.pigeonbox.workers.dev",
+  "cloudDashboard": true
 }
