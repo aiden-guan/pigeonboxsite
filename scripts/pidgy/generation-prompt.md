@@ -1,0 +1,18 @@
+Generated with the built-in imagegen tool. The old `brand/pidgy.webp` was the edit target; gift (world row 7) and lantern (world row 12) were the approved model references.
+
+The generated source is `compact-source.png`. Production frames are packed into 96 × 96 cells, with uniform scaling, a 56-pixel pigeon body height, and feet at y=92. Generated gutters and isolated specks were removed during packing. The five regenerated rows are shared by `brand/pidgy.webp` and `brand/pidgy-world.webp`. The eight newer rows are preserved. The flight sheet keeps its flying frames; its first and last resting frames use the approved idle model.
+
+Prompt:
+
+Use case: identity-preserve.
+Asset type: production transparent pixel-art pigeon animation atlas.
+Edit target image 1 is the old 4 columns x 5 rows animation atlas. Images 2 and 3 are the approved gift and lantern character references. Regenerate EVERY pigeon in image 1 to be precisely the same compact, balanced model as images 2 and 3. Preserve the old actions and props, but replace the elongated bodies/necks, and original oversized idle bird. This is a redrawing, not vertical stretching/compression.
+CANONICAL CHARACTER: round grey pigeon head flowing directly into a short plump pear-shaped body, broad rounded belly, no long neck, small black bead eyes, tiny orange beak and two orange feet, off-white upper breast patch, folded grey wings, brown leather messenger bag and diagonal strap. The approved pigeon is about 54 pixels tall and 48 pixels broad within a 96 pixel cell; body height/width around 1.15, rounded head about half the width of its torso. Exactly match the pixel-art style, dark stair-step outlines and soft grey shading in the two approved reference images. Keep the body proportions identical in every frame, changing only wing poses, eye/expression and slight head angle for animation. Do not replace this with a realistic pigeon.
+LAYOUT: exactly 20 full sprites, strict 4 columns by 5 rows, equal rectangular cells. Top to bottom row order: idle, inbox route/laptop, draft/notepad, search/magnifying glass, alert/exclamation. No grid lines, labels, scenery, or texture in the transparent negative space. Entire canvas genuinely transparent. All sprites fully inside their own cell with generous padding; body center about 45% of the cell width, feet on 94% cell height. Pigeon visible height about 57% of cell height (compact and reference-sized), props may extend higher or farther right.
+FRAME ACTIONS LEFT TO RIGHT:
+row1 IDLE: calmly looking right; glance slightly upward/right; eyes closed blink; original relaxed look again.
+row2 ROUTE: compact pigeon beside dark laptop on the left looking at screen; taps keys with wing; types with wing extended; looks up from screen. Preserve laptop in all four.
+row3 DRAFT: compact pigeon holding small cream spiral notepad on right; raises orange pencil to write; writes with eyes down; looks up, notepad still held.
+row4 SEARCH: compact pigeon holding magnifying glass on right at chest; raises glass slightly; holds glass over one eye; lifts it outward slightly. Keep torso round and short, not stretched by glass.
+row5 ALERT: compact pigeon with wing touching side of head and small copper exclamation mark just above right shoulder; surprised eye glance; blinks while tapping head; alert look, same round body. Exclamation detached but no extra sparkles or effects.
+Constraints: Preserve animation semantics, palette, bag, beak, feet, breast patch, 4x5 frame layout. Reference lantern and gift bodies are authoritative. No tall narrow birds, no elongated necks, no different size between idle and action states. Match the references faithfully. Output only this regenerated atlas.

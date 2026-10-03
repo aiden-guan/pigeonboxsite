@@ -9,6 +9,19 @@ const TAU = Math.PI * 2;
 const ink = (v) => `rgb(${Math.round(Math.min(1, Math.max(0, v)) * 255)},0,0)`;
 const acc = (v) => `rgb(0,${Math.round(Math.min(1, Math.max(0, v)) * 255)},0)`;
 const CUT = 'rgb(0,0,0)';
+const PIDGY_INK = new Image();
+PIDGY_INK.decoding = 'async';
+PIDGY_INK.src = '/brand/pidgy-ink.png';
+
+// Every printed pigeon uses the approved sprite geometry and the same foot anchor.
+function printPidgy(ctx, x, ground, height, row = 0, frame = 0, mirror = false) {
+  if (!PIDGY_INK.complete || !PIDGY_INK.naturalWidth) return;
+  const size = height * 96 / 56;
+  ctx.save(); ctx.translate(x, ground); if (mirror) ctx.scale(-1, 1);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(PIDGY_INK, frame * 96, row * 96, 96, 96, -size * 44 / 96, -size * 92 / 96, size, size);
+  ctx.restore();
+}
 
 function rng(seed) {
   let a = seed >>> 0;
@@ -140,7 +153,7 @@ export function createField(canvas, scene) {
     raf = requestAnimationFrame(tick);
   };
   const stop = () => { state.running = false; cancelAnimationFrame(raf); raf = 0; };
-  const render = () => { fit(); paint(); };
+  const render = (rebuild = false) => { if (rebuild) data = null; fit(); paint(); };
 
   // Static scenes repaint on pointer moves, coalesced to one paint per frame.
   let pending = false;
@@ -500,11 +513,9 @@ export function nightShift() {
       const sag = H * 0.06;
       const wireY = (t) => (1 - t) * (1 - t) * (top + 8) + 2 * (1 - t) * t * (top + 8 + sag * 2) + t * t * (top + 8);
       ctx.beginPath(); ctx.moveTo(p1, top + 8); ctx.quadraticCurveTo((p1 + p2) / 2, top + 8 + sag * 2, p2, top + 8); ctx.stroke();
-      ctx.fillStyle = ink(0.85);
       for (const t of [0.22, 0.31, 0.63, 0.78]) {
         const bx = p1 + (p2 - p1) * t; const by = wireY(t);
-        ctx.beginPath(); ctx.ellipse(bx, by - 8, 9, 7, 0, 0, TAU); ctx.fill();
-        ctx.beginPath(); ctx.arc(bx + (t > 0.5 ? -7 : 7), by - 16, 4.5, 0, TAU); ctx.fill();
+        printPidgy(ctx, bx, by, 22, 0, 0, t > 0.5);
       }
       layout.wire = { x: p1 + (p2 - p1) * 0.46, y: wireY(0.46) - 2 };
     },
@@ -965,18 +976,7 @@ export function waitlistPostmark() {
       }
       ctx.font = '400 29px ui-serif, Georgia, serif'; ctx.fillText('Cloud', 0, -8);
       ctx.font = '600 10px ui-monospace, Menlo, monospace'; ctx.fillText('ON ITS WAY', 0, 20); ctx.restore();
-      // Body, fanned tail, uplifted wings and the distinctive small pigeon head.
-      ctx.fillStyle = CUT;
-      const bird = new Path2D('M58 235 L128 203 C145 174 171 156 201 155 C208 116 229 82 266 48 C265 96 246 147 229 164 C262 164 288 151 307 135 C314 118 326 114 338 122 C344 127 345 134 344 143 L365 151 L344 156 C339 178 320 184 294 184 C265 192 253 218 214 227 L155 237 L97 265 L103 240 L58 250 Z');
-      ctx.fill(bird);
-      ctx.fillStyle = ink(.95); ctx.fill(bird);
-      const wing = new Path2D('M136 207 C119 175 102 136 83 92 C126 99 181 132 211 164 C196 187 168 200 136 207 Z');
-      ctx.fillStyle = ink(.58); ctx.fill(wing);
-      ctx.strokeStyle = CUT; ctx.lineWidth = 5;
-      for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(98 + i * 19, 118 + i * 8); ctx.quadraticCurveTo(117 + i * 18, 154, 143 + i * 10, 191); ctx.stroke(); }
-      ctx.fillStyle = CUT; ctx.beginPath(); ctx.arc(333, 136, 4, 0, TAU); ctx.fill();
-      ctx.strokeStyle = acc(.95); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(270, 190); ctx.lineTo(269, 218); ctx.moveTo(281, 188); ctx.lineTo(286, 218); ctx.stroke();
-      envelopeShape(ctx, 277, 235, 49, .95, true);
+      printPidgy(ctx, 180, 275, 180, 7);
       ctx.restore();
     },
   };
@@ -996,5 +996,6 @@ export function mount(root = document) {
     canvas.field = field;
   });
   if (!FLIGHT.complete) FLIGHT.addEventListener('load', () => fields.forEach((f) => f.render()), { once: true });
+  if (!PIDGY_INK.complete) PIDGY_INK.addEventListener('load', () => fields.forEach((f) => f.render(true)), { once: true });
   return fields;
 }

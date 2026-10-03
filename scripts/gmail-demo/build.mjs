@@ -51,6 +51,10 @@ try {
   await cp(resolve(app, 'apps/extension/public/icons'), resolve(outDir, 'icons'), { recursive: true });
   await mkdir(resolve(outDir, 'brand'), { recursive: true });
   await cp(resolve(app, 'apps/extension/public/brand/pigeon-sprites.webp'), resolve(outDir, 'brand/pigeon-sprites.webp'));
+  // Brand assets are part of the source snapshot, just like the rendered components.
+  for (const file of ['brand/pigeon-sprites.webp', 'icons/icon16.png', 'icons/icon48.png', 'icons/icon128.png']) {
+    sourceFiles.add(resolve(app, 'apps/extension/public', file));
+  }
   const snapshot = createHash('sha256');
   for (const file of [...sourceFiles].sort()) snapshot.update(relative(app, file)).update('\0').update(await readFile(file)).update('\0');
   const changes = execFileSync('git', ['-C', app, 'status', '--porcelain', '--', ...[...sourceFiles].map(file => relative(app, file))], { encoding: 'utf8' }).trim();
