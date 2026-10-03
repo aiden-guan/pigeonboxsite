@@ -6,6 +6,7 @@
 const CELL = 96;                                   // sprite cell on /brand/pidgy-world.webp
 const INK = '24,25,27', COPPER = '168,80,44';
 const BIRD = 24;                                   // 20% smaller; pose bounds normalize to one visible height
+const BODY_ANCHOR_X = 44, GROUND_ANCHOR_Y = 92;    // stable pigeon pivot in the sprite atlas
 const RES = 1.6;                                   // dots per world unit
 
 // row on the sheet, frame order, ms per frame; `hide` lifts a prop while Pidgy holds it.
@@ -232,15 +233,18 @@ export function startStage() {
     const bounds = spriteBounds[row]?.[col];
     const scale = spriteScale[row]?.[col] || 1;
     const size = BIRD * scale;
-    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, -.2, 12 * BIRD / 30 * scale, 1.4 * BIRD / 30 * scale, 0, 0, 6.2832); c.fill();
+    const bodyCenterX = bounds?.bodyCenterX ?? CELL / 2;
+    const bodyAnchorX = BIRD * (BODY_ANCHOR_X / CELL - .5);
+    const x = bodyAnchorX - size * bodyCenterX / CELL;
+    const y = -size * GROUND_ANCHOR_Y / CELL;
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(bodyAnchorX, -.2, 12 * BIRD / 30, 1.4 * BIRD / 30, 0, 0, 6.2832); c.fill();
     if (sheet.complete && sheet.naturalWidth) {
-      const y = bounds?.height ? -size * bounds.bottom / CELL : -size * 95 / CELL;
-      c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, -size / 2, y, size, size);
+      c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, x, y, size, size);
     }
   }
 
-  // Atlas frames use different padding. Normalize each visible frame to one height so every
-  // state keeps the same pigeon scale as its sprite changes.
+  // Atlas frames use different padding. Normalize each frame, then align the pigeon core and
+  // foot line to fixed world anchors so props and empty margins cannot pull it around.
   function measureSpriteFrames() {
     if (!sheet.naturalWidth || !sheet.naturalHeight) return;
     const columns = Math.floor(sheet.naturalWidth / CELL);
@@ -248,6 +252,7 @@ export function startStage() {
     const sample = document.createElement('canvas');
     sample.width = sample.height = CELL;
     const pixels = sample.getContext('2d', { willReadFrequently: true });
+    const mask = new Uint8Array(CELL * CELL), stack = new Int32Array(CELL * CELL);
     let maxHeight = 0;
     spriteBounds = Array.from({ length: rows }, (_, row) => Array.from({ length: columns }, (_, col) => {
       pixels.clearRect(0, 0, CELL, CELL);
@@ -260,9 +265,38 @@ export function startStage() {
       }
       const height = bottom - top;
       maxHeight = Math.max(maxHeight, height);
-      return { bottom, height };
+      return { height, bodyCenterX: neutralBodyCenterX(rgba, mask, stack) };
     }));
     spriteScale = spriteBounds.map(row => row.map(frame => maxHeight / Math.max(1, frame.height)));
+  }
+
+  function neutralBodyCenterX(rgba, mask, stack) {
+    mask.fill(0);
+    for (let i = 0; i < mask.length; i++) {
+      const offset = i * 4, red = rgba[offset], green = rgba[offset + 1], blue = rgba[offset + 2];
+      const tone = (red + green + blue) / 3;
+      if (rgba[offset + 3] > 100 && tone >= 75 && tone <= 220 && Math.max(red, green, blue) - Math.min(red, green, blue) < 28) mask[i] = 1;
+    }
+
+    let bestSize = 0, bestX = CELL / 2;
+    for (let seed = 0; seed < mask.length; seed++) {
+      if (!mask[seed]) continue;
+      let size = 0, sumX = 0, stackSize = 0;
+      stack[stackSize++] = seed; mask[seed] = 0;
+      while (stackSize) {
+        const index = stack[--stackSize], x = index % CELL, y = (index - x) / CELL;
+        size++; sumX += x;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= CELL || ny < 0 || ny >= CELL) continue;
+          const neighbor = ny * CELL + nx;
+          if (mask[neighbor]) { mask[neighbor] = 0; stack[stackSize++] = neighbor; }
+        }
+      }
+      if (size > bestSize) { bestSize = size; bestX = sumX / size; }
+    }
+    return bestX;
   }
 
   function finish(done, now) {
