@@ -508,7 +508,7 @@ export function startStage() {
       tone[i] += (v - tone[i]) * (reduced ? 1 : .55);
       const k = tone[i];
       if (k < .045) continue;
-      const rad = Math.min(.62, .05 + Math.pow(k, .72) * .6) * dot, cx = px, cy = py;
+      const rad = Math.min(.48, .05 + Math.pow(k, .72) * .46) * dot, cx = px, cy = py;
       const path = m[i * 4 + 3] > 30 ? copperPath : inkPath;
       path.moveTo(cx + rad, cy); path.arc(cx, cy, rad, 0, 6.2832);
     }
