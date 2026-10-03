@@ -65,9 +65,9 @@ export function startStage() {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'wl-prop'; b.setAttribute('aria-label', p.label);
     b.addEventListener('click', () => trigger(p));
-    b.addEventListener('pointerenter', () => { hovered = p.id; showTip(p); });
+    b.addEventListener('pointerenter', event => { if (event.pointerType === 'touch') return; hovered = p.id; showTip(p); });
     b.addEventListener('pointerleave', () => { if (hovered === p.id) hovered = null; hideTip(); });
-    b.addEventListener('focus', () => { hovered = p.id; showTip(p); });
+    b.addEventListener('focus', () => { if (b.matches(':focus-visible')) { hovered = p.id; showTip(p); } });
     b.addEventListener('blur', () => { hovered = null; hideTip(); });
     layer.append(b);
     return [p.id, b];
@@ -76,14 +76,16 @@ export function startStage() {
   function layout() {
     const r = stage.getBoundingClientRect();
     W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1);
-    const narrow = W < 900;
-    cell = narrow ? Math.max(3.4, W / 104) : Math.max(4.4, Math.min(8.5, W / 172, H / 100));
+    const narrow = matchMedia('(max-width: 900px)').matches;
+    // Read the resolved padding: CSS reserves the scene height plus a 28px text gap.
+    const sceneHeight = narrow ? parseFloat(getComputedStyle(stage).paddingTop) - 28 : 0;
+    cell = narrow ? Math.min(4.5, W / 112) : Math.max(4.4, Math.min(8.5, W / 172, H / 100));
     dot = cell / RES; cols = Math.ceil(W / dot); rows = Math.ceil(H / dot);
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     buf.width = acc.width = cols; buf.height = acc.height = rows;
     tone = new Float32Array(cols * rows);
-    ax = narrow ? Math.round(W / cell / 2 - 7) : Math.round(W / cell * .64);
-    gy = narrow ? Math.round((Math.min(W * .86, 380) - 18) / cell) : Math.round(H / cell * .8);
+    ax = narrow ? Math.round(W / cell / 2 - 9) : Math.round(W / cell * .64);
+    gy = narrow ? Math.round(sceneHeight / cell) : Math.round(H / cell * .8);
     // The world fades out before it reaches the headline on wide screens.
     fade = Array.from({ length: cols }, (_, x) => narrow ? 1 : smooth(ax - 66, ax - 42, x / RES));
     for (const p of PROPS) if (!p.moving) place(p, p.box[0], p.box[1]);
@@ -370,11 +372,11 @@ export function startStage() {
 
   let visible = true, last = 0;
   const loop = now => {
-    if (visible && now - last > 32) { last = now; frame(now); }
+    if (visible && !document.hidden && now - last > 32) { last = now; frame(now); }
     requestAnimationFrame(loop);
   };
 
-  stage.addEventListener('pointermove', e => { const r = stage.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
+  stage.addEventListener('pointermove', e => { if (e.pointerType === 'touch') return; const r = stage.getBoundingClientRect(); mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; });
   stage.addEventListener('pointerleave', () => { mouse.x = mouse.y = -1e4; });
   new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(stage);
   new ResizeObserver(layout).observe(stage);

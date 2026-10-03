@@ -13,6 +13,9 @@ export function initGmailDemo() {
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const home = root.parentNode;
   const marker = document.createComment('Gmail walkthrough');
+  const placeholder = document.createElement('div');
+  placeholder.className = 'walkthrough-placeholder';
+  placeholder.setAttribute('aria-hidden', 'true');
   home.insertBefore(marker, root);
   let paused = motion.matches;
   let visible = false;
@@ -51,20 +54,25 @@ export function initGmailDemo() {
   motion.addEventListener('change', () => { if (!playingExplicitly) paused = motion.matches; control(); });
   expand.addEventListener('click', () => {
     if (dialog.open) { dialog.close(); return; }
-    dialog.showModal();
+    // Preserve the hero's height while the walkthrough moves into the top layer.
+    placeholder.style.height = `${root.getBoundingClientRect().height}px`;
+    marker.after(placeholder);
     dialog.append(root);
     root.classList.add('is-expanded');
+    dialog.showModal();
+    size();
     expand.setAttribute('aria-label', 'Close expanded walkthrough');
     expand.querySelector('[data-demo-expand-label]').textContent = 'Close';
-    expand.focus();
+    expand.focus({ preventScroll: true });
     control();
   });
   dialog.addEventListener('close', () => {
     marker.after(root);
+    placeholder.remove();
     root.classList.remove('is-expanded');
     expand.setAttribute('aria-label', 'Expand walkthrough');
     expand.querySelector('[data-demo-expand-label]').textContent = 'Expand';
-    expand.focus();
+    expand.focus({ preventScroll: true });
     control();
   });
   dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });

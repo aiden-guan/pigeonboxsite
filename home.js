@@ -187,7 +187,8 @@ function initRoute() {
   route.addEventListener('focusin', stopAuto);
 
   set(0);
-  if (reduced() || !('IntersectionObserver' in window)) return;
+  // Touch readers choose a stop; automatic panel changes can move the page mid-scroll.
+  if (reduced() || matchMedia('(pointer: coarse)').matches || !('IntersectionObserver' in window)) return;
   const io = new IntersectionObserver(([entry]) => {
     if (!entry.isIntersecting) { stopAuto(); return; }
     io.disconnect();

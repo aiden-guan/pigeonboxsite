@@ -1,6 +1,6 @@
 /* Cloud waitlist: a pixel night sky, with Pidgy flying in to perch on the form. */
 body[data-page=waitlist]{background:var(--paper)}
-.wl-stage{position:relative;isolation:isolate;overflow:hidden;margin:8px var(--gutter) 0;border-radius:0;background:var(--paper);color:var(--text);min-height:min(calc(100svh - var(--header) - 16px),860px);display:flex;align-items:center;padding:80px clamp(24px,6vw,88px)}
+.wl-stage{--wl-scene-height:0px;position:relative;isolation:isolate;overflow:hidden;margin:8px var(--gutter) 0;border-radius:0;background:var(--paper);color:var(--text);min-height:min(calc(100svh - var(--header) - 16px),860px);display:flex;align-items:center;padding:80px clamp(24px,6vw,88px)}
 .wl-dots{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
 .wl-props{position:absolute;inset:0;z-index:1;pointer-events:none}
 .wl-prop{position:absolute;left:0;top:0;padding:0;border:0;background:transparent;cursor:pointer;pointer-events:auto;border-radius:8px}
@@ -25,7 +25,7 @@ body[data-page=waitlist]{background:var(--paper)}
 .wl-form{width:100%;max-width:470px;position:relative}
 .wl-perch{position:relative;display:flex;gap:6px;padding:6px;border-radius:14px;background:rgba(250,248,243,.85);border:1px solid var(--rule-strong);box-shadow:0 18px 50px -24px rgba(24,25,27,.25);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:border-color var(--t-content) var(--ease),box-shadow var(--t-content) var(--ease)}
 .wl-perch:focus-within{border-color:var(--copper);box-shadow:0 18px 50px -20px rgba(168,80,44,.35)}
-.wl-perch input{flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:15px;padding:0 12px;height:46px}
+.wl-perch input{flex:1;min-width:0;background:transparent;border:0;color:var(--text);font:inherit;font-size:16px;padding:0 12px;height:46px}
 .wl-perch input::placeholder{color:var(--faint)}
 .wl-perch input:focus-visible{outline:none}
 .wl-perch input[aria-invalid=true]{color:var(--copper)}
@@ -53,7 +53,8 @@ body[data-page=waitlist]{background:var(--paper)}
 .waitlist-footer nav{margin-left:auto;display:flex;gap:20px}
 .waitlist-footer .wordmark{color:var(--text);font-size:18px}
 
-@media(max-width:900px){.wl-content{width:100%}.wl-stage{align-items:flex-end;padding-top:min(86vw,380px);padding-bottom:48px}.wl-perks{grid-template-columns:1fr}}
-@media(max-width:560px){.wl-stage{margin:0;padding:72px 16px 120px}.wl-perch{flex-direction:column}.wl-btn{width:100%}.waitlist-footer{flex-wrap:wrap;gap:10px 18px}.waitlist-footer nav{margin-left:0;flex-basis:100%}}
+/* The painted ground and content share one scene height, even on short phones. */
+@media(max-width:900px){.wl-content{width:100%;max-width:620px;margin-inline:auto}.wl-stage{--wl-scene-height:clamp(264px,76vw,360px);align-items:flex-start;padding-top:calc(var(--wl-scene-height) + 28px);padding-bottom:max(48px,env(safe-area-inset-bottom))}.wl-title{font-size:clamp(36px,10.7vw,64px);margin-bottom:28px}.wl-perks{grid-template-columns:1fr}}
+@media(max-width:560px){.wl-stage{margin:0;padding-inline:var(--gutter)}.wl-title{margin-bottom:24px}.wl-perch{flex-direction:column}.wl-perch input{flex:none;min-height:48px;height:48px}.wl-btn{width:100%;height:48px}.wl-note a{display:inline-flex;align-items:center;min-height:44px}.waitlist-footer{flex-wrap:wrap;gap:10px 18px}.waitlist-footer nav{margin-left:0;flex-basis:100%;flex-wrap:wrap}.waitlist-footer nav a{display:inline-flex;align-items:center;min-height:44px}}
 @media(prefers-reduced-motion:reduce){.wl-w,.wl-in{animation:none;opacity:1;filter:none;transform:none}}
 [data-d="0"]{--d:0}[data-d="1"]{--d:1}[data-d="2"]{--d:2}[data-d="3"]{--d:3}[data-d="4"]{--d:4}[data-d="5"]{--d:5}[data-d="6"]{--d:6}[data-d="7"]{--d:7}[data-d="8"]{--d:8}

@@ -31,7 +31,7 @@ const errors = [];
 const results = [];
 try {
   for (const width of [1440, 768, 390, 320]) {
-    const context = await browser.newContext({ viewport: { width, height: 1000 }, reducedMotion: 'reduce' });
+    const context = await browser.newContext({ viewport: { width, height: 1000 }, isMobile: width <= 768, hasTouch: width <= 768, reducedMotion: 'reduce' });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
     let requests = 0, mode = 'failure', submitted;
@@ -45,6 +45,15 @@ try {
     await page.waitForFunction(() => document.querySelector('canvas.wl-dots').width > 1);
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `overflow at ${width}`);
+    assert.ok(await page.locator('#waitlist-email').evaluate(input => parseFloat(getComputedStyle(input).fontSize) >= 16), 'email must not trigger mobile focus zoom');
+    if (width <= 900) {
+      const gap = await page.evaluate(() => {
+        const title = document.querySelector('.wl-title').getBoundingClientRect();
+        const props = [...document.querySelectorAll('.wl-prop')].filter(button => button.getAttribute('aria-label') !== 'Catch the plane');
+        return title.top - Math.max(...props.map(button => button.getBoundingClientRect().bottom));
+      });
+      assert.ok(gap >= 20, `waitlist artwork overlaps text at ${width}`);
+    }
     await page.screenshot({ path: `${output}/waitlist-${width}.png`, fullPage: true });
     const canvas = await page.locator('canvas').evaluate(canvas => canvas.toDataURL());
     await page.waitForTimeout(300);
@@ -65,7 +74,25 @@ try {
     assert.deepEqual(submitted, { email: 'owner@example.test', source: 'extension', website: '' });
     assert.equal(await page.locator('button[type=submit]').isDisabled(), true);
     assert.equal(requests, 3);
-    results.push({ width, layout: 'pass', reducedMotion: 'pass', invalid: 'pass', persistenceFailureRetry: 'pass', rateLimit: 'pass', signup: 'pass' });
+    await page.goto(origin + '/');
+    for (let stop = 1; stop <= 5; stop++) {
+      await page.locator(`#stop-${stop}`).click();
+      // Compare with the requested width: mobile engines can widen innerWidth to fit overflow.
+      assert.equal(await page.evaluate(width => document.documentElement.scrollWidth <= width, width), true, `dispatch overflow at ${width}, stop ${stop}`);
+    }
+    await page.locator('[data-demo-expand]').click();
+    assert.equal(await page.locator('[data-demo-dialog]').evaluate(dialog => {
+      const bounds = dialog.getBoundingClientRect();
+      return bounds.left >= 0 && bounds.right <= innerWidth && bounds.top >= 0 && bounds.bottom <= innerHeight;
+    }), true, `expanded demo clipped at ${width}`);
+    await page.locator('[data-demo-expand]').click();
+    assert.equal(await page.locator('[data-demo-dialog]').evaluate(dialog => dialog.open), false, 'expanded demo must close by tapping its control');
+    for (const category of ['respond', 'waiting', 'fyi', 'followups']) {
+      const tab = page.locator(`[data-lab-cat="${category}"]`);
+      await tab.click();
+      assert.equal(await tab.getAttribute('aria-pressed'), 'true');
+    }
+    results.push({ width, layout: 'pass', reducedMotion: 'pass', invalid: 'pass', persistenceFailureRetry: 'pass', rateLimit: 'pass', signup: 'pass', dispatchViewport: 'pass', expandedDemo: 'pass', inboxTabs: 'pass' });
     await context.close();
   }
   const page = await browser.newPage();

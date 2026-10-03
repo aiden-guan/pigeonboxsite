@@ -24,6 +24,7 @@
 /* Automatic walkthrough, built from the extension's current UI. */
 .gmail-walkthrough { margin: 0; min-width: 0; position: relative; background: #fff; border: 1px solid #c6c9cc; border-radius: 12px; box-shadow: 0 32px 70px -36px rgba(30, 33, 38, .4), 0 0 0 5px var(--paper-2); overflow: hidden; }
 .walkthrough-viewport { position: relative; aspect-ratio: 1100 / 760; overflow: hidden; background: #f6f8fc; }
+.walkthrough-placeholder { min-width: 0; }
 .walkthrough-viewport iframe { position: absolute; inset: 0 auto auto 0; width: 1100px; height: 760px; max-width: none; border: 0; transform-origin: top left; pointer-events: none; }
 .walkthrough-progress { height: 2px; background: #e8e8e4; overflow: hidden; }
 .walkthrough-progress span { display: block; width: 100%; height: 100%; background: var(--copper); transform-origin: left; transform: scaleX(0); }
@@ -47,8 +48,8 @@
 .route-svg path { fill: none; vector-effect: non-scaling-stroke; }
 .route-ghost { stroke: var(--rule-strong); stroke-width: 1.25; stroke-dasharray: 3 5; }
 .route-path { stroke: var(--copper); stroke-width: 1.75; stroke-dasharray: 1 1; stroke-dashoffset: 1; transition: stroke-dashoffset 560ms var(--ease); }
-.route-bird { position: absolute; inset: 0; transform: translateX(calc(var(--stop) * 20%)); transition: transform 560ms var(--ease); pointer-events: none; }
-.route-bird .pidgy { position: absolute; left: 10%; bottom: 8px; margin-left: -14px; }
+.route-bird { position: absolute; top: 0; bottom: 0; left: 0; width: 20%; transform: translateX(calc(var(--stop) * 100%)); transition: transform 560ms var(--ease); pointer-events: none; }
+.route-bird .pidgy { position: absolute; left: 50%; bottom: 8px; margin-left: -14px; }
 .route-stops { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--text); }
 .route-stops button {
   display: grid; justify-items: center; gap: 6px; padding: 16px 4px 18px; min-height: 64px;
@@ -284,3 +285,19 @@
   .console-btn .key, .console-tabs .key, .lab-keys, .console-keys { display: none; }
 }
 @media (max-width: 760px) { .lab-brand i { display: none; } }
+
+/* Keep phone controls comfortable without changing the desktop composition. */
+@media (max-width: 560px) {
+  .lab-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lab-tabs button { min-width: 0; gap: 6px; padding-inline: 10px; border-bottom-color: var(--rule); }
+  .route-stops .name { font-size: clamp(8px, 2.35vw, 10px); letter-spacing: 0; line-height: 1.25; }
+  .ask-form input { height: 44px; font-size: 16px; }
+  .walkthrough-caption { flex-wrap: wrap; font-size: 12px; padding-block: 6px; }
+  .walkthrough-description { flex: 1 1 170px; }
+  .walkthrough-controls button { width: 44px; min-height: 44px; }
+  .walkthrough-controls svg { width: 16px; height: 16px; }
+  .walkthrough-chapters { flex-wrap: wrap; gap: 6px 14px; font-size: 9px; }
+  .walkthrough-note { font-size: 10px; }
+  .walkthrough-dialog { width: min(96vw, calc((92dvh - 144px) * 1100 / 760)); }
+}
+@media (pointer: coarse) { .tone button, .ask-suggest button { min-height: 44px; } }
