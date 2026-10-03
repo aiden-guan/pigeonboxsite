@@ -1,5 +1,5 @@
 import { upload } from '../../lib/session.js';
-import { ago, button, card, checkbox, clear, confirmDialog, copyText, day, empty, field, h, input, note, pill, plural, secretDialog, table, toast } from '../ui.js';
+import { ago, button, checkbox, clear, confirmDialog, copyText, day, empty, emptyState, eyebrow, field, h, input, note, pill, plural, secretDialog, surface, table, toast } from '../ui.js';
 
 const PRECISION = {
   pages_observed: ['Pages seen', 'good', 'The PigeonBox viewer rendered these pages and saw them on screen.'],
@@ -43,13 +43,15 @@ async function detail(document, { api, back }) {
     clear(
       holder,
       h('button', { type: 'button', class: 'back', on: { click: () => back() } }, '← Documents'),
-      card(
-        null,
-        h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, data.document.title), h('p', { class: 'muted' }, `${data.document.filename} · ${data.document.pageCount === null ? 'page count unknown' : plural(data.document.pageCount, 'page')} · uploaded ${day(data.document.createdAt)}`)), pill(data.document.status, data.document.status === 'ready' ? 'good' : 'neutral')),
+      surface(
+        'card',
+        {},
+        h('header', { class: 'detail-head' }, h('div', {}, eyebrow(`${data.document.filename} · ${data.document.pageCount === null ? 'page count unknown' : plural(data.document.pageCount, 'page')} · uploaded ${day(data.document.createdAt)}`), h('h2', {}, data.document.title)), pill(data.document.status, data.document.status === 'ready' ? 'good' : 'neutral')),
         data.notes.map((text) => h('p', { class: 'hint' }, text)),
       ),
-      card(
-        'New link',
+      surface(
+        'slip',
+        { title: 'New link', className: 'composer' },
         h('p', {}, 'One link per person tells you who opened what. Anyone with the link can open it until it expires or you revoke it.'),
         h('div', { class: 'grid-2' }, field('Recipient', recipient), field('Expires', expires)),
         allowDownload,
@@ -73,8 +75,9 @@ async function detail(document, { api, back }) {
           }),
         ),
       ),
-      card(
-        'Links',
+      surface(
+        'ledger',
+        { title: 'Links' },
         data.links.length
           ? h(
               'ul',
@@ -134,8 +137,9 @@ export async function render({ api }) {
       h(
         'div',
         { class: 'stack' },
-        card(
-          'Share a PDF',
+        surface(
+          'slip',
+          { title: 'Share a PDF', className: 'composer' },
           h('p', {}, 'Recipients read it in PigeonBox’s viewer. You see who opened it and which pages were on screen — never more than the viewer can actually observe.'),
           h('div', { class: 'grid-2' }, field('PDF', file, `Up to ${MAX_MB} MB.`), field('Title', title)),
           h(
@@ -154,8 +158,9 @@ export async function render({ api }) {
           ),
         ),
         documents.length
-          ? card(
-              'Documents',
+          ? surface(
+              'ledger',
+              { title: 'Documents' },
               table(
                 [
                   { label: 'Title', render: (row) => h('button', { type: 'button', class: 'link-button', on: { click: () => open(row) } }, row.title) },
@@ -167,7 +172,7 @@ export async function render({ api }) {
                 documents,
               ),
             )
-          : empty('No documents yet.'),
+          : emptyState({ state: 'parcel', title: 'No documents yet', text: 'Upload a PDF above, then make one link per person to see who opened what.' }),
         note('Forwarded links, screenshots and printouts are invisible to PigeonBox. Views from link scanners are not counted.', 'info'),
       ),
     );

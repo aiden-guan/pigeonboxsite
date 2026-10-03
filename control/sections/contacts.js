@@ -1,4 +1,4 @@
-import { ago, button, card, checkbox, clear, day, empty, facts, field, h, input, pill, textarea, toast } from '../ui.js';
+import { ago, button, card, checkbox, clear, day, empty, eyebrow, facts, field, h, input, pill, surface, textarea, timeline, toast } from '../ui.js';
 import { accountEmails, gmailLink, STATES } from '../shared.js';
 
 const RADAR = [
@@ -26,9 +26,10 @@ async function brief(contactId, { api, emails, back }) {
     'div',
     { class: 'stack' },
     h('button', { type: 'button', class: 'back', on: { click: () => back() } }, '← Contacts'),
-    card(
-      null,
-      h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, c.name || c.email), h('p', { class: 'muted' }, [c.name ? c.email : null, c.company].filter(Boolean).join(' · '))), c.vip ? pill('VIP', 'good') : null),
+    surface(
+      'card',
+      {},
+      h('header', { class: 'detail-head' }, h('div', {}, eyebrow([c.name ? c.email : null, c.company].filter(Boolean).join(' · ') || 'Contact'), h('h2', {}, c.name || c.email)), c.vip ? pill('VIP', 'good') : null),
       h('p', {}, b.whoTheyAre),
       facts([
         ['You wrote', `${c.sentCount} times`],
@@ -40,10 +41,10 @@ async function brief(contactId, { api, emails, back }) {
     ),
     h('div', { class: 'grid-2' }, card('You owe them', commitments(b.youOwe, 'Nothing open.')), card('They owe you', commitments(b.theyOwe, 'Nothing open.'))),
     b.importantThreads.length
-      ? card('Threads', h('ul', { class: 'list' }, b.importantThreads.map((thread) => h('li', {}, h('div', { class: 'list-main' }, gmailLink(thread.subject || '(no subject)', emails.get(thread.accountId), thread.threadId), h('span', { class: 'muted' }, `${STATES[thread.state] ?? thread.state} · ${ago(thread.lastMessageAt)}`))))))
+      ? surface('ledger', { title: 'Threads' }, h('ul', { class: 'list' }, b.importantThreads.map((thread) => h('li', {}, h('div', { class: 'list-main' }, gmailLink(thread.subject || '(no subject)', emails.get(thread.accountId), thread.threadId), h('span', { class: 'muted' }, `${STATES[thread.state] ?? thread.state} · ${ago(thread.lastMessageAt)}`))))))
       : null,
-    b.signals.length ? card('Signals', h('ul', { class: 'list' }, b.signals.map((signal) => h('li', {}, h('div', { class: 'list-main' }, h('strong', {}, signal.label), h('span', { class: 'muted' }, signal.explanation)))))) : null,
-    card('Timeline', b.timeline.length ? h('ul', { class: 'timeline' }, b.timeline.map((entry) => h('li', {}, h('time', { dateTime: entry.at }, day(entry.at)), h('span', {}, entry.label)))) : empty('No activity yet.')),
+    b.signals.length ? surface('ledger', { title: 'Signals' }, h('ul', { class: 'list' }, b.signals.map((signal) => h('li', {}, h('div', { class: 'list-main' }, h('strong', {}, signal.label), h('span', { class: 'muted' }, signal.explanation)))))) : null,
+    surface('ledger', { title: 'Timeline' }, b.timeline.length ? timeline(b.timeline.map((entry) => ({ at: entry.at, title: entry.label, tone: 'neutral' }))) : empty('No activity yet.')),
     card(
       'Your notes',
       notes,
@@ -103,8 +104,9 @@ export async function render({ api }) {
     drawContacts(first.contacts);
 
     const radarCards = RADAR.filter(([id]) => radar[id].length).map(([id, label]) =>
-      card(
-        label,
+      surface(
+        'bin',
+        { title: label },
         h(
           'ul',
           { class: 'list' },
@@ -120,9 +122,8 @@ export async function render({ api }) {
       h(
         'div',
         { class: 'stack' },
-        h('p', { class: 'lede' }, 'Built from dates, counts and open promises in your synced mail. No hidden scores: every item says why it is here.'),
-        radarCards.length ? h('div', { class: 'grid-3' }, radarCards) : null,
-        card('People', h('div', { class: 'row' }, search, vipOnly), listEl),
+        radarCards.length ? h('div', { class: 'bins' }, radarCards) : null,
+        surface('ledger', { title: 'People' }, h('div', { class: 'row tight people-tools' }, search, vipOnly), listEl),
       ),
     );
   };

@@ -1,4 +1,4 @@
-import { ago, button, card, clear, confirmDialog, empty, field, h, input, note, pill, tabs, textarea, toast } from '../ui.js';
+import { ago, button, clear, confirmDialog, empty, eyebrow, field, h, input, note, pill, surface, tabs, textarea, toast } from '../ui.js';
 import { accountEmails, actionLabel, gmailLink } from '../shared.js';
 
 const MODE = { view: ['View', 'neutral'], shadow: ['Shadow Mode', 'info'], active: ['Active', 'good'] };
@@ -122,9 +122,10 @@ async function detail(view, { api, emails, back }) {
     'div',
     { class: 'stack' },
     h('button', { type: 'button', class: 'back', on: { click: () => back(null) } }, '← All Smart Views'),
-    card(
-      null,
-      h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, view.name), h('p', { class: 'muted' }, `“${view.prompt}” · v${view.version}`)), modePill(view)),
+    surface(
+      'card',
+      {},
+      h('header', { class: 'detail-head' }, h('div', {}, eyebrow(`Smart View · v${view.version}`), h('h2', {}, view.name), h('p', { class: 'prompt' }, `“${view.prompt}”`)), modePill(view)),
       explanation(view.explanation),
       view.usesAi ? note('Part of this view needs AI judgment, so some matches can be wrong.', 'info') : null,
       view.actions.length ? h('p', {}, h('strong', {}, 'Does: '), view.actions.map(actionLabel).join(', ')) : null,
@@ -159,7 +160,7 @@ export async function render(ctx) {
           'div',
           { class: 'draft-preview' },
           field('Name', name),
-          h('p', { class: 'muted' }, 'PigeonBox understood:'),
+          h('p', { class: 'eyebrow' }, 'PigeonBox understood'),
           explanation(draft.explanation),
           draft.actions.length ? h('p', {}, h('strong', {}, 'Then: '), draft.actions.map(actionLabel).join(', ')) : null,
           draft.warnings.map((warning) => note(warning, 'info')),
@@ -181,17 +182,19 @@ export async function render(ctx) {
       h(
         'div',
         { class: 'stack' },
-        card(
-          'New Smart View',
-          h('p', {}, 'Describe the mail in your own words. PigeonBox turns it into rules you can read, and anything that would change Gmail starts in Shadow Mode.'),
-          prompt,
-          h('div', { class: 'row' }, compile),
+        surface(
+          'slip',
+          { title: 'New Smart View', className: 'composer' },
+          h('p', { class: 'muted' }, 'Describe the mail in your own words. PigeonBox turns it into rules you can read, and anything that would change Gmail starts in Shadow Mode.'),
+          h('div', { class: 'field' }, prompt),
+          h('div', { class: 'row tight' }, compile),
           draftArea,
         ),
-        views.length
-          ? card(
-              'Your views',
-              h(
+        surface(
+          'ledger',
+          { title: 'Your views' },
+          views.length
+            ? h(
                 'ul',
                 { class: 'list selectable' },
                 views.map((view) =>
@@ -207,9 +210,9 @@ export async function render(ctx) {
                     modePill(view),
                   ),
                 ),
-              ),
-            )
-          : empty('No Smart Views yet.'),
+              )
+            : empty('No Smart Views yet. Describe one above to see which synced mail it would hold.'),
+        ),
       ),
     );
   };

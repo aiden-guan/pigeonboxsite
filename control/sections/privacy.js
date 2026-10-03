@@ -1,4 +1,4 @@
-import { button, card, clear, confirmDialog, h, link, note, pill, select, table, toast, toggle } from '../ui.js';
+import { button, clear, confirmDialog, h, index, pill, select, surface, table, toast, toggle } from '../ui.js';
 
 const CONTENT = {
   metadata: ['Metadata', 'neutral', 'IDs, dates, addresses and states. No message text.'],
@@ -26,22 +26,43 @@ export async function render({ api }) {
         toast(error.message, 'error');
       }
     });
+    const records = inventory.reduce((sum, row) => sum + row.count, 0);
     clear(
       root,
-      h('p', { class: 'lede' }, 'What PigeonBox Cloud keeps about your mail, and how. Local PigeonBox data in your browser is separate and never shown here.'),
-      card(
-        'Fast Recall',
-        h('p', {}, 'By default PigeonBox keeps no message text: Ask Pigeon searches summaries and re-reads Gmail when it needs detail. Fast Recall keeps encrypted excerpts of synced messages so deep questions are answered faster.'),
-        toggle('Keep encrypted excerpts for Fast Recall', fastRecall.enabled, async (on) => {
-          if (!on && !(await confirmDialog({ title: 'Turn off Fast Recall?', body: ['All stored excerpts are deleted immediately.'], confirm: 'Turn off and delete', danger: true }))) throw new Error('Kept on.');
-          await api('/v1/preferences/update', { method: 'POST', body: { preferences: { fastRecall: { enabled: on } } } });
-          toast(on ? 'Fast Recall is on. New mail is indexed as it syncs.' : 'Fast Recall is off and its excerpts were deleted.', 'success');
-          await draw();
-        }),
-        h('div', { class: 'row' }, h('label', { class: 'inline-label' }, 'Keep excerpts for ', retention)),
+      h(
+        'div',
+        { class: 'grid-2' },
+        surface(
+          'card',
+          { eyebrow: 'Message text', title: 'Fast Recall' },
+          h('p', { class: 'muted' }, 'By default PigeonBox keeps no message text: Ask Pigeon searches summaries and re-reads Gmail when it needs detail. Fast Recall keeps encrypted excerpts of synced messages so deep questions are answered faster.'),
+          h(
+            'div',
+            { class: 'toggles' },
+            toggle('Keep encrypted excerpts for Fast Recall', fastRecall.enabled, async (on) => {
+              if (!on && !(await confirmDialog({ title: 'Turn off Fast Recall?', body: ['All stored excerpts are deleted immediately.'], confirm: 'Turn off and delete', danger: true }))) throw new Error('Kept on.');
+              await api('/v1/preferences/update', { method: 'POST', body: { preferences: { fastRecall: { enabled: on } } } });
+              toast(on ? 'Fast Recall is on. New mail is indexed as it syncs.' : 'Fast Recall is off and its excerpts were deleted.', 'success');
+              await draw();
+            }),
+          ),
+          h('div', { class: 'row' }, h('label', { class: 'inline-label' }, 'Keep excerpts for ', retention)),
+        ),
+        surface(
+          'slip',
+          { title: 'How PigeonBox treats mail' },
+          h(
+            'ul',
+            { class: 'plain' },
+            h('li', {}, 'Credentials for Google are encrypted and never leave PigeonBox’s servers.'),
+            h('li', {}, 'Logs never contain message text, prompts, AI output or credentials.'),
+            h('li', {}, 'Email content is treated as untrusted data: instructions inside an email are never followed by PigeonBox’s AI.'),
+          ),
+        ),
       ),
-      card(
-        'What is stored',
+      surface(
+        'ledger',
+        { title: 'What is stored', actions: pill(`${records.toLocaleString()} records`, 'neutral') },
         table(
           [
             { label: 'Data', render: (row) => row.label },
@@ -50,23 +71,33 @@ export async function render({ api }) {
           ],
           inventory,
         ),
-        h('p', { class: 'hint' }, 'Credentials for Google are encrypted and never leave PigeonBox’s servers. Logs never contain message text, prompts, AI output or credentials.'),
+        h('p', { class: 'hint' }, 'Hover a mark to see how that data is kept. Local PigeonBox data in your browser is separate and never shown here.'),
       ),
-      card(
-        'Delete synced mail data',
-        h('p', {}, 'Deletes everything PigeonBox derived from your mail — summaries, drafts, follow-ups, contacts, search data and excerpts — across all connections. Connections stay; new mail syncs from now on. Gmail is not changed.'),
-        h('div', { class: 'row' }, button('Delete synced mail data…', async () => {
-          const ok = await confirmDialog({ title: 'Delete synced mail data?', body: ['This cannot be undone.'], confirm: 'Delete', danger: true, typed: 'delete synced mail data' });
-          if (!ok) return;
-          const { removed } = await api('/v1/control/privacy/purge-mail', { method: 'POST', body: { confirm: 'delete synced mail data' } });
-          toast(`Deleted ${removed.toLocaleString()} records.`, 'success');
-          await draw();
-        }, { variant: 'danger-ghost' })),
-      ),
-      card(
-        'More',
-        h('ul', { class: 'plain' }, h('li', {}, link('Inspect or forget personal memories', '#memory')), h('li', {}, link('Disconnect a Google account', '#connections'), ' — revokes access and deletes its credentials.'), h('li', {}, link('Delete your PigeonBox Cloud account', '/account'), ' — closes your Cloud account and deletes its data.'), h('li', {}, link('Read the privacy notice', '/privacy'))),
-        note('Email content is treated as untrusted data: instructions inside an email are never followed by PigeonBox’s AI.', 'info'),
+      h(
+        'div',
+        { class: 'grid-2' },
+        surface(
+          'card',
+          { eyebrow: 'Cannot be undone', title: 'Delete synced mail data', className: 'danger-zone' },
+          h('p', { class: 'muted' }, 'Deletes everything PigeonBox derived from your mail — summaries, drafts, follow-ups, contacts, search data and excerpts — across all connections. Connections stay; new mail syncs from now on. Gmail is not changed.'),
+          h('div', { class: 'row' }, button('Delete synced mail data…', async () => {
+            const ok = await confirmDialog({ title: 'Delete synced mail data?', body: ['This cannot be undone.'], confirm: 'Delete', danger: true, typed: 'delete synced mail data' });
+            if (!ok) return;
+            const { removed } = await api('/v1/control/privacy/purge-mail', { method: 'POST', body: { confirm: 'delete synced mail data' } });
+            toast(`Deleted ${removed.toLocaleString()} records.`, 'success');
+            await draw();
+          }, { variant: 'danger-ghost' })),
+        ),
+        surface(
+          'ledger',
+          { title: 'More controls' },
+          index([
+            ['Personal memories', 'Inspect, correct or forget them', '#memory'],
+            ['Disconnect a Google account', 'Revokes access and deletes its credentials', '#connections'],
+            ['Delete your Cloud account', 'Closes your Cloud account and deletes its data', '#billing'],
+            ['Privacy notice', 'How PigeonBox handles your data', '/privacy'],
+          ]),
+        ),
       ),
     );
   };

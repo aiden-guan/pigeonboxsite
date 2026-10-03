@@ -1,4 +1,4 @@
-import { ago, button, card, clear, empty, h, link, when } from '../ui.js';
+import { ago, button, clear, empty, eyebrow, h, link, loading, surface, when } from '../ui.js';
 import { accountEmails, gmailLink } from '../shared.js';
 
 const KIND = { morning: 'Morning', end_of_day: 'End of day', meeting: 'Meeting' };
@@ -8,7 +8,7 @@ function briefingView(briefing, emails) {
   return h(
     'article',
     { class: 'card briefing' },
-    h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, briefing.title), h('p', { class: 'muted' }, `Prepared ${when(briefing.generatedAt)}`))),
+    h('header', { class: 'detail-head' }, h('div', {}, eyebrow(`Prepared ${when(briefing.generatedAt)}`), h('h2', {}, briefing.title))),
     briefing.sections.map((section) =>
       h(
         'section',
@@ -56,7 +56,7 @@ export async function render({ api }) {
   const listEl = h('div');
 
   const open = async (id) => {
-    clear(detail, h('p', { class: 'loading' }, 'Loading briefing…'));
+    clear(detail, loading('Loading briefing…'));
     const { briefing } = await api('/v1/briefings/get', { method: 'POST', body: { id } });
     clear(detail, briefingView(briefing, emails));
   };
@@ -90,8 +90,7 @@ export async function render({ api }) {
   return h(
     'div',
     { class: 'stack' },
-    h('p', { class: 'lede' }, 'Briefings are built from your synced mail and calendar. Every line links to where it came from.'),
-    h('div', { class: 'row' }, generate('morning'), generate('end_of_day'), link('Briefing times', '#preferences', { class: 'btn btn-quiet' })),
-    h('div', { class: 'grid-sidebar' }, card('Recent', listEl), detail),
+    h('div', { class: 'row tight' }, generate('morning'), generate('end_of_day'), link('Briefing times', '#preferences', { class: 'btn btn-quiet' })),
+    h('div', { class: 'grid-sidebar' }, surface('ledger', { title: 'Recent' }, listEl), detail),
   );
 }

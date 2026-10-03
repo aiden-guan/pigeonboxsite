@@ -1,4 +1,8 @@
-import { ago, button, card, checkbox, clear, confirmDialog, day, field, h, input, note, pill, secretDialog, select, table, tabs } from '../ui.js';
+import { API_BASE } from '../../lib/session.js';
+import { ago, button, checkbox, clear, confirmDialog, copyText, day, field, h, input, note, pill, secretDialog, select, surface, table, tabs } from '../ui.js';
+
+// The API's origin: same-origin on Cloud, the named API when the website hosts this page.
+const MCP_URL = `${API_BASE || location.origin}/v1/mcp`;
 
 const SCOPES = [
   ['read', 'Read', 'Search mail PigeonBox has synced, threads, contacts, follow-ups, calendar availability.'],
@@ -26,8 +30,9 @@ function tokens(api) {
       const expiry = select([['30', '30 days'], ['90', '90 days'], ['365', '1 year'], ['never', 'No expiry']], '90');
       clear(
         holder,
-        card(
-          'New token',
+        surface(
+          'slip',
+          { title: 'New token', className: 'composer' },
           field('Name', name),
           h('div', { class: 'checks' }, boxes),
           field('Expires', expiry),
@@ -35,13 +40,14 @@ function tokens(api) {
             const scopes = boxes.map((box) => box.querySelector('input')).filter((box) => box.checked).map((box) => box.value);
             if (!scopes.length) throw new Error('Choose at least one scope.');
             const created = await api('/v1/control/tokens/create', { method: 'POST', body: { name: name.value.trim() || 'API token', scopes, expiresInDays: expiry.value === 'never' ? null : Number(expiry.value) } });
-            const config = JSON.stringify({ mcpServers: { pigeonbox: { type: 'http', url: `${location.origin}/v1/mcp`, headers: { Authorization: `Bearer ${created.token}` } } } }, null, 2);
+            const config = JSON.stringify({ mcpServers: { pigeonbox: { type: 'http', url: MCP_URL, headers: { Authorization: `Bearer ${created.token}` } } } }, null, 2);
             await secretDialog('Your new token', created.token, ['Copy it now: PigeonBox stores only a hash and cannot show it again.'], h('details', { class: 'disclosure' }, h('summary', {}, 'MCP client configuration'), h('pre', { class: 'code' }, config)));
             await draw();
           })),
         ),
-        card(
-          'Tokens',
+        surface(
+          'ledger',
+          { title: 'Tokens' },
           table(
             [
               { label: 'Name', render: (row) => h('span', {}, row.name, h('span', { class: 'muted' }, ` · ${row.prefix}…`)) },
@@ -67,7 +73,19 @@ function tokens(api) {
       );
     };
     await draw();
-    return h('div', { class: 'stack' }, note('Tokens can never approve anything, change your account, manage Google connections or send email. Everything they do is audited under the token’s name.', 'info'), h('p', {}, 'MCP endpoint: ', h('code', {}, `${location.origin}/v1/mcp`)), holder);
+    const endpoint = MCP_URL;
+    return h(
+      'div',
+      { class: 'stack' },
+      h(
+        'div',
+        { class: 'term-block' },
+        h('div', { class: 'term-bar' }, h('span', {}, 'MCP endpoint'), button('Copy', () => copyText(endpoint), { variant: 'ghost', small: true, busy: 'Copying…' })),
+        h('pre', {}, h('span', { class: 'p', attrs: { 'aria-hidden': 'true' } }, '› '), endpoint),
+      ),
+      note('Tokens can never approve anything, change your account, manage Google connections or send email. Everything they do is audited under the token’s name.', 'info'),
+      holder,
+    );
   };
 }
 
@@ -80,8 +98,9 @@ function webhooks(api) {
       const boxes = EVENTS.map(([value, label]) => checkbox(label, value === 'approval', { value }));
       clear(
         holder,
-        card(
-          'New webhook',
+        surface(
+          'slip',
+          { title: 'New webhook', className: 'composer' },
           field('HTTPS URL', url, 'Public HTTPS endpoints only. Deliveries are signed with a secret you get once.'),
           h('div', { class: 'checks two' }, boxes),
           h('div', { class: 'row' }, button('Add webhook', async () => {
@@ -92,8 +111,9 @@ function webhooks(api) {
             await draw();
           })),
         ),
-        card(
-          'Webhooks',
+        surface(
+          'ledger',
+          { title: 'Webhooks' },
           table(
             [
               { label: 'URL', render: (row) => row.url },

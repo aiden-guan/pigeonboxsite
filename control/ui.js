@@ -1,5 +1,8 @@
 // Small DOM toolkit for the control plane. Everything user- or mail-derived is
 // set as text (never HTML), so nothing from an email can run in this page.
+//
+// Visual primitives follow the website's Dispatch system: sheets, slips,
+// ledgers, parcels and notices instead of one generic card (see control.css).
 
 const SAFE_HREF = /^(?:\/(?!\/)|https:\/\/|mailto:|#[a-z][a-z0-9/-]*$)/i;
 
@@ -64,23 +67,49 @@ export function when(iso, options = { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 export const day = (iso) => when(iso, { dateStyle: 'medium' });
+export const clock = (iso) => when(iso, { timeStyle: 'short' });
 export const plural = (n, word, many = `${word}s`) => `${n.toLocaleString()} ${n === 1 ? word : many}`;
 export const humanize = (value) => String(value ?? '').replace(/_/g, ' ');
 export const key = () => crypto.randomUUID();
+
+/** Postmark-style date, e.g. "OCT 03 2026". */
+export function postmarkDate(date = new Date()) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).format(date).toUpperCase().replace(',', '');
+}
 
 // ---------------------------------------------------------------------------
 // Feedback
 // ---------------------------------------------------------------------------
 
 let toastRoot = null;
+// Set when a confirmation was declined, so the button that asked shows no success mark.
+let declined = false;
+const TOAST_MARK = { success: 'Done', error: 'Problem', warn: 'Held', info: 'Notice' };
 
+/** A compact dispatch notice. The mark is decoration; the message is the text. */
 export function toast(message, tone = 'info') {
   toastRoot ??= document.getElementById('toasts');
   if (!toastRoot) return;
-  const item = h('div', { class: ['toast', `toast-${tone}`], attrs: { role: tone === 'error' ? 'alert' : 'status' } }, message);
+  const item = h(
+    'div',
+    { class: ['toast', `toast-${tone}`], attrs: { role: tone === 'error' ? 'alert' : 'status' } },
+    h('span', { class: 'toast-mark', attrs: { 'aria-hidden': 'true' } }, TOAST_MARK[tone] ?? TOAST_MARK.info),
+    h('span', { class: 'toast-msg' }, message),
+  );
   toastRoot.append(item);
-  setTimeout(() => item.classList.add('leaving'), 4_200);
-  setTimeout(() => item.remove(), 4_700);
+  while (toastRoot.children.length > 4) toastRoot.firstElementChild.remove();
+  let leave = 0;
+  const schedule = (ms) => {
+    clearTimeout(leave);
+    leave = setTimeout(() => {
+      item.classList.add('leaving');
+      setTimeout(() => item.remove(), 220);
+    }, ms);
+  };
+  // Hovering a notice holds it, so it can be read to the end.
+  item.addEventListener('pointerenter', () => clearTimeout(leave));
+  item.addEventListener('pointerleave', () => schedule(1_600));
+  schedule(tone === 'error' ? 6_500 : 4_200);
 }
 
 /** A button that runs an async action, shows progress, and reports failures. */
@@ -91,10 +120,14 @@ export function button(label, action, { variant = 'primary', busy = 'Working…'
     if (el.disabled) return;
     const original = el.textContent;
     el.disabled = true;
+    el.classList.remove('is-done');
     el.setAttribute('aria-busy', 'true');
     el.textContent = busy;
+    let ok = false;
+    declined = false;
     try {
       await action(event);
+      ok = !declined;
     } catch (error) {
       toast(error?.message || 'Something went wrong.', 'error');
     } finally {
@@ -102,6 +135,11 @@ export function button(label, action, { variant = 'primary', busy = 'Working…'
         el.disabled = false;
         el.removeAttribute('aria-busy');
         el.textContent = original;
+        // A finished action leaves a brief check where it happened.
+        if (ok) {
+          el.classList.add('is-done');
+          setTimeout(() => el.classList.remove('is-done'), 1_400);
+        }
       }
     }
   });
@@ -112,28 +150,139 @@ export function link(label, href, props = {}) {
   return h('a', { href, ...props }, label);
 }
 
+/** An editorial text link with a mono arrow. */
+export function arrowLink(label, href, props = {}) {
+  return h('a', { href, class: 'text-link', ...props }, label, h('span', { class: 'arr', attrs: { 'aria-hidden': 'true' } }, '→'));
+}
+
+/** A status mark: a dot and mono label. Tone carries meaning in colour and shape, the text carries it in words. */
 export function pill(text, tone = 'neutral') {
   return h('span', { class: ['pill', `pill-${tone}`] }, text);
 }
 
+export function tag(text, tone = null) {
+  return h('span', { class: ['tag', tone && `tag-${tone}`] }, text);
+}
+
 export function chips(values, tone = 'neutral') {
-  return h('div', { class: 'chips' }, values.map((value) => pill(humanize(value), tone)));
+  return h('div', { class: 'chips' }, values.map((value) => tag(humanize(value), tone === 'neutral' ? null : tone)));
+}
+
+export function eyebrow(...parts) {
+  return h('p', { class: 'eyebrow' }, parts);
+}
+
+/** Pidgy, the courier. Decorative: the state is always also said in text nearby. */
+export function pidgy(state = 'idle', { size = null, still = false } = {}) {
+  return h('span', { class: ['pidgy', size && `pidgy-${size}`], dataset: { state, ...(still ? { still: '' } : {}) }, attrs: { 'aria-hidden': 'true' } });
+}
+
+/** A postage stamp, for finished things. Decorative. */
+export function stamp(text, small = '') {
+  return h('span', { class: 'stamp', attrs: { 'aria-hidden': 'true' } }, text, small ? h('small', {}, small) : null);
+}
+
+// ---------------------------------------------------------------------------
+// Surfaces
+// ---------------------------------------------------------------------------
+
+/**
+ * A surface of one archetype: 'card' (sheet), 'slip', 'ledger', 'parcel' or 'stub'.
+ * With only a title, the heading is the first child; with an eyebrow, meta or
+ * actions, a header row holds them.
+ */
+export function surface(kind, { title = null, eyebrow: label = null, meta = null, actions = null, tag: tagName = 'section', className = null, level = 'h2', href = null } = {}, ...children) {
+  const heading = title ? h(level, {}, title) : null;
+  const rich = label || meta || (actions && [actions].flat().filter(Boolean).length);
+  const head = rich
+    ? h(
+        'header',
+        { class: 'surface-head' },
+        h('div', {}, label ? eyebrow(label) : null, heading, meta ? h('p', { class: 'muted' }, meta) : null),
+        actions ? h('div', { class: 'row tight' }, actions) : null,
+      )
+    : heading;
+  return h(href ? 'a' : tagName, { class: [kind, className], href }, head, ...children);
 }
 
 export function card(title, ...children) {
-  return h('section', { class: 'card' }, title ? h('h2', {}, title) : null, ...children);
+  return surface('card', { title }, ...children);
 }
 
-export function empty(text, ...actions) {
-  return h('div', { class: 'empty' }, h('p', {}, text), actions.length ? h('div', { class: 'row' }, actions) : null);
+export function slip(title, ...children) {
+  return surface('slip', { title }, ...children);
 }
+
+export function ledger(title, ...children) {
+  return surface('ledger', { title }, ...children);
+}
+
+/** Compact empty: a quiet slip with Pidgy waiting. */
+export function empty(text, ...actions) {
+  return h('div', { class: 'empty' }, pidgy('tea', { size: 'sm' }), h('p', {}, text), actions.length ? h('div', { class: 'row' }, actions) : null);
+}
+
+/** A page-level empty state with an editorial headline. */
+export function emptyState({ state = 'tea', title, text = null, actions = [], level = 'h2' }) {
+  return h('div', { class: 'empty-state' }, pidgy(state, { size: 'lg' }), h(level, {}, title), text ? h('p', {}, text) : null, actions.length ? h('div', { class: 'row' }, actions) : null);
+}
+
+const NOTE_MARK = { info: 'Note', success: 'Done', warn: 'Attention', error: 'Problem' };
 
 export function note(text, tone = 'info') {
-  return h('p', { class: ['note', `note-${tone}`], attrs: { role: tone === 'error' ? 'alert' : null } }, text);
+  return h(
+    'div',
+    { class: ['note', `note-${tone}`], attrs: { role: tone === 'error' ? 'alert' : null } },
+    h('span', { class: 'note-mark', attrs: { 'aria-hidden': 'true' } }, NOTE_MARK[tone] ?? NOTE_MARK.info),
+    h('p', { class: 'note-text' }, text),
+  );
+}
+
+/** A postal notice: something on this account needs a person. */
+export function notice({ tone = 'warn', label, title, text = null, state = 'alert', actions = [] }) {
+  return h(
+    'div',
+    { class: ['notice', `notice-${tone}`], attrs: { role: tone === 'bad' ? 'alert' : null } },
+    pidgy(state, { size: 'sm' }),
+    h('div', { class: 'notice-copy' }, label ? eyebrow(label) : null, h('strong', {}, title), text ? h('p', {}, text) : null),
+    actions.length ? h('div', { class: 'row' }, actions) : null,
+  );
+}
+
+/** Status phrase for a masthead. Only ever derived from real state. */
+export function dispatchStatus({ tone = 'good', label, phrase, detail = null, state = 'idle' }) {
+  return h(
+    'div',
+    { class: 'dispatch-status', dataset: { tone }, attrs: { role: 'status' } },
+    pidgy(state),
+    eyebrow(label),
+    h('p', { class: 'ds-phrase' }, phrase),
+    detail ? h('p', { class: 'ds-detail' }, detail) : null,
+  );
 }
 
 export function loading(text = 'Loading…') {
-  return h('p', { class: 'loading', attrs: { role: 'status' } }, text);
+  return h(
+    'div',
+    { class: 'loading', attrs: { role: 'status' } },
+    h('span', { class: 'sr-only' }, text),
+    h('span', { class: 'skel skel-line', attrs: { 'aria-hidden': 'true' } }),
+    h('span', { class: 'skel skel-short', attrs: { 'aria-hidden': 'true' } }),
+  );
+}
+
+/** Whole-page skeleton. Pidgy appears only if loading takes a while. */
+export function pageLoading(text = 'Loading…') {
+  const bar = (className) => h('span', { class: ['skel', className], attrs: { 'aria-hidden': 'true' } });
+  return h(
+    'div',
+    { class: 'loading loading-page', attrs: { role: 'status' } },
+    h('span', { class: 'sr-only' }, text),
+    h('div', { class: 'loading-head', attrs: { 'aria-hidden': 'true' } }, bar(), bar('skel-title'), bar('skel-line')),
+    bar('skel-block'),
+    h('div', { class: 'grid-2', attrs: { 'aria-hidden': 'true' } }, bar('skel-block'), bar('skel-block')),
+    h('p', { class: 'loading-bird', attrs: { 'aria-hidden': 'true' } }, pidgy('search', { size: 'sm' }), 'Sorting the mail'),
+  );
 }
 
 export function stat(label, value, detail, href) {
@@ -141,16 +290,103 @@ export function stat(label, value, detail, href) {
   return href ? h('a', { class: 'stat', href }, body) : h('div', { class: 'stat' }, body);
 }
 
-export function table(columns, rows, { emptyText = 'Nothing yet.' } = {}) {
+/** Usage against a limit. Without a limit, it shows the count alone. */
+export function meter(label, used, limit, { unit = '', note: detail = null } = {}) {
+  const share = limit ? Math.min(1, used / limit) : null;
+  const fill = h('span', { class: 'meter-fill' });
+  if (share !== null) fill.style.setProperty('--v', String(share));
+  return h(
+    'div',
+    { class: 'meter', dataset: { tone: share === null ? 'none' : share >= 0.95 ? 'bad' : share >= 0.8 ? 'warn' : 'ok' } },
+    h('div', { class: 'meter-head' }, h('span', { class: 'stat-label' }, label), h('b', {}, `${used.toLocaleString()}${limit ? ` / ${limit.toLocaleString()}` : ''}${unit ? ` ${unit}` : ''}`)),
+    share !== null
+      ? h('div', { class: 'meter-track', attrs: { role: 'meter', 'aria-label': label, 'aria-valuemin': 0, 'aria-valuemax': limit, 'aria-valuenow': Math.min(used, limit) } }, fill)
+      : null,
+    detail ? h('p', { class: 'meter-note' }, detail) : null,
+  );
+}
+
+/**
+ * A route of stages. `stops` is [{ label, value, detail, state, href }] with
+ * state 'done' | 'active' | 'warn' | 'bad' | 'idle'.
+ */
+export function routeStrip(stops, { label = 'Route' } = {}) {
+  const list = h(
+    'ol',
+    { class: 'route-strip', attrs: { 'aria-label': label } },
+    stops.map((stop, index) =>
+      h(
+        'li',
+        { class: 'route-stop', dataset: { state: stop.state ?? 'idle' } },
+        h('span', { class: 'route-dot', attrs: { 'aria-hidden': 'true' } }),
+        h('span', { class: 'n' }, h('b', {}, String(index + 1).padStart(2, '0')), stop.label),
+        stop.href ? h('a', { href: stop.href, class: 'rs-value' }, h('strong', {}, stop.value)) : h('strong', {}, stop.value),
+        stop.detail ? h('span', { class: 'rs-detail' }, stop.detail) : null,
+      ),
+    ),
+  );
+  list.style.setProperty('--cols', String(stops.length));
+  return list;
+}
+
+/**
+ * The dispatch log. `items` is [{ at, title, meta, tone, aside }]. Grouped
+ * under day rules when `days` is set.
+ */
+export function timeline(items, { days = true } = {}) {
+  const rows = [];
+  let lastDay = '';
+  for (const item of items) {
+    const label = day(item.at);
+    if (days && label !== lastDay) {
+      rows.push(h('li', { class: 'tl-day', attrs: { role: 'presentation' } }, label));
+      lastDay = label;
+    }
+    rows.push(
+      h(
+        'li',
+        {},
+        h('time', { dateTime: item.at, title: when(item.at) }, days ? clock(item.at) : when(item.at, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })),
+        h('span', { class: 'tl-mark', dataset: { tone: item.tone ?? 'neutral' }, attrs: { 'aria-hidden': 'true' } }),
+        h('div', { class: 'tl-body' }, h('strong', {}, item.title), item.meta ? h('span', { class: 'muted' }, item.meta) : null),
+        item.aside ? h('div', { class: 'tl-aside' }, item.aside) : null,
+      ),
+    );
+  }
+  return h('ul', { class: 'timeline' }, rows);
+}
+
+/** A directory of destinations: numbered, ruled, with an arrow. */
+export function index(items) {
+  return h(
+    'ul',
+    { class: 'index' },
+    items.map(([title, detail, href], position) =>
+      h(
+        'li',
+        {},
+        h(
+          'a',
+          { href },
+          h('span', { class: 'n', attrs: { 'aria-hidden': 'true' } }, String(position + 1).padStart(2, '0')),
+          h('span', {}, h('strong', {}, title), detail ? h('small', {}, detail) : null),
+          h('span', { class: 'arr', attrs: { 'aria-hidden': 'true' } }, '→'),
+        ),
+      ),
+    ),
+  );
+}
+
+export function table(columns, rows, { emptyText = 'Nothing yet.', stack = true } = {}) {
   if (!rows.length) return empty(emptyText);
   return h(
     'div',
     { class: 'table-wrap' },
     h(
       'table',
-      {},
+      { class: stack ? 'stack-sm' : null },
       h('thead', {}, h('tr', {}, columns.map((column) => h('th', { attrs: { scope: 'col' }, class: column.numeric ? 'num' : null }, column.label)))),
-      h('tbody', {}, rows.map((row) => h('tr', {}, columns.map((column) => h('td', { class: column.numeric ? 'num' : null }, column.render(row)))))),
+      h('tbody', {}, rows.map((row) => h('tr', {}, columns.map((column) => h('td', { class: column.numeric ? 'num' : null, dataset: column.label ? { col: column.label } : {} }, column.render(row)))))),
     ),
   );
 }
@@ -164,7 +400,9 @@ let fieldId = 0;
 export function field(label, control, hint) {
   const id = control.id || `f${(fieldId += 1)}`;
   control.id = id;
-  return h('div', { class: 'field' }, h('label', { for: id }, label), control, hint ? h('p', { class: 'hint' }, hint) : null);
+  const help = hint ? h('p', { class: 'hint', id: `${id}-hint` }, hint) : null;
+  if (help) control.setAttribute('aria-describedby', help.id);
+  return h('div', { class: 'field' }, h('label', { for: id }, label), control, help);
 }
 
 export function input(props = {}) {
@@ -205,6 +443,16 @@ export function toggle(label, checked, onChange, hint) {
   return h('label', { class: 'toggle' }, h('span', {}, label, hint ? h('small', {}, hint) : null), box);
 }
 
+/** A labelled group of settings: a label column and its controls. */
+export function settings({ index: number = null, title, text = null }, ...children) {
+  return h(
+    'section',
+    { class: 'settings' },
+    h('div', { class: 'settings-head' }, number ? eyebrow(number) : null, h('h2', {}, title), text ? h('p', {}, text) : null),
+    h('div', { class: 'settings-body' }, children),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Dialogs
 // ---------------------------------------------------------------------------
@@ -213,8 +461,9 @@ export function toggle(label, checked, onChange, hint) {
  * Ask before something consequential. With `typed`, the person must type the
  * phrase to enable the confirm button. Resolves to true or false.
  */
-export function confirmDialog({ title, body, confirm = 'Confirm', danger = false, typed = null, extra = null, cancellable = true }) {
+export function confirmDialog({ title, body, confirm = 'Confirm', danger = false, typed = null, extra = null, cancellable = true, label = null }) {
   return new Promise((resolve) => {
+    const opener = document.activeElement;
     const phrase = typed ? input({ autocomplete: 'off', attrs: { 'aria-label': `Type ${typed} to confirm` } }) : null;
     const ok = h('button', { type: 'submit', class: ['btn', danger ? 'btn-danger' : 'btn-primary'], disabled: Boolean(typed) }, confirm);
     const cancel = h('button', { type: 'button', class: 'btn btn-ghost' }, 'Cancel');
@@ -223,7 +472,8 @@ export function confirmDialog({ title, body, confirm = 'Confirm', danger = false
       { class: 'dialog', attrs: { 'aria-labelledby': 'dialog-title' } },
       h(
         'form',
-        { method: 'dialog' },
+        { method: 'dialog', class: danger ? 'is-danger' : null },
+        eyebrow(label ?? (danger ? 'Please confirm' : 'Confirm')),
         h('h2', { id: 'dialog-title' }, title),
         (Array.isArray(body) ? body : [body]).map((line) => (line instanceof Node ? line : h('p', {}, line))),
         extra,
@@ -234,8 +484,11 @@ export function confirmDialog({ title, body, confirm = 'Confirm', danger = false
     phrase?.addEventListener('input', () => (ok.disabled = phrase.value.trim() !== typed));
     cancel.addEventListener('click', () => dialog.close('cancel'));
     dialog.addEventListener('close', () => {
+      declined = dialog.returnValue !== 'ok';
       resolve(dialog.returnValue === 'ok');
       dialog.remove();
+      // After the asking button has re-enabled itself.
+      setTimeout(() => opener instanceof HTMLElement && opener.isConnected && opener.focus({ preventScroll: true }), 0);
     });
     ok.addEventListener('click', (event) => {
       event.preventDefault();
@@ -251,7 +504,7 @@ export function confirmDialog({ title, body, confirm = 'Confirm', danger = false
 export function secretDialog(title, secret, lines = [], extra = null) {
   const value = h('code', { class: 'secret' }, secret);
   const copy = button('Copy', () => copyText(secret), { variant: 'ghost', small: true, busy: 'Copying…' });
-  return confirmDialog({ title, body: [...lines, h('div', { class: 'secret-row' }, value, copy)], confirm: 'Done', extra, cancellable: false });
+  return confirmDialog({ title, body: [...lines, h('div', { class: 'secret-row' }, value, copy)], confirm: 'Done', extra, cancellable: false, label: 'Shown once' });
 }
 
 export async function copyText(text, message = 'Copied.') {
@@ -263,28 +516,73 @@ export async function copyText(text, message = 'Copied.') {
   }
 }
 
-/** Tabs within a section. `tabs` is [[id, label, render]]. */
+let tabsId = 0;
+
+/** Tabs within a section. `items` is [[id, label, render]]. Arrow keys move between tabs. */
 export function tabs(items, initial = items[0][0]) {
-  const panel = h('div', { class: 'tab-panel' });
+  const base = `t${(tabsId += 1)}`;
+  const panel = h('div', { class: 'tab-panel', id: `${base}-panel`, attrs: { role: 'tabpanel', tabindex: '-1' } });
+  const ink = h('span', { class: 'tab-ink is-instant', attrs: { 'aria-hidden': 'true' } });
   const buttons = items.map(([id, label]) =>
-    h('button', { type: 'button', class: 'tab', attrs: { role: 'tab', 'aria-selected': id === initial ? 'true' : 'false' }, dataset: { tab: id } }, label),
+    h('button', { type: 'button', class: 'tab', id: `${base}-${id}`, attrs: { role: 'tab', 'aria-selected': 'false', 'aria-controls': panel.id, tabindex: '-1' }, dataset: { tab: id } }, label),
   );
-  const bar = h('div', { class: 'tabs', attrs: { role: 'tablist' } }, buttons);
+  const bar = h('div', { class: 'tabs', attrs: { role: 'tablist' } }, buttons, ink);
+  const place = (target) => {
+    if (!target.offsetWidth) return;
+    ink.style.setProperty('--x', `${target.offsetLeft + (target === buttons[0] ? 0 : 12)}px`);
+    ink.style.setProperty('--w', `${target.offsetWidth - (target === buttons[0] ? 12 : 24)}px`);
+  };
+  let revision = 0;
   const show = async (id) => {
-    for (const el of buttons) el.setAttribute('aria-selected', el.dataset.tab === id ? 'true' : 'false');
+    const current = (revision += 1);
+    let selected = buttons[0];
+    for (const el of buttons) {
+      const on = el.dataset.tab === id;
+      el.setAttribute('aria-selected', on ? 'true' : 'false');
+      el.tabIndex = on ? 0 : -1;
+      if (on) selected = el;
+    }
+    panel.setAttribute('aria-labelledby', selected.id);
+    place(selected);
+    requestAnimationFrame(() => {
+      place(selected);
+      requestAnimationFrame(() => ink.classList.remove('is-instant'));
+    });
     clear(panel, loading());
     try {
-      clear(panel, await items.find(([itemId]) => itemId === id)[2]());
+      const content = await items.find(([itemId]) => itemId === id)[2]();
+      if (current !== revision) return;
+      clear(panel, content);
     } catch (error) {
+      if (current !== revision) return;
       clear(panel, note(error?.message || 'Could not load this.', 'error'));
     }
+    panel.classList.remove('is-entering');
+    void panel.offsetWidth;
+    panel.classList.add('is-entering');
   };
   for (const el of buttons) el.addEventListener('click', () => show(el.dataset.tab));
+  bar.addEventListener('keydown', (event) => {
+    const at = buttons.indexOf(document.activeElement);
+    if (at < 0) return;
+    const next = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: buttons.length - 1 }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    const target = buttons[(next + buttons.length) % buttons.length];
+    target.focus();
+    show(target.dataset.tab);
+  });
+  new ResizeObserver(() => place(buttons.find((el) => el.getAttribute('aria-selected') === 'true') ?? buttons[0])).observe(bar);
   show(initial);
-  return h('div', {}, bar, panel);
+  return h('div', { class: 'tabset' }, bar, panel);
 }
 
 /** Label/value pairs as a responsive grid. `pairs` is [[label, value]]. */
 export function facts(pairs) {
   return h('dl', { class: 'facts' }, pairs.map(([label, value]) => h('div', {}, h('dt', {}, label), h('dd', {}, value))));
+}
+
+/** Label/value rows, like a shipping manifest or receipt. */
+export function manifest(pairs) {
+  return h('dl', { class: 'manifest' }, pairs.filter(Boolean).flatMap(([label, value]) => [h('dt', {}, label), h('dd', {}, value)]));
 }

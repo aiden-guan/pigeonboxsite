@@ -1,5 +1,6 @@
-import { ago, button, card, checkbox, clear, confirmDialog, day, empty, facts, h, note, pill, plural, toast } from '../ui.js';
-import { accounts, FEATURES, statusPill, syncPill } from '../shared.js';
+import { ago, button, checkbox, clear, confirmDialog, day, emptyState, facts, h, note, plural, surface, toast } from '../ui.js';
+import { accounts, FEATURES, phasePill, statusPill, syncPhase, syncPill } from '../shared.js';
+import { celebrate } from '../motion.js';
 
 const ORDER = ['mail_read', 'drafts', 'organize', 'calendar_read', 'calendar_write', 'send'];
 
@@ -10,23 +11,49 @@ const ERRORS = {
   conflict: 'That Google account is already connected to another PigeonBox account.',
 };
 
+// Where a healthy account is on its way to current mail.
+const TRACK = ['Import', 'Catch up', 'Review', 'Up to date'];
+const STEP = { importing: 0, recovering: 1, catching_up: 1, analyzing: 2, up_to_date: 3 };
+const HELD = { degraded: 'Sync is degraded; PigeonBox retries automatically.', stalled: 'Sync stopped and needs attention.', needs_reauth: 'Held until you reconnect.', paused: 'Paused. Nothing new is read.' };
+
 async function connect(api, features, accountId) {
   const { url } = await api('/v1/connections/google/start', { method: 'POST', body: { features, returnTo: 'web', ...(accountId ? { accountId } : {}) } });
   location.assign(url);
 }
 
 function featurePicker(selected, locked = []) {
-  const boxes = ORDER.map((feature) => {
-    const row = checkbox(FEATURES[feature].title, selected.includes(feature), { value: feature, disabled: locked.includes(feature) }, FEATURES[feature].detail);
-    return row;
-  });
+  const boxes = ORDER.map((feature) => checkbox(FEATURES[feature].title, selected.includes(feature), { value: feature, disabled: locked.includes(feature) }, FEATURES[feature].detail));
   const picked = () => boxes.map((row) => row.querySelector('input')).filter((box) => box.checked).map((box) => box.value);
-  return { el: h('div', { class: 'checks' }, boxes), picked };
+  return { el: h('div', { class: 'checks two' }, boxes), picked };
+}
+
+function track(account) {
+  const phase = syncPhase(account);
+  const at = STEP[phase];
+  const list = h(
+    'ol',
+    { class: 'rc-phases', attrs: { 'aria-label': 'Sync progress' }, dataset: at === undefined ? { broken: '' } : {} },
+    TRACK.map((label, position) =>
+      h('li', { class: at === undefined ? null : position < at ? 'is-done' : position === at ? 'is-now' : null, attrs: position === at ? { 'aria-current': 'step' } : {} }, label),
+    ),
+  );
+  return h('div', {}, list, at === undefined ? h('p', { class: 'hint' }, HELD[phase] ?? '') : null);
+}
+
+function permissions(account) {
+  return h(
+    'div',
+    { class: 'stamps', attrs: { role: 'list', 'aria-label': 'Google permissions' } },
+    ORDER.map((feature) => {
+      const on = account.features.includes(feature);
+      return h('div', { class: ['perm', on && 'is-on'], attrs: { role: 'listitem' } }, h('strong', {}, FEATURES[feature]?.title ?? feature), h('span', {}, on ? 'Granted' : 'Not granted'));
+    }),
+  );
 }
 
 function health(account) {
   const sync = account.sync;
-  const rows = [
+  return facts([
     ['Sync', syncPill(sync.state)],
     ['Last sync', sync.lastSyncAt ? ago(sync.lastSyncAt) : 'Not yet'],
     ['Last Gmail push', sync.lastPushAt ? ago(sync.lastPushAt) : 'None yet'],
@@ -34,11 +61,10 @@ function health(account) {
     ['Synced since', sync.coverageSince ? day(sync.coverageSince) : '—'],
     ['Threads', sync.threadsTracked.toLocaleString()],
     ['Queued work', sync.backlog ? plural(sync.backlog, 'job') : 'None'],
-  ];
-  return facts(rows);
+  ]);
 }
 
-function accountCard(account, api, redraw) {
+function accountCard(account, position, api, redraw) {
   const missing = ORDER.filter((feature) => !account.features.includes(feature));
   const add = featurePicker(account.features, account.features);
   const problem =
@@ -48,14 +74,20 @@ function accountCard(account, api, redraw) {
         ? note(`Last problem: ${account.sync.lastErrorCode.replace(/_/g, ' ')}. PigeonBox retries automatically.`, 'warn')
         : null;
 
-  return h(
-    'article',
-    { class: 'card' },
-    h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, account.email), h('p', { class: 'muted' }, `Connected ${ago(account.connectedAt)}`)), statusPill(account.status)),
+  return surface(
+    'card',
+    {
+      tag: 'article',
+      className: 'route-card',
+      eyebrow: `Route ${String(position + 1).padStart(2, '0')} · connected ${ago(account.connectedAt)}`,
+      title: account.email,
+      meta: account.displayName && account.displayName !== account.email ? account.displayName : null,
+      actions: [statusPill(account.status), phasePill(account)],
+    },
     problem,
+    track(account),
     health(account),
-    h('h3', {}, 'Permissions'),
-    h('div', { class: 'chips' }, account.features.map((feature) => pill(FEATURES[feature]?.title ?? feature, 'good'))),
+    h('div', { class: 'rc-perms' }, h('p', { class: 'eyebrow' }, 'Permissions'), permissions(account)),
     missing.length
       ? h(
           'details',
@@ -130,11 +162,14 @@ export async function render({ api, landing }) {
       root,
       banner,
       data.googleConfigured ? null : note('Google sign-in is not configured on this server yet, so accounts cannot be connected.', 'warn'),
-      data.accounts.length ? data.accounts.map((account) => accountCard(account, api, draw)) : empty('No Google account is connected.'),
+      data.accounts.length
+        ? data.accounts.map((account, position) => accountCard(account, position, api, draw))
+        : emptyState({ state: 'map', title: 'No Google account is connected.', text: 'Connect one and PigeonBox Cloud keeps triage, follow-ups and drafts current while Gmail is closed.' }),
       data.googleConfigured && data.accounts.length < data.maxAccounts
-        ? card(
-            data.accounts.length ? 'Connect another account' : 'Connect Google',
-            h('p', {}, 'Pick what PigeonBox Cloud may do. Reading mail is required for always-on features; everything else is optional and can be added later.'),
+        ? surface(
+            'slip',
+            { title: data.accounts.length ? 'Connect another account' : 'Connect Google', className: 'composer' },
+            h('p', { class: 'muted' }, 'Pick what PigeonBox Cloud may do. Reading mail is required for always-on features; everything else is optional and can be added later.'),
             fresh.el,
             h('div', { class: 'row' }, button('Continue to Google', () => connect(api, fresh.picked()))),
             h('p', { class: 'hint' }, 'Credentials are encrypted and stay on PigeonBox’s servers. The extension never receives them.'),
@@ -145,6 +180,11 @@ export async function render({ api, landing }) {
     );
   };
   await draw();
+  if (justConnected && !landing.celebrated) {
+    // One arrival moment, on the newest route, the first time this page opens after Google.
+    landing.celebrated = true;
+    setTimeout(() => celebrate([...root.querySelectorAll('.route-card')].at(-1), { state: 'parcel', text: 'Linked', small: 'Gmail' }), 450);
+  }
   // Keep sync health current while the first sync runs.
   if (justConnected) {
     let rounds = 0;

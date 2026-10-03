@@ -1,4 +1,4 @@
-import { ago, button, card, clear, confirmDialog, empty, field, h, input, note, pill, secretDialog, select, tabs, textarea, toast } from '../ui.js';
+import { ago, button, clear, confirmDialog, empty, emptyState, eyebrow, field, h, input, note, pill, secretDialog, select, surface, tabs, textarea, toast } from '../ui.js';
 
 const ROLE = { owner: 'Owner', admin: 'Admin', member: 'Member' };
 
@@ -8,9 +8,10 @@ function shareView(share, { api, me, back }) {
     'div',
     { class: 'stack' },
     h('button', { type: 'button', class: 'back', on: { click: () => back() } }, '← Team'),
-    card(
-      null,
-      h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, share.subject ?? 'Shared thread'), h('p', { class: 'muted' }, `${share.workspaceName} · shared by ${share.sharedBy.name} ${ago(share.sharedAt)}`)), share.assignment ? pill(share.assignment.status === 'done' ? 'Done' : 'Open', share.assignment.status === 'done' ? 'good' : 'warn') : null),
+    surface(
+      'card',
+      {},
+      h('header', { class: 'detail-head' }, h('div', {}, eyebrow(`${share.workspaceName} · shared by ${share.sharedBy.name} ${ago(share.sharedAt)}`), h('h2', {}, share.subject ?? 'Shared thread')), share.assignment ? pill(share.assignment.status === 'done' ? 'Done' : 'Open', share.assignment.status === 'done' ? 'good' : 'warn') : null),
       share.summary ? h('p', {}, share.summary) : null,
       share.participants ? h('p', { class: 'muted' }, share.participants.join(', ')) : null,
       share.assignment ? h('p', {}, h('strong', {}, 'Assigned to '), share.assignment.assignee.name, share.assignment.note ? ` — “${share.assignment.note}”` : '') : null,
@@ -23,8 +24,9 @@ function shareView(share, { api, me, back }) {
           }))
         : null,
     ),
-    card(
-      'Comments',
+    surface(
+      'ledger',
+      { title: 'Comments' },
       share.comments.length
         ? h('ul', { class: 'list' }, share.comments.map((comment) => h('li', {}, h('div', { class: 'list-main' }, h('strong', {}, comment.author.name), h('span', { class: 'muted' }, ago(comment.createdAt))), h('p', {}, comment.body))))
         : empty('No comments yet.'),
@@ -42,10 +44,9 @@ function workspaceCard(workspace, { api, me, redraw }) {
   const admin = workspace.role === 'owner' || workspace.role === 'admin';
   const email = input({ type: 'email', placeholder: 'teammate@company.com', attrs: { 'aria-label': 'Email to invite' } });
   const role = select([['member', 'Member'], ['admin', 'Admin']], 'member', { attrs: { 'aria-label': 'Role' } });
-  return h(
-    'article',
-    { class: 'card' },
-    h('header', { class: 'approval-head' }, h('h2', {}, workspace.name), pill(ROLE[workspace.role], 'neutral')),
+  return surface(
+    'card',
+    { tag: 'article', eyebrow: `Workspace · ${workspace.members.length} ${workspace.members.length === 1 ? 'member' : 'members'}`, title: workspace.name, actions: pill(ROLE[workspace.role], 'neutral') },
     h(
       'ul',
       { class: 'list' },
@@ -97,8 +98,9 @@ async function snippets(api, workspaces) {
     const scope = select([['', 'Just me'], ...workspaces.map((workspace) => [workspace.id, `Shared with ${workspace.name}`])], '');
     clear(
       holder,
-      card(
-        'New snippet',
+      surface(
+        'slip',
+        { title: 'New snippet', className: 'composer' },
         h('p', { class: 'hint' }, 'Use {variables} for values you fill in, and {AI: …} for a sentence PigeonBox writes from the thread. AI parts never invent facts; missing ones become placeholders.'),
         field('Name', name),
         field('Text', body),
@@ -110,8 +112,9 @@ async function snippets(api, workspaces) {
         })),
       ),
       items.length
-        ? card(
-            'Snippets',
+        ? surface(
+            'ledger',
+            { title: 'Snippets' },
             h(
               'ul',
               { class: 'list' },
@@ -166,8 +169,8 @@ export async function render({ api, me, caps, landing }) {
           h(
             'div',
             { class: 'stack' },
-            workspaces.length ? workspaces.map((workspace) => workspaceCard(workspace, { api, me, redraw: () => draw() })) : empty('You are not in a workspace yet.'),
-            card('New workspace', h('div', { class: 'row' }, name, button('Create', async () => {
+            workspaces.length ? workspaces.map((workspace) => workspaceCard(workspace, { api, me, redraw: () => draw() })) : emptyState({ state: 'wave', title: 'You are not in a workspace yet.', text: 'Create one below, then invite teammates by email. Shared threads carry only the summary the sharer chooses.' }),
+            surface('slip', { title: 'New workspace' }, h('div', { class: 'row tight' }, name, button('Create', async () => {
               if (!name.value.trim()) throw new Error('Name the workspace.');
               await api('/v1/control/workspaces/create', { method: 'POST', body: { name: name.value.trim() } });
               await draw();
@@ -195,7 +198,7 @@ export async function render({ api, me, caps, landing }) {
       ],
     ];
     if (caps.has('cloud_ai')) items.push(['snippets', 'Snippets', () => snippets(api, workspaces)]);
-    clear(root, h('div', { class: 'stack' }, banner, h('p', { class: 'lede' }, 'Share a thread’s summary with teammates, assign it, and discuss it internally. The email itself never leaves the sharer’s mailbox.'), tabs(items)));
+    clear(root, h('div', { class: 'stack' }, banner, tabs(items)));
   };
   await draw();
   return root;

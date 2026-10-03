@@ -1,4 +1,4 @@
-import { ago, button, card, clear, confirmDialog, empty, field, h, humanize, input, key, note, pill, select, table, textarea, toast } from '../ui.js';
+import { ago, button, clear, confirmDialog, empty, eyebrow, field, h, humanize, input, key, note, pill, select, surface, table, textarea, timeline, toast } from '../ui.js';
 import { ACTIONS, tierPill } from '../shared.js';
 
 const AUTONOMY = [
@@ -40,6 +40,7 @@ function saveBody(automation, overrides = {}) {
 }
 
 const OUTCOME = { applied: ['Done', 'good'], shadowed: ['Would do', 'info'], approval_requested: ['Waiting for approval', 'warn'], skipped: ['Skipped', 'neutral'], failed: ['Failed', 'bad'] };
+const RUN_TONE = { failed: 'bad', succeeded: 'good', completed: 'good', shadowed: 'quiet' };
 
 async function detail(automation, { api, back }) {
   const autonomy = select(AUTONOMY, automation.autonomy);
@@ -52,24 +53,19 @@ async function detail(automation, { api, back }) {
     clear(
       runsEl,
       items.length
-        ? h(
-            'ul',
-            { class: 'list' },
-            items.map((run) =>
-              h(
-                'li',
-                {},
-                h('div', { class: 'list-main' }, h('strong', {}, `${humanize(run.trigger)} · ${humanize(run.status)}`), h('span', { class: 'muted' }, ago(run.startedAt))),
-                h(
-                  'div',
-                  { class: 'chips' },
-                  run.actions.map((action) => pill(`${ACTIONS[action.kind] ?? action.kind}: ${(OUTCOME[action.outcome] ?? [action.outcome])[0]}`, (OUTCOME[action.outcome] ?? [0, 'neutral'])[1])),
-                ),
-                run.actions.some((action) => action.approvalId) ? h('a', { href: '#approvals', class: 'hint' }, 'Open Approvals') : null,
-              ),
-            ),
+        ? timeline(
+            items.map((run) => ({
+              at: run.startedAt,
+              title: `${humanize(run.trigger)} · ${humanize(run.status)}`,
+              tone: RUN_TONE[run.status] ?? 'neutral',
+              meta: run.actions.length ? null : 'No actions',
+              aside: [
+                h('div', { class: 'chips' }, run.actions.map((action) => pill(`${ACTIONS[action.kind] ?? action.kind}: ${(OUTCOME[action.outcome] ?? [action.outcome])[0]}`, (OUTCOME[action.outcome] ?? [0, 'neutral'])[1]))),
+                run.actions.some((action) => action.approvalId) ? h('a', { href: '#approvals', class: 'text-link' }, 'Open Approvals') : null,
+              ],
+            })),
           )
-        : empty('No runs yet.'),
+        : empty('No runs yet. In Shadow Mode, each run records what this automation would have done.'),
     );
   };
   await drawRuns();
@@ -79,9 +75,10 @@ async function detail(automation, { api, back }) {
     'div',
     { class: 'stack' },
     h('button', { type: 'button', class: 'back', on: { click: () => back(null) } }, '← All automations'),
-    card(
-      null,
-      h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, automation.name), h('p', { class: 'muted' }, `“${automation.prompt}” · v${automation.version}`)), modePill(automation)),
+    surface(
+      'card',
+      {},
+      h('header', { class: 'detail-head' }, h('div', {}, eyebrow(`Automation · v${automation.version}`), h('h2', {}, automation.name), h('p', { class: 'prompt' }, `“${automation.prompt}”`)), modePill(automation)),
       h('ul', { class: 'explain' }, automation.explanation.map((line) => h('li', {}, line))),
       field('Autonomy', autonomy, 'Sending and invitations always need approval, whatever you choose.'),
       tiersEl,
@@ -89,12 +86,6 @@ async function detail(automation, { api, back }) {
       h(
         'div',
         { class: 'row' },
-        button('Save autonomy', async () => {
-          if (autonomy.value === automation.autonomy) return toast('Nothing changed.');
-          const { automation: saved } = await api('/v1/automations/save', { method: 'POST', body: saveBody(automation, { autonomy: autonomy.value }) });
-          toast(saved.mode === 'shadow' && automation.mode === 'active' ? 'Saved. Changing what it does put it back in Shadow Mode.' : 'Saved.', 'success');
-          back(saved.id);
-        }, { variant: 'ghost' }),
         automation.mode === 'shadow'
           ? button('Turn on', async () => {
               const ok = await confirmDialog({ title: `Turn on “${automation.name}”?`, body: ['It will act on new events as shown above. Every change is logged in Activity and undoable where possible.'], confirm: 'Turn on' });
@@ -107,6 +98,12 @@ async function detail(automation, { api, back }) {
               await api('/v1/automations/save', { method: 'POST', body: saveBody(automation, { mode: 'shadow' }) });
               back(automation.id);
             }, { variant: 'ghost' }),
+        button('Save autonomy', async () => {
+          if (autonomy.value === automation.autonomy) return toast('Nothing changed.');
+          const { automation: saved } = await api('/v1/automations/save', { method: 'POST', body: saveBody(automation, { autonomy: autonomy.value }) });
+          toast(saved.mode === 'shadow' && automation.mode === 'active' ? 'Saved. Changing what it does put it back in Shadow Mode.' : 'Saved.', 'success');
+          back(saved.id);
+        }, { variant: 'ghost' }),
         button(automation.enabled ? 'Pause' : 'Resume', async () => {
           await api('/v1/automations/save', { method: 'POST', body: saveBody(automation, { enabled: !automation.enabled }) });
           back(automation.id);
@@ -125,7 +122,7 @@ async function detail(automation, { api, back }) {
         }, { variant: 'danger-ghost' }),
       ),
     ),
-    card('Runs', runsEl),
+    surface('ledger', { title: 'Runs' }, runsEl),
   );
 }
 
@@ -153,6 +150,7 @@ export async function render({ api }) {
           'div',
           { class: 'draft-preview' },
           field('Name', name),
+          h('p', { class: 'eyebrow' }, 'PigeonBox understood'),
           h('ul', { class: 'explain' }, draft.explanation.map((line) => h('li', {}, line))),
           draft.warnings.map((warning) => note(warning, 'info')),
           field('Autonomy', autonomy),
@@ -178,24 +176,37 @@ export async function render({ api }) {
       h(
         'div',
         { class: 'stack' },
-        card('New automation', h('p', {}, 'Say what should happen and when, in plain words. You will see exactly what it does and which steps need your approval before anything runs.'), prompt, h('div', { class: 'row' }, compile), draftArea),
-        automations.length
-          ? card(
-              'Your automations',
-              h(
+        surface(
+          'slip',
+          { title: 'New automation', className: 'composer' },
+          h('p', { class: 'muted' }, 'Say what should happen and when, in plain words. You will see exactly what it does and which steps need your approval before anything runs.'),
+          h('div', { class: 'field' }, prompt),
+          h('div', { class: 'row tight' }, compile),
+          draftArea,
+        ),
+        surface(
+          'ledger',
+          { title: 'Your automations', actions: automations.length ? pill(`${automations.filter((item) => item.enabled && item.mode === 'active').length} on`, 'neutral') : null },
+          automations.length
+            ? h(
                 'ul',
                 { class: 'list selectable' },
                 automations.map((automation) =>
                   h(
                     'li',
                     {},
-                    h('button', { type: 'button', class: 'list-button', on: { click: () => drawList(automation.id) } }, h('strong', {}, automation.name), h('span', { class: 'muted' }, automation.explanation[0] ?? '')),
+                    h(
+                      'button',
+                      { type: 'button', class: 'list-button', on: { click: () => drawList(automation.id) } },
+                      h('strong', {}, automation.name),
+                      h('span', { class: 'muted' }, [automation.explanation[0] ?? '', automation.stats?.lastRunAt ? `last ran ${ago(automation.stats.lastRunAt)}` : null].filter(Boolean).join(' · ')),
+                    ),
                     modePill(automation),
                   ),
                 ),
-              ),
-            )
-          : empty('No automations yet.'),
+              )
+            : empty('No automations yet. Describe one above; it starts in Shadow Mode, so nothing changes until you turn it on.'),
+        ),
       ),
     );
   };

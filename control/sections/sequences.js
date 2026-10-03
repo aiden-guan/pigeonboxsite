@@ -1,4 +1,4 @@
-import { ago, button, card, checkbox, clear, confirmDialog, empty, facts, field, h, input, note, pill, select, table, tabs, textarea, toast } from '../ui.js';
+import { ago, button, checkbox, clear, confirmDialog, emptyState, facts, field, h, input, note, pill, select, surface, table, tabs, textarea, toast } from '../ui.js';
 import { accounts } from '../shared.js';
 
 const STATUS = { draft: ['Draft', 'neutral'], active: ['Running', 'good'], paused: ['Paused', 'neutral'], stopped: ['Stopped', 'bad'], completed: ['Completed', 'info'] };
@@ -70,8 +70,9 @@ async function editor(sequence, { api, dailyLimit, back }) {
     'div',
     { class: 'stack' },
     h('button', { type: 'button', class: 'back', on: { click: () => back() } }, '← Sequences'),
-    card(
-      sequence ? `Edit “${sequence.name}”` : 'New sequence',
+    surface(
+      'card',
+      { eyebrow: sequence ? 'Edit sequence' : 'New sequence', title: sequence ? sequence.name : 'A new sequence' },
       field('Name', name),
       field('Send from', account),
       h('div', { class: 'grid-3' }, field(`Emails per day (up to ${dailyLimit})`, limit), field('Window starts', start), field('Window ends', end)),
@@ -125,10 +126,9 @@ function sequenceCard(sequence, { api, redraw, edit }) {
     }, { variant: status === 'active' ? 'primary' : status === 'stopped' ? 'danger-ghost' : 'ghost' });
 
   const counts = sequence.counts;
-  return h(
-    'article',
-    { class: 'card' },
-    h('header', { class: 'approval-head' }, h('div', {}, h('h2', {}, sequence.name), h('p', { class: 'muted' }, `${sequence.steps.length} steps · up to ${sequence.dailyLimit}/day · ${sequence.window.start}–${sequence.window.end}`)), pill(...(STATUS[sequence.status] ?? [sequence.status, 'neutral']))),
+  return surface(
+    'card',
+    { tag: 'article', eyebrow: `${sequence.steps.length} steps · up to ${sequence.dailyLimit}/day · ${sequence.window.start}–${sequence.window.end}`, title: sequence.name, actions: pill(...(STATUS[sequence.status] ?? [sequence.status, 'neutral'])) },
     facts([
       ['Enrolled', counts.enrolled],
       ['Active', counts.active],
@@ -159,7 +159,6 @@ export async function render({ api }) {
       h(
         'div',
         { class: 'stack' },
-        h('p', { class: 'lede' }, 'Personal sequences for a small list of people you would write to anyway. Every batch waits for your approval, each person gets their own email with an unsubscribe link, and replies stop it for them.'),
         tabs([
           [
             'sequences',
@@ -168,8 +167,10 @@ export async function render({ api }) {
               h(
                 'div',
                 { class: 'stack' },
-                h('div', { class: 'row' }, button('New sequence', () => show(null))),
-                sequences.length ? sequences.map((sequence) => sequenceCard(sequence, { api, redraw: draw, edit: show })) : empty('No sequences yet.'),
+                h('div', { class: 'row tight' }, button('New sequence', () => show(null))),
+                sequences.length
+                  ? sequences.map((sequence) => sequenceCard(sequence, { api, redraw: draw, edit: show }))
+                  : emptyState({ state: 'plane', title: 'No sequences yet', text: 'Write a few steps, add the people you would write to anyway, and approve each batch before it goes out.' }),
               ),
           ],
           [
