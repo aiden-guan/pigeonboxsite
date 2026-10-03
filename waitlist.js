@@ -1,5 +1,5 @@
 import { loadSiteConfig } from './app.js';
-import { startStage } from './waitlist-stage.js?v=8';
+import { startStage } from './waitlist-stage.js?v=9';
 
 const stage = startStage();
 

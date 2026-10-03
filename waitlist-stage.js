@@ -18,7 +18,8 @@ const ROUTINES = {
   tea:     { row: 5, frames: [0, 1, 2, 2, 1, 2, 3, 0], ms: 430, hide: 'tea' },
   sleep:   { row: 6, frames: [0, 1, 2, 1, 2, 1, 2, 1, 2, 3], ms: 620, night: true },
   parcel:  { row: 7, frames: [0, 1, 2, 3, 1, 2, 3, 0], ms: 380, hide: 'parcel' },
-  plane:   { row: 8, frames: [0, 1, 2, 3, 0, 1, 2, 3], ms: 300, hide: 'plane' },
+  // End on the atlas frame where the paper plane has left Pidgy's wing.
+  plane:   { row: 8, frames: [0, 1, 2], ms: 300, hide: 'plane' },
   wave:    { row: 9, frames: [0, 1, 2, 1, 2, 1, 3], ms: 260 },
   stars:   { row: 10, frames: [0, 1, 2, 1, 2, 1, 2, 3], ms: 330, sparkle: true },
   map:     { row: 11, frames: [0, 1, 2, 3, 1, 2, 3, 0], ms: 430 },
@@ -36,7 +37,7 @@ const PROPS = [
   { id: 'lantern', label: 'Light the lantern', box: [44, -39, 12, 39] },
   { id: 'moon',    label: 'Goodnight',         box: [30, -68, 15, 15], routine: 'sleep' },
   { id: 'star',    label: 'Make a wish',       box: [-14, -76, 46, 12], routine: 'stars' },
-  { id: 'plane',   label: 'Catch the plane',   box: [0, 0, 9, 7], moving: true },
+  { id: 'plane',   label: 'Catch the plane',   box: [0, 0, 14, 11], moving: true },
 ];
 const STARS = [[-10, -70], [4, -66], [16, -73], [27, -67]];
 const AMBIENT = ['tea', 'map', 'stars', 'parcel', 'lantern', 'plane', 'search', 'wave', 'route', 'draft'];
@@ -55,9 +56,9 @@ export function startStage() {
   sheet.src = '/brand/pidgy-world.webp';
   let spriteBounds = [], spriteScale = [];
 
-  let W = 0, H = 0, dpr = 1, cell = 7, dot = 4, cols = 0, rows = 0, ax = 0, gy = 0, fade = [], tone = new Float32Array(0);
+  let W = 0, H = 0, dpr = 1, cell = 7, dot = 4, cols = 0, rows = 0, ax = 0, gy = 0, narrow = false, fade = [], tone = new Float32Array(0);
   let routine = null, routineAt = 0, queue = [], lastPlay = performance.now(), hovered = null, focusProp = null;
-  let night = 0, plane = { x: -30, y: -48, dir: 1 }, planeAway = 0;
+  let night = 0, plane = { x: -30, y: -48, dir: 1 }, flight = null, launchOnFinish = false;
   const mouse = { x: -1e4, y: -1e4 }, ripples = [], sparks = [], steam = [];
 
   // One focusable button per prop, laid over the dots.
@@ -75,8 +76,9 @@ export function startStage() {
 
   function layout() {
     const r = stage.getBoundingClientRect();
+    const oldW = W, oldH = H;
     W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1);
-    const narrow = matchMedia('(max-width: 900px)').matches;
+    narrow = matchMedia('(max-width: 900px)').matches;
     // Read the resolved padding: CSS reserves the scene height plus a 28px text gap.
     const sceneHeight = narrow ? parseFloat(getComputedStyle(stage).paddingTop) - 28 : 0;
     cell = narrow ? Math.min(4.5, W / 112) : Math.max(4.4, Math.min(8.5, W / 172, H / 100));
@@ -88,6 +90,11 @@ export function startStage() {
     gy = narrow ? Math.round(sceneHeight / cell) : Math.round(H / cell * .8);
     // The world fades out before it reaches the headline on wide screens.
     fade = Array.from({ length: cols }, (_, x) => narrow ? 1 : smooth(ax - 66, ax - 42, x / RES));
+    if (flight && oldW && oldH) {
+      flight.x *= W / oldW; flight.y *= H / oldH;
+      flight.targetX *= W / oldW; flight.targetY *= H / oldH;
+      flight.trail.length = 0;
+    }
     for (const p of PROPS) if (!p.moving) place(p, p.box[0], p.box[1]);
   }
 
@@ -100,7 +107,7 @@ export function startStage() {
   function showTip(p) {
     if (!tip) return;
     tip.textContent = p.label;
-    const [x, y, w] = p.moving ? [plane.x - 4, plane.y - 3, 9] : p.box;
+    const [x, y, w] = p.moving ? [plane.x - 7, plane.y - 5.5, 14] : p.box;
     tip.style.transform = `translate(${(ax + x + w / 2) * cell}px, ${(gy + y) * cell - 10}px) translate(-50%, -100%)`;
     tip.dataset.show = 'true';
   }
@@ -113,9 +120,13 @@ export function startStage() {
 
   function trigger(p) {
     const name = p.routine || p.id;
-    const [x, y, w, h] = p.moving ? [plane.x - 4, plane.y - 3, 9, 7] : p.box;
+    launchOnFinish = name === 'plane';
+    const [x, y, w, h] = p.moving ? [plane.x - 7, plane.y - 5.5, 14, 11] : p.box;
     if (!reduced) ripples.push({ x: x + w / 2, y: y + h / 2, at: performance.now() });
-    if (name === 'plane') planeAway = performance.now();
+    if (name === 'plane') {
+      flight = null; hovered = null; hideTip();
+      if (reduced) { queue = []; routine = null; launchPlane(performance.now()); launchOnFinish = false; return; }
+    }
     queue = []; routine = null; play(name);
   }
 
@@ -189,7 +200,7 @@ export function startStage() {
       });
     },
     plane(c) {
-      if (holding('plane') || planeAway) return;
+      if (holding('plane') || flight) return;
       const { x, y, dir } = plane;
       c.save(); c.translate(x, y); c.scale(dir, 1);
       c.fillStyle = 'rgba(0,0,0,.78)';
@@ -214,7 +225,7 @@ export function startStage() {
       c.fillStyle = 'rgba(0,0,0,.08)';
       c.beginPath(); c.ellipse(x, cy, 9, 2.4, 0, 0, 6.2832); c.ellipse(x + 5, cy - 1.6, 5, 2.4, 0, 0, 6.2832); c.fill();
     }
-    if (!holding('plane') && !planeAway) for (let i = 1; i < 9; i++) {
+    if (!holding('plane') && !flight) for (let i = 1; i < 9; i++) {
       const p = planeAt(t - i * 140);
       if (i % 2) disc(c, p.x - p.dir * 2, p.y, .45, .4 - i * .035);
     }
@@ -223,6 +234,113 @@ export function startStage() {
   function planeAt(t) {
     const s = t / 5200;
     return { x: 6 + Math.sin(s) * 44, y: -47 + Math.sin(s * 2) * 5, dir: Math.cos(s) >= 0 ? 1 : -1 };
+  }
+
+  function flightBounds() {
+    // Keep the mobile flight above the form; on desktop it can cross the whole scene.
+    return { left: W * .08, right: W * .92, top: H * .1, bottom: narrow ? gy * cell - 8 : H * .73 };
+  }
+
+  function chooseFlightTarget() {
+    if (!flight) return;
+    const b = flightBounds();
+    for (let i = 0; i < 8; i++) {
+      const x = b.left + Math.random() * (b.right - b.left);
+      const y = b.top + Math.random() * (b.bottom - b.top);
+      if (Math.hypot(x - flight.x, y - flight.y) > Math.min(W * .2, 180) || i === 7) {
+        flight.targetX = x; flight.targetY = y;
+        break;
+      }
+    }
+  }
+
+  function launchPlane(now) {
+    // The white paper plane in sprite row 8, frame 2 is centred near (76, 38).
+    // Start the dotted plane at that exact point when the sprite frame ends.
+    const bounds = spriteBounds[8]?.[2];
+    const size = BIRD * (spriteScale[8]?.[2] || 1);
+    const bodyX = BIRD * (BODY_ANCHOR_X / CELL - .5);
+    const releaseX = bodyX + size * (76 - (bounds?.bodyCenterX ?? CELL / 2)) / CELL;
+    const releaseY = size * (38 - GROUND_ANCHOR_Y) / CELL;
+    const x = (ax + releaseX) * cell, y = (gy + releaseY) * cell;
+    flight = { x, y, vx: 150, vy: -105, heading: -.6, targetX: x, targetY: y,
+      trail: [], nextTrail: now, nextTarget: now + 1250, lastUpdate: now, startedAt: now };
+    if (reduced) {
+      flight.x = Math.min(W * .82, x + 25 * cell);
+      flight.y = Math.max(H * .12, y - 19 * cell);
+      flight.heading = -.35;
+    } else {
+      flight.targetX = Math.min(W * .88, x + Math.max(80, W * .17));
+      flight.targetY = Math.max(H * .14, y - Math.max(75, H * .15));
+      for (let i = 0; i < 5; i++) sparks.push({ x: 5, y: -16, vx: .2 + Math.random() * .45,
+        vy: -.15 - Math.random() * .5, life: .8 });
+    }
+  }
+
+  function advanceFlight(now) {
+    if (!flight || reduced) return;
+    const dt = Math.min((now - flight.lastUpdate) / 1000, .08);
+    flight.lastUpdate = now;
+    if (now >= flight.nextTarget || Math.hypot(flight.targetX - flight.x, flight.targetY - flight.y) < 36) {
+      chooseFlightTarget();
+      flight.nextTarget = now + 2400 + Math.random() * 1800;
+    }
+    const dx = flight.targetX - flight.x, dy = flight.targetY - flight.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const speed = Math.min(155, Math.max(95, distance * .8));
+    const steer = Math.min(1, dt * 1.35);
+    flight.vx += (dx / distance * speed - flight.vx) * steer;
+    flight.vy += (dy / distance * speed - flight.vy) * steer;
+    flight.x += flight.vx * dt; flight.y += flight.vy * dt;
+    const b = flightBounds();
+    if (flight.x < b.left || flight.x > b.right || flight.y < b.top || flight.y > b.bottom) {
+      flight.x = Math.max(b.left, Math.min(b.right, flight.x));
+      flight.y = Math.max(b.top, Math.min(b.bottom, flight.y));
+      chooseFlightTarget(); flight.nextTarget = now + 2400;
+    }
+    flight.heading = Math.atan2(flight.vy, flight.vx);
+    if (now >= flight.nextTrail) {
+      flight.trail.push({ x: flight.x, y: flight.y, at: now });
+      if (flight.trail.length > 38) flight.trail.shift();
+      flight.nextTrail = now + 65;
+    }
+    flight.trail = flight.trail.filter(p => now - p.at < 2600);
+  }
+
+  function printFlight(now) {
+    if (!flight) return;
+    const trail = new Path2D();
+    for (let i = 0; i < flight.trail.length; i += 2) {
+      const p = flight.trail[i], age = (now - p.at) / 2600;
+      const radius = Math.max(.65, dot * .34 * (1 - age));
+      trail.moveTo(p.x + radius, p.y); trail.arc(p.x, p.y, radius, 0, 6.2832);
+    }
+    out.fillStyle = `rgba(${COPPER},.48)`; out.fill(trail);
+
+    // Print the wings one dot at a time, with the fold in darker ink. This is
+    // drawn after the world so the plane stays legible even over the faded sky.
+    const size = Math.max(3.1, Math.min(5.2, cell * .7)) * (reduced ? 1 : .24 + .76 * smooth(0, 420, now - flight.startedAt));
+    const radius = Math.max(.72, size * .42);
+    const cos = Math.cos(flight.heading), sin = Math.sin(flight.heading);
+    const wing = new Path2D(), fold = new Path2D();
+    for (let y = -7; y <= 7; y++) for (let x = -9; x <= 11; x++) {
+      const upper = inTriangle(x, y, -9, -7, 11, 0, -2, 0);
+      const lower = inTriangle(x, y, -9, 7, 11, 0, -2, 0);
+      if (!upper && !lower) continue;
+      const px = flight.x + (x * cos - y * sin) * size;
+      const py = flight.y + (x * sin + y * cos) * size;
+      const path = y === 0 || (lower && !upper) ? fold : wing;
+      path.moveTo(px + radius, py); path.arc(px, py, radius, 0, 6.2832);
+    }
+    out.fillStyle = `rgb(${COPPER})`; out.fill(wing);
+    out.fillStyle = `rgb(${INK})`; out.fill(fold);
+  }
+
+  function inTriangle(px, py, ax, ay, bx, by, cx, cy) {
+    const a = (px - bx) * (ay - by) - (ax - bx) * (py - by);
+    const b = (px - cx) * (by - cy) - (bx - cx) * (py - cy);
+    const c = (px - ax) * (cy - ay) - (cx - ax) * (py - ay);
+    return (a >= 0 && b >= 0 && c >= 0) || (a <= 0 && b <= 0 && c <= 0);
   }
 
   function paintBird(c, now) {
@@ -302,7 +420,8 @@ export function startStage() {
   }
 
   function finish(done, now) {
-    if (done.name === 'plane') planeAway = now;
+    if (done.name === 'plane' && launchOnFinish) launchPlane(now);
+    launchOnFinish = false;
     routine = null; lastPlay = now;
     if (queue.length) play(queue.shift(), now);
   }
@@ -312,13 +431,17 @@ export function startStage() {
   function frame(now) {
     const t = reduced ? 0 : now;
     // Pidgy finds something to do on his own when nobody's clicking.
-    if (!routine && !reduced && now - lastPlay > 7000) play(AMBIENT[Math.floor(now / 7000) % AMBIENT.length], now);
+    if (!routine && !reduced && now - lastPlay > 7000) {
+      const ambient = AMBIENT[Math.floor(now / 7000) % AMBIENT.length];
+      play(flight && ambient === 'plane' ? 'wave' : ambient, now);
+    }
     night = reduced ? Number(!!routine?.night) : night + ((routine?.night ? 1 : 0) - night) * .07;
-    if (planeAway && now - planeAway > 2600) planeAway = 0;
-    plane = planeAt(t);
+    advanceFlight(now);
+    plane = flight ? { x: flight.x / cell - ax, y: flight.y / cell - gy, dir: flight.vx >= 0 ? 1 : -1 } : planeAt(t);
     const planeBtn = buttons.get('plane');
-    planeBtn.hidden = !!planeAway || holding('plane');
-    if (!planeBtn.hidden) place(PROPS.at(-1), plane.x - 4.5, plane.y - 3.5);
+    planeBtn.hidden = holding('plane');
+    if (!planeBtn.hidden) place(PROPS.at(-1), plane.x - 7, plane.y - 5.5);
+    if (hovered === 'plane' && !planeBtn.hidden) showTip(PROPS.at(-1));
     if (!reduced) {
       for (const s of steam) { s.y += .07; s.x = Math.sin(s.y * 1.3 + s.p) * .8; if (s.y > 9) { s.y = 0; s.p = Math.random() * 6; } }
       if (steam.length < 3) steam.push({ x: 0, y: steam.length * 3, p: Math.random() * 6 });
@@ -368,6 +491,7 @@ export function startStage() {
     }
     out.fillStyle = `rgb(${INK})`; out.fill(inkPath);
     out.fillStyle = `rgb(${COPPER})`; out.fill(copperPath);
+    printFlight(now);
   }
 
   let visible = true, last = 0;
