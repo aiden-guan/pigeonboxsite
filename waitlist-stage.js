@@ -5,7 +5,7 @@
 
 const CELL = 96;                                   // sprite cell on /brand/pidgy-world.webp
 const INK = '24,25,27', COPPER = '168,80,44';
-const BIRD = 44;                                   // Pidgy's size in world units
+const BIRD = 30;                                   // Shared size for every Pidgy pose in world units
 const RES = 1.6;                                   // dots per world unit
 
 // row on the sheet, frame order, ms per frame; `hide` lifts a prop while Pidgy holds it.
@@ -28,7 +28,7 @@ const ROUTINES = {
 const PROPS = [
   { id: 'map',     label: 'Read the map',      box: [-38, -27, 13, 27] },
   { id: 'tea',     label: 'Tea break',         box: [-27, -18, 15, 18] },
-  { id: 'pidgy',   label: 'Say hello',         box: [-15, -38, 30, 38], routine: 'wave' },
+  { id: 'pidgy',   label: 'Say hello',         box: [-BIRD * .34, -BIRD * .86, BIRD * .68, BIRD * .86], routine: 'wave' },
   { id: 'parcel',  label: 'Open a parcel',     box: [14, -13, 12, 13] },
   { id: 'mail',    label: 'Check the mail',    box: [25, -21, 11, 21], routine: 'alert' },
   { id: 'laptop',  label: 'Run the inbox',     box: [36, -16, 13, 16], routine: 'route' },
@@ -222,7 +222,7 @@ export function startStage() {
   }
 
   function paintBird(c, now) {
-    let row = 0, col = idleFrame(now - lastPlay);
+    let row = 0, col = reduced ? 0 : idleFrame(now - lastPlay);
     if (routine) {
       const i = Math.floor((now - routineAt) / routine.ms);
       if (i >= routine.frames.length) { finish(routine, now); return paintBird(c, now); }
@@ -244,14 +244,16 @@ export function startStage() {
     const t = reduced ? 0 : now;
     // Pidgy finds something to do on his own when nobody's clicking.
     if (!routine && !reduced && now - lastPlay > 7000) play(AMBIENT[Math.floor(now / 7000) % AMBIENT.length], now);
-    night += ((routine?.night ? 1 : 0) - night) * .07;
+    night = reduced ? Number(!!routine?.night) : night + ((routine?.night ? 1 : 0) - night) * .07;
     if (planeAway && now - planeAway > 2600) planeAway = 0;
     plane = planeAt(t);
     const planeBtn = buttons.get('plane');
     planeBtn.hidden = !!planeAway || holding('plane');
     if (!planeBtn.hidden) place(PROPS.at(-1), plane.x - 4.5, plane.y - 3.5);
-    for (const s of steam) { s.y += .07; s.x = Math.sin(s.y * 1.3 + s.p) * .8; if (s.y > 9) { s.y = 0; s.p = Math.random() * 6; } }
-    if (steam.length < 3) steam.push({ x: 0, y: steam.length * 3, p: Math.random() * 6 });
+    if (!reduced) {
+      for (const s of steam) { s.y += .07; s.x = Math.sin(s.y * 1.3 + s.p) * .8; if (s.y > 9) { s.y = 0; s.p = Math.random() * 6; } }
+      if (steam.length < 3) steam.push({ x: 0, y: steam.length * 3, p: Math.random() * 6 });
+    }
     if (routine?.sparkle && !reduced && Math.random() < .35) sparks.push({ x: 8 + Math.random() * 4, y: -34, vx: (Math.random() - .3) * .5, vy: -.2 - Math.random() * .4, life: 1 });
 
     // Tone buffer: the world, then night, then Pidgy and particles on top.

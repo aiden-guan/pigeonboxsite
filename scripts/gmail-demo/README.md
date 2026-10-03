@@ -3,7 +3,7 @@
 Build from the canonical extension checkout:
 
 ```sh
-rtk proxy node scripts/gmail-demo/build.mjs /Users/aidenguan/Documents/Projects/EmailApp
+rtk proxy node scripts/gmail-demo/build.mjs /Users/aidenguan/Documents/Projects/PigeonBox
 ```
 
 The build imports the unified `PigeonBoxWorkspace`, its `CurrentThread`,

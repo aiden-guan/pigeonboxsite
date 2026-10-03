@@ -10,7 +10,7 @@ import { createRequire } from 'node:module';
 
 const source = dirname(fileURLToPath(import.meta.url));
 const site = resolve(source, '../..');
-const app = resolve(process.argv[2] || resolve(site, '../../EmailApp'));
+const app = resolve(process.argv[2] || resolve(site, '../../PigeonBox'));
 const requireApp = createRequire(resolve(app, 'package.json'));
 const dep = (name) => pathToFileURL(requireApp.resolve(name)).href;
 const { build } = await import(dep('vite'));

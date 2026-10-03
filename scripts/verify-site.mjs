@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const { chromium } = createRequire(resolve(root, '../../EmailApp/package.json'))('@playwright/test');
+const { chromium } = createRequire(resolve(root, '../../PigeonBox/package.json'))('@playwright/test');
 const config = JSON.parse(await readFile(resolve(root, 'vercel.json')));
 const output = process.env.PIGEONBOX_SITE_QA_OUT || '/tmp/pigeonbox-site-qa';
 await mkdir(output, { recursive: true });
@@ -41,8 +41,9 @@ try {
       await route.fulfill({ status: mode === 'failure' ? 500 : mode === 'limited' ? 429 : 202, headers: { 'Access-Control-Allow-Origin': origin }, contentType: 'application/json', body: mode === 'success' ? '{"ok":true}' : '{"error":{"message":"test failure"}}' });
     });
     await page.goto(origin + '/waitlist?source=extension');
-    await page.locator('canvas[data-halftone=waitlist]').waitFor();
-    await page.waitForFunction(() => document.querySelector('canvas[data-halftone=waitlist]').width > 1);
+    await page.locator('canvas.wl-dots').waitFor();
+    await page.waitForFunction(() => document.querySelector('canvas.wl-dots').width > 1);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `overflow at ${width}`);
     await page.screenshot({ path: `${output}/waitlist-${width}.png`, fullPage: true });
     const canvas = await page.locator('canvas').evaluate(canvas => canvas.toDataURL());
