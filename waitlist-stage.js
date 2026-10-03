@@ -36,10 +36,10 @@ const PROPS = [
   { id: 'laptop',  label: 'Run the inbox',     box: [36, -16, 13, 16], routine: 'route' },
   { id: 'lantern', label: 'Light the lantern', box: [44, -39, 12, 39] },
   { id: 'moon',    label: 'Goodnight',         box: [30, -68, 15, 15], routine: 'sleep' },
-  { id: 'star',    label: 'Make a wish',       box: [-14, -76, 46, 12], routine: 'stars' },
+  { id: 'star',    label: 'Make a wish',       box: [0, -46, 38, 20], routine: 'stars' },
   { id: 'plane',   label: 'Catch the plane',   box: [0, 0, 14, 11], moving: true },
 ];
-const STARS = [[-10, -70], [4, -66], [16, -73], [27, -67]];
+const STARS = [[4, -31], [13, -37], [24, -34], [33, -41]];
 const AMBIENT = ['tea', 'map', 'stars', 'parcel', 'lantern', 'plane', 'search', 'wave', 'route', 'draft'];
 
 export function startStage() {
@@ -257,11 +257,7 @@ export function startStage() {
   function launchPlane(now) {
     // The white paper plane in sprite row 8, frame 2 is centred near (76, 38).
     // Start the dotted plane at that exact point when the sprite frame ends.
-    const bounds = spriteBounds[8]?.[2];
-    const size = BIRD * (spriteScale[8]?.[2] || 1);
-    const bodyX = BIRD * (BODY_ANCHOR_X / CELL - .5);
-    const releaseX = bodyX + size * (76 - (bounds?.bodyCenterX ?? CELL / 2)) / CELL;
-    const releaseY = size * (38 - GROUND_ANCHOR_Y) / CELL;
+    const { x: releaseX, y: releaseY } = spritePoint(8, 2, 76, 38);
     const x = (ax + releaseX) * cell, y = (gy + releaseY) * cell;
     flight = { x, y, vx: 150, vy: -105, heading: -.6, targetX: x, targetY: y,
       trail: [], nextTrail: now, nextTarget: now + 1250, lastUpdate: now, startedAt: now };
@@ -275,6 +271,27 @@ export function startStage() {
       for (let i = 0; i < 5; i++) sparks.push({ x: 5, y: -16, vx: .2 + Math.random() * .45,
         vy: -.15 - Math.random() * .5, life: .8 });
     }
+  }
+
+  function spritePoint(row, col, atlasX, atlasY) {
+    const size = BIRD * (spriteScale[row]?.[col] || 1);
+    const bodyX = BIRD * (BODY_ANCHOR_X / CELL - .5);
+    const centerX = spriteBounds[row]?.[col]?.bodyCenterX ?? CELL / 2;
+    return { x: bodyX + size * (atlasX - centerX) / CELL,
+      y: size * (atlasY - GROUND_ANCHOR_Y) / CELL };
+  }
+
+  function makeWishSpark(now) {
+    if (!routine?.sparkle || reduced || Math.random() >= .48) return;
+    const frame = Math.floor((now - routineAt) / routine.ms);
+    const col = routine.frames[frame];
+    if (col !== 1 && col !== 2) return;
+    // The raised star is at a different atlas position in each pose.
+    const point = col === 1 ? spritePoint(10, 1, 72, 41) : spritePoint(10, 2, 70, 44);
+    sparks.push({ x: point.x + (Math.random() - .5) * 1.4,
+      y: point.y + (Math.random() - .5) * 1.4,
+      vx: (Math.random() - .5) * .28, vy: -.16 - Math.random() * .2,
+      life: 1, wish: true });
   }
 
   function advanceFlight(now) {
@@ -446,7 +463,7 @@ export function startStage() {
       for (const s of steam) { s.y += .07; s.x = Math.sin(s.y * 1.3 + s.p) * .8; if (s.y > 9) { s.y = 0; s.p = Math.random() * 6; } }
       if (steam.length < 3) steam.push({ x: 0, y: steam.length * 3, p: Math.random() * 6 });
     }
-    if (routine?.sparkle && !reduced && Math.random() < .35) sparks.push({ x: 8 + Math.random() * 4, y: -34, vx: (Math.random() - .3) * .5, vy: -.2 - Math.random() * .4, life: 1 });
+    makeWishSpark(now);
 
     // Tone buffer: the world, then night, then Pidgy and particles on top.
     g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#fff'; g.fillRect(0, 0, cols, rows);
@@ -459,13 +476,17 @@ export function startStage() {
     }
     for (const p of PROPS) if (p.id !== 'pidgy') painters[p.id](g, t, night);
     paintBird(g, now);
-    for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.vy += .012; s.life -= .02; disc(g, s.x, s.y, .7, s.life * .8); }
-    while (sparks.length && sparks[0].life <= 0) sparks.shift();
+    for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.vy += s.wish ? .008 : .012; s.life -= s.wish ? .028 : .02; disc(g, s.x, s.y, .7, s.life * .8); }
+    for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life <= 0) sparks.splice(i, 1);
 
     // Accent mask: whatever is hovered, or the prop Pidgy is busy with.
     const lit = hovered || (routine && (PROPS.find(p => (p.routine || p.id) === routine.name)?.id));
     a.setTransform(1, 0, 0, 1, 0, 0); a.clearRect(0, 0, cols, rows);
     if (lit && lit !== 'pidgy' && painters[lit]) { a.setTransform(RES, 0, 0, RES, ax * RES, gy * RES); painters[lit](a, t, 0); }
+    if (sparks.some(s => s.wish)) {
+      a.setTransform(RES, 0, 0, RES, ax * RES, gy * RES);
+      for (const s of sparks) if (s.wish) disc(a, s.x, s.y, .7, s.life * .8);
+    }
 
     const d = g.getImageData(0, 0, cols, rows).data, m = a.getImageData(0, 0, cols, rows).data;
     out.setTransform(dpr, 0, 0, dpr, 0, 0); out.clearRect(0, 0, W, H);
