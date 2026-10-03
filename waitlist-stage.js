@@ -52,6 +52,7 @@ export function startStage() {
   const out = canvas.getContext('2d');
   const buf = document.createElement('canvas'), g = buf.getContext('2d', { willReadFrequently: true });
   const acc = document.createElement('canvas'), a = acc.getContext('2d', { willReadFrequently: true });
+  const birdMask = document.createElement('canvas'), birdMaskCtx = birdMask.getContext('2d', { willReadFrequently: true });
   const sheet = new Image();
   sheet.src = '/brand/pidgy-world.webp';
   let spriteBounds = [], spriteScale = [];
@@ -85,7 +86,7 @@ export function startStage() {
     cell = narrow ? Math.min(4.5, W / 112) : Math.max(4.4, Math.min(8.5, W / 172, H / 100));
     dot = cell / RES; cols = Math.ceil(W / dot); rows = Math.ceil(H / dot);
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
-    buf.width = acc.width = cols; buf.height = acc.height = rows;
+    buf.width = acc.width = birdMask.width = cols; buf.height = acc.height = birdMask.height = rows;
     tone = new Float32Array(cols * rows);
     ax = narrow ? Math.round(W / cell / 2 - 9) : Math.round(W / cell * .64);
     gy = narrow ? Math.round(sceneHeight / cell) : Math.round(H / cell * .8);
@@ -362,11 +363,11 @@ export function startStage() {
     return (a >= 0 && b >= 0 && c >= 0) || (a <= 0 && b <= 0 && c <= 0);
   }
 
-  function paintBird(c, now) {
+  function paintBird(c, now, maskCtx = null) {
     let row = 0, col = reduced ? 0 : idleFrame(now - lastPlay);
     if (routine) {
       const i = Math.floor((now - routineAt) / routine.ms);
-      if (i >= routine.frames.length) { finish(routine, now); return paintBird(c, now); }
+      if (i >= routine.frames.length) { finish(routine, now); return paintBird(c, now, maskCtx); }
       row = routine.row; col = reduced ? 0 : routine.frames[i];
     }
     const bounds = spriteBounds[row]?.[col];
@@ -379,6 +380,7 @@ export function startStage() {
     c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(bodyAnchorX, -.2, 12 * BIRD / 30, 1.4 * BIRD / 30, 0, 0, 6.2832); c.fill();
     if (sheet.complete && sheet.naturalWidth) {
       c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, x, y, size, size);
+      maskCtx?.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, x, y, size, size);
     }
   }
 
@@ -483,7 +485,9 @@ export function startStage() {
       disc(g, s.x, s.y, s.wish ? .52 : .7, s.life * (s.wish ? .58 : .8));
     }
     for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life <= 0) sparks.splice(i, 1);
-    paintBird(g, now);
+    birdMaskCtx.setTransform(1, 0, 0, 1, 0, 0); birdMaskCtx.clearRect(0, 0, cols, rows);
+    birdMaskCtx.setTransform(RES, 0, 0, RES, ax * RES, gy * RES);
+    paintBird(g, now, birdMaskCtx);
 
     // Accent mask: whatever is hovered, or the prop Pidgy is busy with.
     const lit = hovered || (routine && (PROPS.find(p => (p.routine || p.id) === routine.name)?.id));
@@ -491,6 +495,7 @@ export function startStage() {
     if (lit && lit !== 'pidgy' && painters[lit]) { a.setTransform(RES, 0, 0, RES, ax * RES, gy * RES); painters[lit](a, t, 0); }
 
     const d = g.getImageData(0, 0, cols, rows).data, m = a.getImageData(0, 0, cols, rows).data;
+    const birdPixels = birdMaskCtx.getImageData(0, 0, cols, rows).data;
     out.setTransform(dpr, 0, 0, dpr, 0, 0); out.clearRect(0, 0, W, H);
     const live = ripples.filter(r => now - r.at < 1400);
     ripples.length = 0; ripples.push(...live);
@@ -508,7 +513,8 @@ export function startStage() {
       tone[i] += (v - tone[i]) * (reduced ? 1 : .55);
       const k = tone[i];
       if (k < .045) continue;
-      const rad = Math.min(.48, .05 + Math.pow(k, .72) * .46) * dot, cx = px, cy = py;
+      const isPidgy = birdPixels[i * 4 + 3] > 30;
+      const rad = Math.min(isPidgy ? .48 : .62, .05 + Math.pow(k, .72) * (isPidgy ? .46 : .6)) * dot, cx = px, cy = py;
       const path = m[i * 4 + 3] > 30 ? copperPath : inkPath;
       path.moveTo(cx + rad, cy); path.arc(cx, cy, rad, 0, 6.2832);
     }
