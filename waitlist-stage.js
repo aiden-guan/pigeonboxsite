@@ -8,6 +8,7 @@ const INK = '24,25,27', COPPER = '168,80,44';
 const BIRD = 24;                                   // 20% smaller; pose bounds normalize to one visible height
 const BODY_ANCHOR_X = 44, GROUND_ANCHOR_Y = 92;    // stable pigeon pivot in the sprite atlas
 const RES = 1.6;                                   // dots per world unit
+const PIDGY_RES = 2.4;                             // denser print grid for Pidgy only
 
 // row on the sheet, frame order, ms per frame; `hide` lifts a prop while Pidgy holds it.
 const ROUTINES = {
@@ -53,11 +54,14 @@ export function startStage() {
   const buf = document.createElement('canvas'), g = buf.getContext('2d', { willReadFrequently: true });
   const acc = document.createElement('canvas'), a = acc.getContext('2d', { willReadFrequently: true });
   const birdMask = document.createElement('canvas'), birdMaskCtx = birdMask.getContext('2d', { willReadFrequently: true });
+  const birdFine = document.createElement('canvas'), birdFineCtx = birdFine.getContext('2d', { willReadFrequently: true });
+  birdFine.width = birdFine.height = Math.ceil(BIRD * PIDGY_RES);
   const sheet = new Image();
   sheet.src = '/brand/pidgy-world.webp';
   let spriteBounds = [], spriteScale = [];
 
   let W = 0, H = 0, dpr = 1, cell = 7, dot = 4, cols = 0, rows = 0, ax = 0, gy = 0, narrow = false, fade = [], tone = new Float32Array(0);
+  let birdTone = new Float32Array(birdFine.width * birdFine.height);
   let routine = null, routineAt = 0, queue = [], lastPlay = performance.now(), hovered = null, focusProp = null;
   let night = 0, plane = { x: -30, y: -48, dir: 1 }, flight = null, launchOnFinish = false;
   const mouse = { x: -1e4, y: -1e4 }, ripples = [], sparks = [], steam = [];
@@ -382,6 +386,7 @@ export function startStage() {
       c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, x, y, size, size);
       maskCtx?.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, x, y, size, size);
     }
+    return { row, col, x, y, size };
   }
 
   // Atlas frames use different padding. Normalize each frame, then align the pigeon core and
@@ -409,6 +414,10 @@ export function startStage() {
       return { height, bodyCenterX: neutralBodyCenterX(rgba, mask, stack) };
     }));
     spriteScale = spriteBounds.map(row => row.map(frame => maxHeight / Math.max(1, frame.height)));
+    const maxScale = Math.max(1, ...spriteBounds.flat().filter(frame => frame.height > 0).map(frame => maxHeight / frame.height));
+    const fineSize = Math.ceil(BIRD * maxScale * PIDGY_RES);
+    birdFine.width = birdFine.height = fineSize;
+    birdTone = new Float32Array(fineSize * fineSize);
   }
 
   function neutralBodyCenterX(rgba, mask, stack) {
@@ -487,7 +496,12 @@ export function startStage() {
     for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].life <= 0) sparks.splice(i, 1);
     birdMaskCtx.setTransform(1, 0, 0, 1, 0, 0); birdMaskCtx.clearRect(0, 0, cols, rows);
     birdMaskCtx.setTransform(RES, 0, 0, RES, ax * RES, gy * RES);
-    paintBird(g, now, birdMaskCtx);
+    const pidgyPose = paintBird(g, now, birdMaskCtx);
+    birdFineCtx.setTransform(1, 0, 0, 1, 0, 0); birdFineCtx.clearRect(0, 0, birdFine.width, birdFine.height);
+    birdFineCtx.setTransform(PIDGY_RES, 0, 0, PIDGY_RES, 0, 0);
+    if (sheet.complete && sheet.naturalWidth) {
+      birdFineCtx.drawImage(sheet, pidgyPose.col * CELL, pidgyPose.row * CELL, CELL, CELL, 0, 0, pidgyPose.size, pidgyPose.size);
+    }
 
     // Accent mask: whatever is hovered, or the prop Pidgy is busy with.
     const lit = hovered || (routine && (PROPS.find(p => (p.routine || p.id) === routine.name)?.id));
@@ -496,6 +510,7 @@ export function startStage() {
 
     const d = g.getImageData(0, 0, cols, rows).data, m = a.getImageData(0, 0, cols, rows).data;
     const birdPixels = birdMaskCtx.getImageData(0, 0, cols, rows).data;
+    const fineBirdPixels = birdFineCtx.getImageData(0, 0, birdFine.width, birdFine.height).data;
     out.setTransform(dpr, 0, 0, dpr, 0, 0); out.clearRect(0, 0, W, H);
     const live = ripples.filter(r => now - r.at < 1400);
     ripples.length = 0; ripples.push(...live);
@@ -512,14 +527,34 @@ export function startStage() {
       }
       tone[i] += (v - tone[i]) * (reduced ? 1 : .55);
       const k = tone[i];
-      if (k < .045) continue;
-      const isPidgy = birdPixels[i * 4 + 3] > 30;
-      const rad = Math.min(isPidgy ? .48 : .62, .05 + Math.pow(k, .72) * (isPidgy ? .46 : .6)) * dot, cx = px, cy = py;
+      if (k < .045 || birdPixels[i * 4 + 3] > 30) continue;
+      const rad = Math.min(.62, .05 + Math.pow(k, .72) * .6) * dot, cx = px, cy = py;
       const path = m[i * 4 + 3] > 30 ? copperPath : inkPath;
       path.moveTo(cx + rad, cy); path.arc(cx, cy, rad, 0, 6.2832);
     }
     out.fillStyle = `rgb(${INK})`; out.fill(inkPath);
     out.fillStyle = `rgb(${COPPER})`; out.fill(copperPath);
+    const fineDot = cell / PIDGY_RES, fineLeft = (ax + pidgyPose.x) * cell, fineTop = (gy + pidgyPose.y) * cell;
+    const pidgyPath = new Path2D();
+    for (let y = 0; y < birdFine.height; y++) for (let x = 0; x < birdFine.width; x++) {
+      const i = (y * birdFine.width + x) * 4;
+      const worldX = pidgyPose.x + (x + .5) / PIDGY_RES, worldY = pidgyPose.y + (y + .5) / PIDGY_RES;
+      const fadeX = Math.max(0, Math.min(cols - 1, Math.floor((ax + worldX) * RES)));
+      let v = (fineBirdPixels[i + 3] / 255) * (1 - fineBirdPixels[i] / 255) * fade[fadeX];
+      const px = fineLeft + (x + .5) * fineDot, py = fineTop + (y + .5) * fineDot;
+      const dx = px - mouse.x, dy = py - mouse.y, dd = dx * dx + dy * dy;
+      if (dd < 14400) v += (1 - Math.sqrt(dd) / 120) * (v > .02 ? .18 : .05);
+      for (const r of live) {
+        const age = (now - r.at) / 1400, dist = Math.hypot(worldX - r.x, worldY - r.y), ring = age * 46;
+        if (Math.abs(dist - ring) < 2.2) v += .28 * (1 - age) * fade[fadeX];
+      }
+      birdTone[y * birdFine.width + x] += (v - birdTone[y * birdFine.width + x]) * (reduced ? 1 : .55);
+      const k = birdTone[y * birdFine.width + x];
+      if (k < .045) continue;
+      const rad = Math.min(.48, .05 + Math.pow(k, .72) * .46) * fineDot;
+      pidgyPath.moveTo(px + rad, py); pidgyPath.arc(px, py, rad, 0, 6.2832);
+    }
+    out.fillStyle = `rgb(${INK})`; out.fill(pidgyPath);
     printFlight(now);
   }
 
