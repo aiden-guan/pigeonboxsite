@@ -5,7 +5,7 @@
 
 const CELL = 96;                                   // sprite cell on /brand/pidgy-world.webp
 const INK = '24,25,27', COPPER = '168,80,44';
-const BIRD = 30;                                   // Shared size for every Pidgy pose in world units
+const BIRD = 24;                                   // 20% smaller; pose bounds normalize to one visible height
 const RES = 1.6;                                   // dots per world unit
 
 // row on the sheet, frame order, ms per frame; `hide` lifts a prop while Pidgy holds it.
@@ -52,6 +52,7 @@ export function startStage() {
   const acc = document.createElement('canvas'), a = acc.getContext('2d', { willReadFrequently: true });
   const sheet = new Image();
   sheet.src = '/brand/pidgy-world.webp';
+  let spriteBounds = [], spriteScale = [];
 
   let W = 0, H = 0, dpr = 1, cell = 7, dot = 4, cols = 0, rows = 0, ax = 0, gy = 0, fade = [], tone = new Float32Array(0);
   let routine = null, routineAt = 0, queue = [], lastPlay = performance.now(), hovered = null, focusProp = null;
@@ -228,8 +229,40 @@ export function startStage() {
       if (i >= routine.frames.length) { finish(routine, now); return paintBird(c, now); }
       row = routine.row; col = reduced ? 0 : routine.frames[i];
     }
-    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, -.2, 12, 1.4, 0, 0, 6.2832); c.fill();
-    if (sheet.complete && sheet.naturalWidth) c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, -BIRD / 2, -BIRD * 95 / 96, BIRD, BIRD);
+    const bounds = spriteBounds[row]?.[col];
+    const scale = spriteScale[row]?.[col] || 1;
+    const size = BIRD * scale;
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(0, -.2, 12 * BIRD / 30 * scale, 1.4 * BIRD / 30 * scale, 0, 0, 6.2832); c.fill();
+    if (sheet.complete && sheet.naturalWidth) {
+      const y = bounds?.height ? -size * bounds.bottom / CELL : -size * 95 / CELL;
+      c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, -size / 2, y, size, size);
+    }
+  }
+
+  // Atlas frames use different padding. Normalize each visible frame to one height so every
+  // state keeps the same pigeon scale as its sprite changes.
+  function measureSpriteFrames() {
+    if (!sheet.naturalWidth || !sheet.naturalHeight) return;
+    const columns = Math.floor(sheet.naturalWidth / CELL);
+    const rows = Math.floor(sheet.naturalHeight / CELL);
+    const sample = document.createElement('canvas');
+    sample.width = sample.height = CELL;
+    const pixels = sample.getContext('2d', { willReadFrequently: true });
+    let maxHeight = 0;
+    spriteBounds = Array.from({ length: rows }, (_, row) => Array.from({ length: columns }, (_, col) => {
+      pixels.clearRect(0, 0, CELL, CELL);
+      pixels.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, 0, 0, CELL, CELL);
+      const rgba = pixels.getImageData(0, 0, CELL, CELL).data;
+      let top = CELL, bottom = 0;
+      for (let y = 0; y < CELL; y++) for (let x = 0; x < CELL; x++) {
+        if (rgba[(y * CELL + x) * 4 + 3] <= 128) continue;
+        top = Math.min(top, y); bottom = Math.max(bottom, y + 1);
+      }
+      const height = bottom - top;
+      maxHeight = Math.max(maxHeight, height);
+      return { bottom, height };
+    }));
+    spriteScale = spriteBounds.map(row => row.map(frame => maxHeight / Math.max(1, frame.height)));
   }
 
   function finish(done, now) {
@@ -313,6 +346,7 @@ export function startStage() {
   new ResizeObserver(layout).observe(stage);
   layout();
   sheet.decode().catch(() => {}).finally(() => {
+    measureSpriteFrames();
     // Open with a wave, so the first thing a visitor sees is Pidgy saying hello.
     if (!reduced) play('wave');
     requestAnimationFrame(loop);
