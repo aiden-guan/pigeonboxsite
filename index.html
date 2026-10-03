@@ -17,7 +17,7 @@
   <link rel="icon" href="/brand/pigeon-icon.png">
   <link rel="preload" href="/brand/pidgy.webp" as="image" type="image/webp">
   <link rel="stylesheet" href="/dispatch.css?v=3">
-  <link rel="stylesheet" href="/home.css?v=3">
+  <link rel="stylesheet" href="/home.css?v=4">
 </head>
 <body data-page="home">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -27,7 +27,7 @@
       <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
       <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-        <a href="/#product" aria-current="page"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/waitlist"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a href="/#dispatch" aria-current="page"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/waitlist"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
         <a class="account-link" href="/dashboard">Sign in</a>
         <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
         <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
@@ -50,7 +50,6 @@
             <a class="btn btn-line" href="/waitlist">Join the Cloud waitlist <span class="arr right" aria-hidden="true">→</span></a>
           </div>
           <p class="hero-utility label">Free <i aria-hidden="true">·</i> Open source <i aria-hidden="true">·</i> Chrome</p>
-          <p class="hero-keys label" aria-hidden="true"><kbd data-mod-key>⌘K</kbd> commands <kbd>L</kbd> local <kbd>C</kbd> cloud <kbd>`</kbd> pidgy</p>
         </div>
 
         <figure class="gmail-walkthrough" data-gmail-demo aria-label="PigeonBox in Gmail: automatic product walkthrough">
@@ -72,12 +71,12 @@
       </div>
     </section>
 
-    <!-- B. The dispatch -->
+    <!-- B. Workflow -->
     <section class="section dispatch" id="dispatch" aria-labelledby="dispatch-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>01</b> — The dispatch</span><span class="label">Five stops</span></div>
-          <h2 class="h-section" id="dispatch-title">The life of a thread.</h2>
+          <div class="index"><span class="label"><b>01</b> — Workflow</span></div>
+          <h2 class="h-section" id="dispatch-title">From inbox to follow-up.</h2>
         </div>
 
         <div class="route" data-route>
@@ -173,87 +172,11 @@
       </div>
     </section>
 
-    <!-- C. Product lab -->
-    <section class="section lab" id="product" aria-labelledby="lab-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>02</b> — Product lab</span><span class="label">Example mail</span></div>
-          <h2 class="h-section" id="lab-title">Try it.</h2>
-          <p class="lede">Pick a queue. Open a thread. Draft a reply. Ask a question.</p>
-        </div>
-
-        <div class="lab-window" data-lab data-local-keys>
-          <div class="lab-top">
-            <span class="lab-brand"><span class="pidgy pidgy-sm" data-state="idle" data-lab-bird aria-hidden="true"></span>PigeonBox <i>/ Gmail</i></span>
-            <span class="label lab-flag">Illustrative preview</span>
-            <span class="lab-keys label" aria-hidden="true"><kbd>J</kbd><kbd>K</kbd> thread <kbd>1–4</kbd> queue <kbd>S</kbd><kbd>R</kbd><kbd>A</kbd> panel</span>
-          </div>
-          <div class="lab-layout">
-            <aside class="lab-rail" aria-hidden="true">
-              <span class="rail-compose">Compose</span>
-              <span class="rail-item is-on">Inbox <b>18</b></span>
-              <span class="rail-item">Starred</span>
-              <span class="rail-item">Sent</span>
-              <span class="rail-sep">PigeonBox</span>
-              <span class="rail-item is-pb">Focus</span>
-              <span class="rail-item">Ask Pigeon</span>
-            </aside>
-            <div class="lab-inbox">
-              <div class="lab-tabs" role="group" aria-label="Triage category">
-                <button type="button" data-lab-cat="respond" aria-pressed="true">Respond <b></b></button>
-                <button type="button" data-lab-cat="waiting" aria-pressed="false">Waiting <b></b></button>
-                <button type="button" data-lab-cat="fyi" aria-pressed="false">FYI <b></b></button>
-                <button type="button" data-lab-cat="followups" aria-pressed="false">Follow-ups <b></b></button>
-              </div>
-              <div class="lab-list" data-lab-list aria-label="Threads"></div>
-              <p class="lab-note">Invented messages.</p>
-            </div>
-            <aside class="lab-companion" aria-label="Thread companion">
-              <div class="comp-tabs" role="tablist" aria-label="Companion panel">
-                <button type="button" role="tab" id="ct-summary" aria-controls="cp-summary" aria-selected="true">Summary</button>
-                <button type="button" role="tab" id="ct-draft" aria-controls="cp-draft" aria-selected="false" tabindex="-1">Draft</button>
-                <button type="button" role="tab" id="ct-ask" aria-controls="cp-ask" aria-selected="false" tabindex="-1">Ask Pigeon</button>
-              </div>
-              <div class="comp-panel" role="tabpanel" id="cp-summary" aria-labelledby="ct-summary" tabindex="0">
-                <p class="label" data-lab-from></p>
-                <h3 class="comp-title" data-lab-title></h3>
-                <p class="comp-copy" data-lab-brief></p>
-                <dl class="comp-facts" data-lab-facts></dl>
-                <div class="comp-next"><span class="label">Next step</span><strong data-lab-action></strong></div>
-              </div>
-              <div class="comp-panel" role="tabpanel" id="cp-draft" aria-labelledby="ct-draft" tabindex="0" hidden>
-                <div class="tone" role="group" aria-label="Draft tone">
-                  <button type="button" data-tone="warm" aria-pressed="true">Warm</button>
-                  <button type="button" data-tone="brief" aria-pressed="false">Brief</button>
-                  <button type="button" data-tone="formal" aria-pressed="false">Formal</button>
-                </div>
-                <p class="draft-text" data-draft-text></p>
-                <div class="draft-foot">
-                  <button type="button" class="btn btn-primary btn-small" data-draft-insert>Insert into Gmail</button>
-                  <span class="label" data-draft-state>Not inserted · not sent</span>
-                </div>
-              </div>
-              <div class="comp-panel" role="tabpanel" id="cp-ask" aria-labelledby="ct-ask" tabindex="0" hidden>
-                <form class="ask-form" data-ask-form>
-                  <label class="sr-only" for="ask-q">Ask Pigeon about this example inbox</label>
-                  <input id="ask-q" type="text" autocomplete="off" placeholder="Ask about your mail…" data-ask-input>
-                  <button type="submit" class="btn btn-primary btn-small">Ask</button>
-                </form>
-                <div class="ask-suggest" data-ask-suggest></div>
-                <div class="ask-answer" data-ask-answer aria-live="polite"></div>
-              </div>
-              <p class="comp-foot">You review and send every draft.</p>
-            </aside>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- D. Capabilities -->
+    <!-- C. Capabilities -->
     <section class="section caps" id="capabilities" aria-labelledby="caps-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>03</b> — Capabilities</span><span class="label">Local and Cloud</span></div>
+          <div class="index"><span class="label"><b>02</b> — Capabilities</span><span class="label">Local and Cloud</span></div>
           <h2 class="h-section" id="caps-title">Five jobs, done quietly.</h2>
         </div>
         <ol class="glyphs" data-reveal>
@@ -266,11 +189,11 @@
       </div>
     </section>
 
-    <!-- E. Local vs Cloud -->
+    <!-- D. Local vs Cloud -->
     <section class="section" id="modes" aria-labelledby="modes-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>04</b> — Execution</span><span class="label">Switch in Settings</span></div>
+          <div class="index"><span class="label"><b>03</b> — Local or Cloud</span><span class="label">Switch in Settings</span></div>
           <h2 class="h-section" id="modes-title">One extension. <br>Two ways to run.</h2>
         </div>
         <div class="modes" data-reveal>
@@ -300,13 +223,13 @@
       </div>
     </section>
 
-    <!-- F. Cloud intelligence -->
+    <!-- E. Cloud intelligence -->
     <section class="section on-ink cloud-board" id="cloud-intelligence" aria-labelledby="board-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>05</b> — Cloud beta</span><span class="label">Status · Oct 1, 2026</span></div>
+          <div class="index"><span class="label"><b>04</b> — Cloud beta</span></div>
           <h2 class="h-section" id="board-title">Gmail closed. Desk open.</h2>
-          <p class="lede">Connect Google and Cloud keeps sorting and preparing in the background.</p>
+          <p class="lede">Connect Google. Cloud sorts your inbox while Gmail is closed.</p>
         </div>
         <div class="city" data-reveal>
           <canvas data-halftone="always" aria-hidden="true"></canvas>
@@ -333,15 +256,15 @@
       </div>
     </section>
 
-    <!-- G. Privacy / data flow -->
+    <!-- F. Privacy / data flow -->
     <section class="section privacy-flow" id="privacy" aria-labelledby="flow-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>06</b> — Where mail goes</span><span class="label">Privacy</span></div>
-          <h2 class="h-section" id="flow-title">Know where your mail goes.</h2>
-          <p class="lede">Pick a kind of data to trace it.</p>
+          <div class="index"><span class="label"><b>05</b> — Privacy</span></div>
+          <h2 class="h-section" id="flow-title">Follow the data.</h2>
+          <p class="lede">Choose a data type to trace its path.</p>
         </div>
-                <div class="flow-module" data-flow data-reveal>
+        <div class="flow-module" data-flow data-reveal>
           <div class="flow-keys" role="group" aria-label="Highlight a kind of data">
             <button type="button" class="flow-key k-raw" data-key="raw" aria-pressed="false"><i aria-hidden="true"></i>Raw mail content</button>
             <button type="button" class="flow-key k-meta" data-key="meta" aria-pressed="false"><i aria-hidden="true"></i>Metadata</button>
@@ -376,7 +299,7 @@
       </div>
     </section>
 
-    <!-- H. Final dispatch -->
+    <!-- G. Final dispatch -->
     <section class="section final" aria-labelledby="final-title">
       <div class="wrap">
         <div class="ticket" data-reveal>
@@ -409,7 +332,7 @@
     </div>
     <div class="wrap footer-grid">
       <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
-      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#product">Product</a><a href="/local">Local</a><a href="/waitlist">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#dispatch">Product</a><a href="/local">Local</a><a href="/waitlist">Cloud beta</a><a href="/pricing">Pricing</a></nav>
       <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
       <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
     </div>

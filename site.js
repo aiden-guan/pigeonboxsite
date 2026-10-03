@@ -89,7 +89,7 @@ function restoreFocus(previous, fallback) {
 /* ---------------- Command palette ---------------- */
 
 const baseCommands = () => [
-  { group: 'Go to', label: 'Product', glyph: '◇', hint: 'P', run: () => go('/#product') },
+  { group: 'Go to', label: 'Product', glyph: '◇', hint: 'P', run: () => go('/#dispatch') },
   { group: 'Go to', label: 'Local', glyph: '◇', hint: 'L', run: () => go('/local') },
   { group: 'Go to', label: 'Cloud beta', glyph: '◇', hint: 'C', run: () => go('/waitlist') },
   { group: 'Go to', label: 'Pricing', glyph: '◇', hint: '$', run: () => go('/pricing') },
@@ -360,7 +360,7 @@ function closeTerminal() {
 
 /* ---------------- Keyboard ---------------- */
 
-const NAV_KEYS = { p: '/#product', l: '/local', c: '/waitlist', $: '/pricing', d: '/docs' };
+const NAV_KEYS = { p: '/#dispatch', l: '/local', c: '/waitlist', $: '/pricing', d: '/docs' };
 
 function typingTarget(target) {
   return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
