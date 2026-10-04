@@ -36,7 +36,7 @@ export function initGmailDemo() {
   size();
   window.addEventListener('message', (event) => {
     if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
-    if (event.data?.type === 'pb-demo-ready') { current = -1; control(); return; }
+    if (event.data?.type === 'pb-demo-ready') { current = -1; ready(); control(); return; }
     if (event.data?.type !== 'pb-demo-progress') return;
     const { stage, chapter, label, progress: p } = event.data;
     if (stage !== current) {
@@ -46,7 +46,12 @@ export function initGmailDemo() {
     }
     progress.style.transform = `scaleX(${p})`;
   });
-  frame.addEventListener('load', control);
+  // The fixture may finish before this module runs, so also check for an already-rendered root.
+  const ready = () => root.classList.add('is-ready');
+  const rendered = () => { try { return frame.contentDocument?.getElementById('root')?.childElementCount > 0; } catch { return false; } };
+  if (rendered()) ready();
+  frame.addEventListener('load', () => { control(); setTimeout(ready, 1500); });
+  if (frame.contentDocument?.readyState === 'complete') setTimeout(ready, rendered() ? 0 : 1500);
   const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; control(); }, { threshold: .15 });
   observer.observe(root);
   document.addEventListener('visibilitychange', control);

@@ -62,6 +62,24 @@
           "value": "no-store"
         }
       ]
+    },
+    {
+      "source": "/(.*)\\.(webp|png|js|css)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/assets/gmail-demo/(assets|brand)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ]
 }
