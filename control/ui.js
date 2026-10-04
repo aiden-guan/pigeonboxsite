@@ -290,19 +290,31 @@ export function stat(label, value, detail, href) {
   return href ? h('a', { class: 'stat', href }, body) : h('div', { class: 'stat' }, body);
 }
 
-/** Usage against a limit. Without a limit, it shows the count alone. */
-export function meter(label, used, limit, { unit = '', note: detail = null } = {}) {
-  const share = limit ? Math.min(1, used / limit) : null;
+/**
+ * Cloud AI usage as one bar: the share of this month's allowance used
+ * (`usage.aiMonthlyUsed`, from the server), never token counts or prices. A
+ * note appears only when today's request cap is nearly reached.
+ */
+export function usageMeter(usage, limits, now = new Date()) {
+  if (!usage) return null;
+  const share = Math.min(1, Math.max(0, usage.aiMonthlyUsed ?? 0));
+  const percent = Math.round(share * 100);
+  const daily = limits.aiRequestsPerDay ? (usage?.aiRequestsToday ?? 0) / limits.aiRequestsPerDay : 0;
+  const resets = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
   const fill = h('span', { class: 'meter-fill' });
-  if (share !== null) fill.style.setProperty('--v', String(share));
+  fill.style.setProperty('--v', String(share));
+  const detail = daily >= 1
+    ? 'You have reached today’s limit. Cloud AI is back tomorrow.'
+    : daily >= 0.8
+      ? 'You are close to today’s limit. It resets tomorrow.'
+      : `Resets ${resets.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}.`;
+  const tone = Math.max(share, daily) >= 0.95 ? 'bad' : Math.max(share, daily) >= 0.8 ? 'warn' : 'ok';
   return h(
     'div',
-    { class: 'meter', dataset: { tone: share === null ? 'none' : share >= 0.95 ? 'bad' : share >= 0.8 ? 'warn' : 'ok' } },
-    h('div', { class: 'meter-head' }, h('span', { class: 'stat-label' }, label), h('b', {}, `${used.toLocaleString()}${limit ? ` / ${limit.toLocaleString()}` : ''}${unit ? ` ${unit}` : ''}`)),
-    share !== null
-      ? h('div', { class: 'meter-track', attrs: { role: 'meter', 'aria-label': label, 'aria-valuemin': 0, 'aria-valuemax': limit, 'aria-valuenow': Math.min(used, limit) } }, fill)
-      : null,
-    detail ? h('p', { class: 'meter-note' }, detail) : null,
+    { class: 'meter', dataset: { tone } },
+    h('div', { class: 'meter-head' }, h('span', { class: 'stat-label' }, 'Cloud AI this month'), h('b', {}, `${percent}% used`)),
+    h('div', { class: 'meter-track', attrs: { role: 'meter', 'aria-label': 'Cloud AI used this month', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': percent, 'aria-valuetext': `${percent}% used` } }, fill),
+    h('p', { class: 'meter-note' }, detail),
   );
 }
 

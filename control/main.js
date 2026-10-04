@@ -314,7 +314,7 @@ function unreachable(error) {
 const menu = document.querySelector('.cp-menu');
 const side = document.getElementById('cp-side');
 const scrim = document.getElementById('cp-scrim');
-const body = document.querySelector('.cp-body');
+const body = document.querySelector('.cp-desk');
 const narrow = matchMedia('(max-width: 900px)');
 
 function closeMenu() {

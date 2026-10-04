@@ -334,17 +334,18 @@ a.cp-status:hover { border-style: solid; background: var(--sheet); }
 .cp-top { display: none; }
 .cp-scrim { display: none; }
 
-.cp-body { position: relative; min-width: 0; isolation: isolate; }
+/* Not .cp-body: the Color Picker for Chrome extension injects global .cp-body rules into pages. */
+.cp-desk { position: relative; min-width: 0; isolation: isolate; }
 
 /* Workspace atmosphere: faint printed dots under the masthead, paper grain everywhere. */
-.cp-body::before {
+.cp-desk::before {
   content: ""; position: absolute; inset: 0 0 auto 0; height: 440px; z-index: -1; pointer-events: none;
   background: radial-gradient(circle, rgba(var(--ht-ink), .2) .8px, transparent 1.2px) 0 0 / 7px 7px;
   -webkit-mask-image: radial-gradient(110% 100% at 92% 0%, #000 0%, transparent 60%);
   mask-image: radial-gradient(110% 100% at 92% 0%, #000 0%, transparent 60%);
   opacity: .5;
 }
-.cp-body::after {
+.cp-desk::after {
   content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background: url("assets/grain.png") 0 0 / 128px 128px;
   opacity: .22;
@@ -1298,7 +1299,7 @@ a.ov-account:hover strong { color: var(--copper); }
   .cp-advanced summary { min-height: 44px; }
 
   .cp-main { padding: 18px 16px 88px; }
-  .cp-body::before { height: 260px; }
+  .cp-desk::before { height: 260px; }
   .masthead { margin-bottom: 20px; }
   .masthead::before, .masthead::after { display: none; }
   .mh-rule { margin-bottom: 14px; padding-bottom: 10px; }

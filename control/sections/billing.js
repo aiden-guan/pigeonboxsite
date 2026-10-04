@@ -1,5 +1,5 @@
 import { signOut } from '../../lib/session.js';
-import { button, confirmDialog, day, eyebrow, h, humanize, manifest, meter, note, notice, pill, stamp, surface, tag } from '../ui.js';
+import { button, confirmDialog, day, eyebrow, h, humanize, manifest, note, notice, pill, stamp, surface, tag, usageMeter } from '../ui.js';
 import { celebrate } from '../motion.js';
 
 const STATUS_TEXT = {
@@ -80,19 +80,11 @@ export async function render({ api, landing }) {
     ? h('ul', { class: 'services' }, entitlements.capabilities.map((capability) => h('li', {}, SERVICES[capability] ?? humanize(capability).replace(/^cloud /, '').replace(/^./, (c) => c.toUpperCase()))))
     : h('p', { class: 'muted' }, 'No Cloud services on this plan. PigeonBox on your computer keeps working.');
 
+  const usageBar = isCloud ? usageMeter(usage, limits) : null;
   const ledgerSide = h(
     'div',
     { class: 'stack' },
-    surface(
-      'ledger',
-      { title: 'Usage' },
-      h(
-        'div',
-        { class: 'stack' },
-        meter('AI requests today', usage.aiRequestsToday, limits.aiRequestsPerDay, { note: limits.aiRequestsPerMinute ? `Up to ${limits.aiRequestsPerMinute.toLocaleString()} a minute.` : null }),
-        meter('Tokens this month', usage.aiTokensThisMonth, limits.aiTokensPerMonth),
-      ),
-    ),
+    usageBar ? surface('ledger', { title: 'Usage' }, usageBar) : null,
     surface('ledger', { title: 'Included services', actions: tag(`${entitlements.capabilities.length} on`, entitlements.capabilities.length ? 'copper' : null) }, services),
   );
 

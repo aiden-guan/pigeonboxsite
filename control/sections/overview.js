@@ -1,4 +1,4 @@
-import { ago, arrowLink, day, dispatchStatus, empty, h, humanize, index, link, meter, notice, pill, plural, routeStrip, stat, surface, timeline } from '../ui.js';
+import { ago, arrowLink, day, dispatchStatus, empty, h, humanize, index, link, notice, pill, plural, routeStrip, stat, surface, timeline, usageMeter } from '../ui.js';
 import { accounts, phasePill, routeHealth, syncPhase } from '../shared.js';
 
 const SUBSCRIPTION = { none: ['No subscription', 'neutral'], active: ['Active', 'good'], trialing: ['Trial', 'info'], past_due: ['Payment due', 'bad'], canceled: ['Canceled', 'neutral'], incomplete: ['Incomplete', 'warn'], incomplete_expired: ['Expired', 'neutral'], unpaid: ['Unpaid', 'bad'], paused: ['Paused', 'neutral'] };
@@ -113,7 +113,7 @@ export async function render({ api, me, plan }) {
   ].slice(0, 6);
 
   const sub = SUBSCRIPTION[me.subscription.status] ?? [humanize(me.subscription.status), 'neutral'];
-  const usage = entitlements?.usage ?? { aiRequestsToday: overview.usage.backgroundToday, aiTokensThisMonth: overview.usage.tokensThisMonth };
+  const usage = entitlements?.usage ?? null;
   const limits = entitlements?.limits ?? {};
   const planCard = surface(
     'stub',
@@ -121,8 +121,7 @@ export async function render({ api, me, plan }) {
     h('div', { class: 'split' }, h('p', { class: 'eyebrow' }, 'Plan'), pill(...sub)),
     h('h2', { class: 'ov-plan-name' }, plan === 'cloud' ? 'PigeonBox Cloud' : 'Local · free'),
     h('p', { class: 'muted' }, me.subscription.currentPeriodEnd ? `${me.subscription.cancelAtPeriodEnd ? 'Ends' : 'Renews'} ${day(me.subscription.currentPeriodEnd)}` : plan === 'cloud' ? 'No renewal date on file.' : 'PigeonBox on your computer is free.'),
-    meter('AI requests today', usage.aiRequestsToday, limits.aiRequestsPerDay ?? null),
-    meter('Tokens this month', usage.aiTokensThisMonth, limits.aiTokensPerMonth ?? null),
+    plan === 'cloud' ? usageMeter(usage, limits) : null,
     h('div', { class: 'row' }, arrowLink('Billing & subscription', '#billing')),
   );
 

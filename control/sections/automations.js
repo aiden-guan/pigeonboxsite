@@ -60,7 +60,7 @@ async function detail(automation, { api, back }) {
               tone: RUN_TONE[run.status] ?? 'neutral',
               meta: run.actions.length ? null : 'No actions',
               aside: [
-                h('div', { class: 'chips' }, run.actions.map((action) => pill(`${ACTIONS[action.kind] ?? action.kind}: ${(OUTCOME[action.outcome] ?? [action.outcome])[0]}`, (OUTCOME[action.outcome] ?? [0, 'neutral'])[1]))),
+                h('div', { class: 'chips' }, run.actions.map((action) => pill(`${ACTIONS[action.kind] ?? action.kind}: ${(OUTCOME[action.outcome] ?? [action.outcome])[0]}${action.outcome === 'skipped' || action.outcome === 'failed' ? ` · ${action.detail}` : ''}`, (OUTCOME[action.outcome] ?? [0, 'neutral'])[1]))),
                 run.actions.some((action) => action.approvalId) ? h('a', { href: '#approvals', class: 'text-link' }, 'Open Approvals') : null,
               ],
             })),
