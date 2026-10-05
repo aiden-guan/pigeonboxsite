@@ -652,7 +652,7 @@ a.card:hover, a.slip:hover, a.parcel:hover, a.stub:hover { transform: translateY
 }
 .cp .route-stop[data-state="done"]::before { border-top: 1.5px solid var(--copper-ink); }
 .cp .route-stop[data-state="bad"]::before { border-top-color: var(--bad); }
-.cp .route-stop:last-child::before { right: auto; width: 24px; }
+.cp .route-stop:last-child::before { content: none; }
 .cp .route-dot {
   position: absolute; top: 1px; left: 0; width: 11px; height: 11px; border-radius: 50%;
   background: var(--paper); border: 1.5px solid var(--rule-strong);
@@ -1324,7 +1324,7 @@ a.ov-account:hover strong { color: var(--copper); }
   .ov-grid { gap: 12px; }
   .ov-grid > * { grid-column: span 12; }
   .cp .route-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 6px; }
-  .cp .route-stop:nth-child(2n)::before { right: auto; width: 24px; }
+  .cp .route-stop:nth-child(2n)::before { content: none; }
   .bins { grid-template-columns: 1fr; }
   .memory-tools { grid-template-columns: 1fr; }
   .memory-slip { grid-template-columns: 1fr; gap: 10px; }
