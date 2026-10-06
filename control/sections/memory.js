@@ -143,6 +143,18 @@ export async function render({ api }) {
       toast('Memory preferences saved.', 'success');
     }),
   );
+  // Separate from learning: checks a short phrase while you write, and never turns it into a memory.
+  settings.push(
+    toggle(
+      'Real-time Pidgy checks',
+      preferences.memory.realtimeComposeChecks === true,
+      async (on) => {
+        await api('/v1/preferences/update', { method: 'POST', body: { preferences: { memory: { realtimeComposeChecks: on } } } });
+        toast(on ? 'Real-time Pidgy checks are on.' : 'Real-time Pidgy checks are off.', 'success');
+      },
+      'While you write, Pidgy can privately check a short relevant phrase against your calendar and Brain. Draft text used for a check is processed ephemerally and is not saved as a memory.',
+    ),
+  );
 
   // Explicit search avoids network and vector work on every keystroke.
   const search = button('Search', () => load(), { variant: 'ghost' });

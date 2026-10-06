@@ -3,8 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>PigeonBox · Account</title>
-    <meta name="description" content="Manage PigeonBox connections, billing, privacy, team and API access." />
+    <title>PigeonBox · Dashboard</title>
+    <meta name="description" content="PigeonBox settings, plus connections, billing, privacy, team and API access for PigeonBox Cloud." />
     <meta name="robots" content="noindex" />
     <!-- Empty: same-origin API. The website copy names the API origin here. -->
     <meta name="pigeonbox-api" content="https://pigeonbox-cloud-api.pigeonbox.workers.dev" />
@@ -17,34 +17,13 @@
   <body data-page="control" data-auth="pending">
     <a class="skip-link" href="#view">Skip to content</a>
     <div class="cp">
-      <aside class="cp-side" id="cp-side" aria-label="PigeonBox Cloud">
+      <aside class="cp-side" id="cp-side" aria-label="PigeonBox">
         <div class="cp-brand">
           <a class="brand" href="/" aria-label="PigeonBox home"><span class="pidgy" data-state="idle" aria-hidden="true"></span><span class="wordmark">PigeonBox</span></a>
-          <span class="cp-badge">Cloud</span>
+          <span class="cp-badge"></span>
         </div>
-        <nav class="cp-nav" id="cp-nav" aria-label="Sections">
-          <span class="cp-nav-marker" aria-hidden="true"></span>
-          <p class="cp-group"><span class="n" aria-hidden="true">01</span>Account</p>
-          <a href="#overview" data-section="overview"><span>Account overview</span></a>
-          <a href="#billing" data-section="billing"><span>Billing &amp; subscription</span></a>
-          <a href="#connections" data-section="connections"><span>Connected accounts</span></a>
-          <a href="#privacy" data-section="privacy"><span>Privacy &amp; data</span></a>
-          <a href="#team" data-section="team"><span>Team</span></a>
-          <a href="#developers" data-section="developers"><span>API &amp; MCP</span></a>
-          <p class="cp-group"><span class="n" aria-hidden="true">02</span>Preferences</p>
-          <a href="#preferences" data-section="preferences"><span>Sync &amp; execution</span></a>
-          <a href="#memory" data-section="memory"><span>Memory</span></a>
-          <a href="#activity" data-section="activity"><span>Audit &amp; activity</span></a>
-          <details class="cp-advanced"><summary><span class="n" aria-hidden="true">03</span>Advanced workflows</summary>
-            <a href="#automations" data-section="automations"><span>Automations</span></a>
-            <a href="#sequences" data-section="sequences"><span>Sequences</span></a>
-            <a href="#views" data-section="views"><span>Smart Views</span></a>
-            <a href="#contacts" data-section="contacts"><span>Contacts</span></a>
-            <a href="#documents" data-section="documents"><span>Documents</span></a>
-            <a href="#approvals" data-section="approvals"><span>Approvals</span> <span class="count" data-count="approvals" hidden></span></a>
-            <a href="#briefings" data-section="briefings"><span>Briefings</span></a>
-          </details>
-        </nav>
+        <div class="cp-mode" id="cp-mode" hidden></div>
+        <nav class="cp-nav" id="cp-nav" aria-label="Sections"></nav>
         <div class="cp-foot">
           <a class="cp-status" id="cp-status" href="#connections" hidden>
             <span class="pill" id="cp-status-mark">Checking routes</span>

@@ -258,6 +258,26 @@ code, pre, kbd { font-family: var(--mono); }
   color: var(--copper); border: 1px solid currentColor; border-radius: 2px;
 }
 
+/* Local / Cloud: which mode PigeonBox runs in. The rail below follows it. */
+.cp-mode { padding: 0 18px 12px 14px; }
+.cp-mode-title { margin: 0 0 6px 6px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.cp-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 3px; border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--paper); }
+.cp-mode-choice {
+  display: grid; gap: 2px; justify-items: start; padding: 7px 10px 8px; min-height: 44px;
+  border: 0; border-radius: calc(var(--r-lg) - 3px); background: transparent; color: var(--muted);
+  font: inherit; text-align: left; cursor: pointer;
+  transition: background var(--t-hover, .15s) var(--ease), color var(--t-hover, .15s) var(--ease), box-shadow var(--t-hover, .15s) var(--ease);
+}
+.cp-mode-choice:hover { color: var(--text); }
+.cp-mode-choice[aria-pressed="true"] { background: var(--sheet-2); color: var(--text); box-shadow: 0 0 0 1px var(--rule), var(--lift); }
+.cp-mode-choice:focus-visible { outline: 2px solid var(--copper); outline-offset: 1px; }
+.cp-mode-label { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.cp-mode-choice[aria-pressed="true"] .cp-mode-label::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--copper); vertical-align: 2px; }
+.cp-mode-detail { font-size: 11.5px; color: var(--muted); }
+.cp-mode-note { margin: 0 6px 6px; font-size: 12.5px; color: var(--muted); }
+.cp-mode .text-link { margin-left: 6px; font-size: 13px; }
+body[data-auth="pending"] .cp-mode { visibility: hidden; }
+
 .cp-nav { position: relative; flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 18px 18px 12px; }
 .cp-group {
   display: flex; align-items: center; gap: 8px;
@@ -1395,3 +1415,19 @@ a.ov-account:hover strong { color: var(--copper); }
   .cp-nav a[aria-current="page"] { outline: 2px solid CanvasText; }
   .pill::before, .route-dot, .tl-mark { forced-color-adjust: none; }
 }
+
+/* Switching to Cloud: numbered steps, the current one open. */
+.setup-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-width: 760px; }
+.setup-step { border: 1px solid var(--rule); border-radius: var(--r-lg); background: var(--sheet); padding: 14px 18px; }
+.setup-step.is-later { background: transparent; border-style: dashed; color: var(--muted); }
+.setup-step.is-current { box-shadow: var(--lift); border-color: var(--rule-strong); }
+.setup-step-head { display: flex; align-items: center; gap: 12px; }
+.setup-step-head h2 { margin: 0; font: 400 19px/1.25 var(--serif); letter-spacing: -.01em; flex: 1; }
+.setup-step-n { font: 500 11px/1 var(--mono); letter-spacing: .08em; color: var(--copper); }
+.setup-step.is-later .setup-step-n { color: var(--muted); }
+.setup-step-body { display: grid; gap: 12px; margin-top: 12px; padding-left: 30px; }
+.setup-step-body p { margin: 0; }
+@media (max-width: 600px) { .setup-step-body { padding-left: 0; } }
+
+.code-block { margin: 0; padding: 12px 14px; max-height: 420px; overflow: auto; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.cp-badge:empty { display: none; }

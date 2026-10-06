@@ -1,38 +1,82 @@
-// PigeonBox Cloud control plane: a small hash-routed app over the same-origin
-// API. Each section is its own module, loaded on first visit. Decoration
-// (motion, halftone prints) is layered on afterwards and never blocks a page.
-import { api, finishSignIn, readSession, signOut, startSignIn } from '../lib/session.js';
-import { ago, arrowLink, button, clear, emptyState, h, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
+// PigeonBox dashboard: Settings for the extension and the Cloud control plane,
+// in one hash-routed app. The extension in this browser decides the mode:
+//
+// - Local: settings stored in the extension (AI, inbox, tracking, voice…).
+//   No account needed. Read and saved through lib/extension.js.
+// - Cloud: the account and everything PigeonBox Cloud does, over the API,
+//   plus the extension settings that still apply in Cloud mode.
+//
+// Switching modes happens at #cloud (to Cloud) or from the rail (to Local).
+// Without the extension, the dashboard shows Cloud account pages only.
+// Each section is its own module, loaded on first visit. Decoration (motion,
+// halftone prints) is layered on afterwards and never blocks a page.
+import { api, finishSignIn, readSession, signOut, startSignIn, takeLinkReturn } from '../lib/session.js';
+import { ext, findExtension, STORE_URL } from '../lib/extension.js';
+import { ago, arrowLink, button, clear, confirmDialog, emptyState, h, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
 import { enter, leave, placeMarker } from './motion.js';
 import { routeHealth } from './shared.js';
+import { readIntent } from './setup-intent.js';
+
+const settingsPage = (name) => () => import(`./sections/settings/${name}.js`);
 
 /**
- * Sections in rail order. `title` is the rail label (and the page's place in
- * the eyebrow); `heading` and `lede` set the masthead.
+ * Every page. `title` is the rail label, `heading` and `lede` set the
+ * masthead. `capability` locks a Cloud page the plan does not include;
+ * `scene` picks its halftone print.
  */
-const SECTIONS = {
-  overview: { title: 'Account overview', group: 'Account', heading: 'Your PigeonBox', lede: 'Everything moving through your Cloud workspace.', capability: 'cloud_mail_sync', load: () => import('./sections/overview.js') },
-  billing: { title: 'Billing & subscription', group: 'Account', heading: 'Account ledger', lede: 'Your plan, its renewal, and what Cloud has used.', capability: null, load: () => import('./sections/billing.js') },
-  connections: { title: 'Connected accounts', group: 'Account', heading: 'Mail routes', lede: 'Google accounts connected to PigeonBox Cloud, and how each one is syncing.', capability: 'cloud_mail_sync', load: () => import('./sections/connections.js') },
-  privacy: { title: 'Privacy & data', group: 'Account', heading: 'What Cloud keeps', lede: 'What PigeonBox Cloud stores about your mail, how it is sealed, and how to remove it. Local PigeonBox data in your browser is separate and never shown here.', capability: 'cloud_mail_sync', load: () => import('./sections/privacy.js') },
-  team: { title: 'Team', group: 'Account', heading: 'Shared desk', lede: 'Share a thread’s summary with teammates, assign it, and discuss it. The email itself never leaves the sharer’s mailbox.', capability: 'cloud_team', load: () => import('./sections/team.js') },
-  developers: { title: 'API & MCP', group: 'Account', heading: 'Service entrance', lede: 'Connect tools to PigeonBox with scoped tokens and signed webhooks. Everything they do is audited.', capability: 'cloud_mcp', load: () => import('./sections/developers.js') },
-  preferences: { title: 'Sync & execution', group: 'Preferences', heading: 'Working hours & routines', lede: 'When PigeonBox works for you, and what it prepares in the background.', capability: 'cloud_mail_sync', load: () => import('./sections/preferences.js') },
-  memory: { title: 'Memory', group: 'Preferences', heading: 'What Pidgy remembers', lede: 'The useful details you should not have to explain twice. Correct or forget any of it.', capability: null, load: () => import('./sections/memory.js') },
-  activity: { title: 'Audit & activity', group: 'Preferences', heading: 'Dispatch log', lede: 'Everything done on your behalf, with who asked for it and why.', capability: null, load: () => import('./sections/activity.js') },
-  automations: { title: 'Automations', group: 'Advanced workflows', heading: 'Standing orders', lede: 'Plain-language rules that run in Shadow Mode until you turn them on.', capability: 'cloud_automations', load: () => import('./sections/automations.js') },
-  sequences: { title: 'Sequences', group: 'Advanced workflows', heading: 'Sequences', lede: 'Personal sequences for a small list of people you would write to anyway. Every batch waits for your approval, and replies stop it for that person.', capability: 'cloud_sequences', load: () => import('./sections/sequences.js') },
-  views: { title: 'Smart Views', group: 'Advanced workflows', heading: 'Smart Views', lede: 'Describe mail in your own words. PigeonBox turns it into rules you can read.', capability: 'cloud_automations', load: () => import('./sections/views.js') },
-  contacts: { title: 'Contacts', group: 'Advanced workflows', heading: 'Correspondents', lede: 'Built from dates, counts and open promises in your synced mail. No hidden scores: every item says why it is here.', capability: 'cloud_relationships', load: () => import('./sections/contacts.js') },
-  documents: { title: 'Documents', group: 'Advanced workflows', heading: 'Tracked documents', lede: 'PDFs read in PigeonBox’s viewer. You see who opened what, never more than the viewer can observe.', capability: 'cloud_documents', load: () => import('./sections/documents.js') },
-  approvals: { title: 'Approvals', group: 'Advanced workflows', heading: 'Waiting for your say', lede: 'PigeonBox never sends email or invites people on its own. Everything that needs your say waits here, in Gmail’s side panel and in the extension.', capability: null, load: () => import('./sections/approvals.js') },
-  briefings: { title: 'Briefings', group: 'Advanced workflows', heading: 'Briefings', lede: 'Built from your synced mail and calendar. Every line links to where it came from.', capability: 'cloud_automations', load: () => import('./sections/briefings.js') },
+const PAGES = {
+  // Local mode
+  general: { title: 'General', heading: 'How PigeonBox runs', lede: 'PigeonBox is running on this computer. Mail stays in this browser unless you set up an AI provider.', scene: 'connections', load: settingsPage('general') },
+  ai: { title: 'AI', heading: 'AI on your terms', lede: 'Where summaries, sorting and drafts are worked out while PigeonBox runs locally.', scene: 'memory', load: settingsPage('ai') },
+  localInbox: { title: 'Inbox & drafts', heading: 'Inbox & drafts', lede: 'What PigeonBox does with your mail while Gmail is open.', scene: 'views', load: settingsPage('inbox') },
+  localTracking: { title: 'Email tracking', heading: 'Email tracking', lede: 'Opens and clicks on mail you send, recorded by a tracker you own.', scene: 'documents', load: settingsPage('tracking') },
+  voice: { title: 'Your voice', heading: 'Your voice', lede: 'How drafts should sound. Used for every draft PigeonBox writes for you.', scene: 'memory', load: settingsPage('voice') },
+  localPrivacy: { title: 'Privacy & data', heading: 'What stays where', lede: 'Your mail index, settings and drafts stay in this browser.', scene: 'privacy', load: settingsPage('privacy') },
+  advanced: { title: 'Advanced', heading: 'Advanced', lede: 'Rules, archive thresholds, keyboard and diagnostics.', scene: 'developers', load: settingsPage('advanced') },
+  // Switching to Cloud
+  cloud: { title: 'PigeonBox Cloud', heading: 'Switch to Cloud', lede: 'Cloud keeps working while Gmail is closed: prepared drafts, follow-ups, briefings and calendar context.', scene: 'billing', load: () => import('./sections/cloud-setup.js') },
+  // Cloud mode
+  overview: { title: 'Overview', heading: 'Your PigeonBox', lede: 'Everything moving through your Cloud workspace.', capability: 'cloud_mail_sync', load: () => import('./sections/overview.js') },
+  billing: { title: 'Billing & subscription', heading: 'Account ledger', lede: 'Your plan, its renewal, and what Cloud has used.', scene: 'billing', load: () => import('./sections/billing.js') },
+  connections: { title: 'Connected accounts', heading: 'Mail routes', lede: 'Google accounts connected to PigeonBox Cloud, and how each one is syncing.', capability: 'cloud_mail_sync', scene: 'connections', load: () => import('./sections/connections.js') },
+  privacy: { title: 'Privacy & data', heading: 'What Cloud keeps', lede: 'What PigeonBox Cloud stores about your mail, how it is sealed, and how to remove it. Local PigeonBox data in your browser is separate and never shown here.', capability: 'cloud_mail_sync', scene: 'privacy', load: () => import('./sections/privacy.js') },
+  preferences: { title: 'Sync & routines', heading: 'Working hours & routines', lede: 'When PigeonBox works for you, and what it prepares in the background.', capability: 'cloud_mail_sync', scene: 'preferences', load: () => import('./sections/preferences.js') },
+  inbox: { title: 'In Gmail', heading: 'In Gmail', lede: 'What the PigeonBox extension does inside Gmail in this browser.', scene: 'views', load: settingsPage('inbox') },
+  tracking: { title: 'Email tracking', heading: 'Email tracking', lede: 'Opens and clicks on mail you send, recorded by PigeonBox Cloud.', scene: 'documents', load: settingsPage('tracking') },
+  personalization: { title: 'Your voice', heading: 'Your voice', lede: 'How drafts should sound, here and in Cloud’s background drafts.', scene: 'memory', load: settingsPage('voice') },
+  memory: { title: 'Memory', heading: 'What Pidgy remembers', lede: 'The useful details you should not have to explain twice. Correct or forget any of it.', scene: 'memory', load: () => import('./sections/memory.js') },
+  activity: { title: 'Audit & activity', heading: 'Dispatch log', lede: 'Everything done on your behalf, with who asked for it and why.', scene: 'activity', load: () => import('./sections/activity.js') },
+  team: { title: 'Team', heading: 'Shared desk', lede: 'Share a thread’s summary with teammates, assign it, and discuss it. The email itself never leaves the sharer’s mailbox.', capability: 'cloud_team', scene: 'team', load: () => import('./sections/team.js') },
+  developers: { title: 'API & MCP', heading: 'Service entrance', lede: 'Connect tools to PigeonBox with scoped tokens and signed webhooks. Everything they do is audited.', capability: 'cloud_mcp', scene: 'developers', load: () => import('./sections/developers.js') },
+  approvals: { title: 'Approvals', heading: 'Waiting for your say', lede: 'PigeonBox never sends email or invites people on its own. Everything that needs your say waits here, in Gmail’s side panel and in the extension.', scene: 'approvals', load: () => import('./sections/approvals.js') },
+  automations: { title: 'Automations', heading: 'Standing orders', lede: 'Plain-language rules that run in Shadow Mode until you turn them on.', capability: 'cloud_automations', scene: 'automations', load: () => import('./sections/automations.js') },
+  sequences: { title: 'Sequences', heading: 'Sequences', lede: 'Personal sequences for a small list of people you would write to anyway. Every batch waits for your approval, and replies stop it for that person.', capability: 'cloud_sequences', scene: 'sequences', load: () => import('./sections/sequences.js') },
+  views: { title: 'Smart Views', heading: 'Smart Views', lede: 'Describe mail in your own words. PigeonBox turns it into rules you can read.', capability: 'cloud_automations', scene: 'views', load: () => import('./sections/views.js') },
+  contacts: { title: 'Contacts', heading: 'Correspondents', lede: 'Built from dates, counts and open promises in your synced mail. No hidden scores: every item says why it is here.', capability: 'cloud_relationships', scene: 'contacts', load: () => import('./sections/contacts.js') },
+  documents: { title: 'Documents', heading: 'Tracked documents', lede: 'PDFs read in PigeonBox’s viewer. You see who opened what, never more than the viewer can observe.', capability: 'cloud_documents', scene: 'documents', load: () => import('./sections/documents.js') },
+  briefings: { title: 'Briefings', heading: 'Briefings', lede: 'Built from your synced mail and calendar. Every line links to where it came from.', capability: 'cloud_automations', scene: 'briefings', load: () => import('./sections/briefings.js') },
 };
-Object.keys(SECTIONS).forEach((id, position) => (SECTIONS[id].n = String(position + 1).padStart(2, '0')));
+
+/**
+ * The rail for each mode: [group, [[hash, page]…], collapsible]. A hash can
+ * name different pages per mode (Local and Cloud "privacy" are not the same).
+ */
+const NAV = {
+  local: [
+    ['Settings', [['general', 'general'], ['ai', 'ai'], ['inbox', 'localInbox'], ['tracking', 'localTracking'], ['personalization', 'voice'], ['privacy', 'localPrivacy'], ['advanced', 'advanced']]],
+  ],
+  cloud: [
+    ['Account', [['overview', 'overview'], ['billing', 'billing'], ['connections', 'connections'], ['privacy', 'privacy']]],
+    ['Settings', [['preferences', 'preferences'], ['inbox', 'inbox'], ['tracking', 'tracking'], ['personalization', 'personalization'], ['memory', 'memory']]],
+    ['Work', [['approvals', 'approvals'], ['activity', 'activity'], ['team', 'team'], ['developers', 'developers']]],
+    ['Advanced workflows', [['automations', 'automations'], ['sequences', 'sequences'], ['views', 'views'], ['contacts', 'contacts'], ['documents', 'documents'], ['briefings', 'briefings']], true],
+  ],
+};
+/** Hashes from the other mode, and older links, land on the closest page. */
+const ALIASES = { local: { overview: 'general', billing: 'cloud', connections: 'cloud', preferences: 'general', memory: 'general', activity: 'general', approvals: 'general' }, cloud: { general: 'overview', ai: 'overview', advanced: 'inbox' } };
 
 const view = document.getElementById('view');
 const nav = document.getElementById('cp-nav');
-const marker = nav.querySelector('.cp-nav-marker');
 const announcer = document.getElementById('cp-announce');
 const params = new URLSearchParams(location.search);
 // Providers may return failures in the query or fragment. Keep only codes for
@@ -41,17 +85,26 @@ const errorFragment = new URLSearchParams(location.hash.slice(1));
 const hasErrorFragment = errorFragment.has('error') || errorFragment.has('error_code');
 const hasSignInError = params.has('error') || params.has('error_code') || hasErrorFragment;
 const signInErrorCode = params.get('error_code') ?? (hasErrorFragment ? errorFragment.get('error_code') : null);
-// One-time landing parameters (Google consent result, team invitation, Stripe return, sign-in return). Keep them, then clean the URL.
-const landing = Object.fromEntries(['connected', 'missing', 'error', 'invite', 'checkout'].filter((name) => params.has(name)).map((name) => [name, params.get(name)]));
-const signInReturn = params.has('code') || params.has('state') ? new URLSearchParams(params) : null;
-if (Object.keys(landing).length || signInReturn || hasSignInError) history.replaceState(null, '', `${location.pathname}${hasErrorFragment ? '' : location.hash}`);
+// One-time landing parameters (Google consent result, team invitation, Stripe return, sign-in return,
+// the extension's ID and a Cloud setup request). Keep them, then clean the URL.
+const landing = Object.fromEntries(['connected', 'missing', 'error', 'invite', 'checkout', 'setup'].filter((name) => params.has(name)).map((name) => [name, params.get(name)]));
+const extensionHint = params.get('ext');
+const authReturn = params.has('code') || params.has('state') ? new URLSearchParams(params) : null;
+if (Object.keys(landing).length || authReturn || hasSignInError || extensionHint) history.replaceState(null, '', `${location.pathname}${hasErrorFragment ? '' : location.hash}`);
 
 let ctx = null;
 let renderToken = 0;
+let marker = null;
 
-function currentSection() {
-  const id = location.hash.replace(/^#/, '').split('/')[0];
-  return SECTIONS[id] ? id : 'overview';
+const hashId = () => location.hash.replace(/^#/, '').split('/')[0];
+
+/** The page for the current hash in the current mode, and the hash it lives at. */
+function currentPage() {
+  const id = hashId();
+  if (id === 'cloud' || ALIASES[ctx.mode][id] === 'cloud') return { hash: 'cloud', page: 'cloud' };
+  const entries = NAV[ctx.mode].flatMap(([, items]) => items);
+  const found = entries.find(([hash]) => hash === id) ?? entries.find(([hash]) => hash === ALIASES[ctx.mode][id]) ?? entries[0];
+  return { hash: found[0], page: found[1] };
 }
 
 // ---------------------------------------------------------------------------
@@ -76,10 +129,13 @@ function masthead({ n, path, heading, lede = null, scene = null }) {
   return { el, aside, art };
 }
 
-const sectionMasthead = (id) => {
-  const section = SECTIONS[id];
-  return masthead({ n: section.n, path: `${section.group} / ${section.title}`, heading: section.heading, lede: section.lede, scene: id === 'overview' ? null : id });
-};
+function pageMasthead(hash, pageId) {
+  const page = PAGES[pageId];
+  const groups = NAV[ctx.mode];
+  const group = groups.find(([, items]) => items.some(([itemHash]) => itemHash === hash))?.[0] ?? (ctx.mode === 'cloud' ? 'Cloud' : 'Local');
+  const position = groups.flatMap(([, items]) => items).findIndex(([itemHash]) => itemHash === hash);
+  return masthead({ n: position >= 0 ? String(position + 1).padStart(2, '0') : null, path: `${group} / ${page.title}`, heading: page.heading, lede: page.lede, scene: page.scene ?? null });
+}
 
 /** Section modules return a node, or { content, aside, art, className } to dress the masthead. */
 function dress(head, result) {
@@ -109,17 +165,13 @@ function paint(head, body, { settle = false } = {}) {
   decorate();
 }
 
-function lockedBody(section) {
+function lockedBody(page) {
   const isCloud = ctx.plan === 'cloud';
   return emptyState({
     state: 'lantern',
-    title: isCloud ? `${section.title} is not turned on for this PigeonBox Cloud server yet.` : `${section.title} is part of PigeonBox Cloud.`,
-    text: isCloud ? 'Nothing is wrong with your account. This server does not offer it yet.' : 'PigeonBox on your computer keeps working without it.',
-    actions: [
-      isCloud ? null : link('See plans', '/pricing', { class: 'btn btn-ghost' }),
-      isCloud ? null : link('Billing & subscription', '#billing', { class: 'btn btn-primary' }),
-      tag(`Needs: ${section.capability.replace(/_/g, ' ')}`),
-    ].filter(Boolean),
+    title: isCloud ? `${page.title} is not turned on for this PigeonBox Cloud server yet.` : `${page.title} needs a PigeonBox Cloud subscription.`,
+    text: isCloud ? 'Nothing is wrong with your account. This server does not offer it yet.' : 'Subscribe to turn on Cloud. PigeonBox on your computer keeps working without it.',
+    actions: [isCloud ? null : link('Billing & subscription', '#billing', { class: 'btn btn-primary' }), tag(`Needs: ${page.capability.replace(/_/g, ' ')}`)].filter(Boolean),
   });
 }
 
@@ -128,18 +180,19 @@ function lockedBody(section) {
 // ---------------------------------------------------------------------------
 
 async function render({ focus = false } = {}) {
-  const id = currentSection();
-  const section = SECTIONS[id];
+  const { hash, page: pageId } = currentPage();
+  if (hashId() !== hash) history.replaceState(null, '', `#${hash}`);
+  const page = PAGES[pageId];
   const token = (renderToken += 1);
-  document.title = `${section.title} · PigeonBox Cloud`;
-  updateNav(id);
+  document.title = `${page.title} · PigeonBox`;
+  updateNav(hash);
   closeMenu();
-  const head = sectionMasthead(id);
+  const head = pageMasthead(hash, pageId);
 
-  if (section.capability && !ctx.caps.has(section.capability)) {
+  if (ctx.mode === 'cloud' && page.capability && !ctx.caps.has(page.capability)) {
     head.art?.setAttribute('data-scene', 'locked');
-    paint(head, lockedBody(section));
-    return finish(id, focus);
+    paint(head, lockedBody(page));
+    return finish(page, focus);
   }
 
   // The current page dims at once; a skeleton follows only if loading is slow.
@@ -149,12 +202,12 @@ async function render({ focus = false } = {}) {
   const slow = setTimeout(() => {
     if (token !== renderToken) return;
     skeleton = true;
-    paint(head, pageLoading(`Loading ${section.title}…`));
+    paint(head, pageLoading(`Loading ${page.title}…`));
   }, first ? 0 : 200);
 
   try {
-    const module = await section.load();
-    const result = await module.render({ ...ctx, landing, section: id, rerender: () => render() });
+    const module = await page.load();
+    const result = await module.render({ ...ctx, landing, section: hash, rerender: () => render() });
     if (token !== renderToken) return;
     clearTimeout(slow);
     paint(head, dress(head, result), { settle: skeleton });
@@ -167,18 +220,18 @@ async function render({ focus = false } = {}) {
       notice({
         tone: 'bad',
         label: 'Returned',
-        title: error?.message || 'This section could not load.',
-        text: 'PigeonBox Cloud did not answer as expected. Nothing was changed.',
+        title: error?.message || 'This page could not load.',
+        text: ctx.mode === 'local' ? 'PigeonBox did not answer as expected. Nothing was changed.' : 'PigeonBox Cloud did not answer as expected. Nothing was changed.',
         actions: [button('Try again', () => render(), { variant: 'ghost' })],
       }),
       { settle: skeleton },
     );
   }
-  finish(id, focus);
+  finish(page, focus);
 }
 
-function finish(id, focus) {
-  announcer.textContent = `${SECTIONS[id].title} loaded`;
+function finish(page, focus) {
+  announcer.textContent = `${page.title} loaded`;
   if (focus) {
     view.focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: 'auto' });
@@ -189,28 +242,96 @@ function finish(id, focus) {
 // Rail
 // ---------------------------------------------------------------------------
 
-function updateNav(id) {
+function buildNav() {
+  marker = h('span', { class: 'cp-nav-marker', attrs: { 'aria-hidden': 'true' } });
+  let n = 0;
+  const groups = NAV[ctx.mode].map(([title, items, collapsible]) => {
+    n += 1;
+    const number = h('span', { class: 'n', attrs: { 'aria-hidden': 'true' } }, String(n).padStart(2, '0'));
+    const links = items.map(([hash, pageId]) => {
+      const page = PAGES[pageId];
+      const locked = ctx.mode === 'cloud' && page.capability && !ctx.caps.has(page.capability);
+      return h(
+        'a',
+        { href: `#${hash}`, dataset: { section: hash, ...(locked ? { locked: '' } : {}) }, title: locked ? 'Needs a Cloud subscription' : null },
+        h('span', {}, page.title),
+        hash === 'approvals' ? [' ', h('span', { class: 'count', dataset: { count: 'approvals' }, hidden: true })] : null,
+      );
+    });
+    if (collapsible) return h('details', { class: 'cp-advanced' }, h('summary', {}, number, title), links);
+    return [h('p', { class: 'cp-group' }, number, title), links];
+  });
+  clear(nav, marker, groups);
+  nav.querySelector('details')?.addEventListener('toggle', () => placeMarker(marker, nav.querySelector('a[aria-current="page"]'), { instant: true }));
+  document.querySelector('.cp-badge').textContent = ctx.mode === 'cloud' ? 'Cloud' : 'Local';
+  renderModeSwitch();
+}
+
+/** Local / Cloud switch at the top of the rail. Only shown when the extension is here to switch. */
+function renderModeSwitch() {
+  const box = document.getElementById('cp-mode');
+  if (!ctx.extension) {
+    clear(
+      box,
+      h('p', { class: 'cp-mode-note' }, 'PigeonBox isn’t installed in this browser, or needs an update, so only Cloud account pages are shown.'),
+      arrowLink('Get PigeonBox for Chrome', STORE_URL, { target: '_blank', rel: 'noopener' }),
+    );
+    box.hidden = false;
+    return;
+  }
+  const choice = (mode, label, detail) =>
+    h(
+      'button',
+      { type: 'button', class: 'cp-mode-choice', attrs: { 'aria-pressed': String(ctx.mode === mode) }, on: { click: () => switchMode(mode) } },
+      h('span', { class: 'cp-mode-label' }, label),
+      h('span', { class: 'cp-mode-detail' }, detail),
+    );
+  clear(
+    box,
+    h('p', { class: 'cp-mode-title', id: 'cp-mode-title' }, 'PigeonBox runs'),
+    h('div', { class: 'cp-mode-switch', attrs: { role: 'group', 'aria-labelledby': 'cp-mode-title' } }, choice('local', 'Local', 'On this computer'), choice('cloud', 'Cloud', 'Always on')),
+  );
+  box.hidden = false;
+}
+
+async function switchMode(mode) {
+  if (mode === ctx.mode) return;
+  if (mode === 'cloud') {
+    location.hash = '#cloud';
+    return;
+  }
+  const ok = await confirmDialog({
+    title: 'Run PigeonBox on this computer?',
+    body: [
+      'PigeonBox stops sending mail to Cloud from this browser. Summaries, sorting and drafts use the AI you set up for Local mode.',
+      'Your Cloud account, subscription and anything Cloud already prepared stay as they are. You can switch back any time.',
+    ],
+    confirm: 'Switch to Local',
+    label: 'Change mode',
+  });
+  if (!ok) return;
+  try {
+    await ext('SET_RUN_MODE', { mode: 'local' });
+    toast('PigeonBox now runs on this computer.', 'success');
+    history.replaceState(null, '', '#general');
+    await boot();
+  } catch (error) {
+    toast(error?.message || 'Could not switch modes.', 'error');
+  }
+}
+
+function updateNav(hash) {
   let current = null;
   for (const anchor of nav.querySelectorAll('a[data-section]')) {
-    if (anchor.dataset.section === id) {
+    if (anchor.dataset.section === hash) {
       anchor.setAttribute('aria-current', 'page');
       // Never hide the current page inside the collapsed group.
       anchor.closest('details')?.setAttribute('open', '');
       current = anchor;
     } else anchor.removeAttribute('aria-current');
   }
-  document.getElementById('cp-top-section').textContent = SECTIONS[id].title;
+  document.getElementById('cp-top-section').textContent = PAGES[currentPage().page].title;
   requestAnimationFrame(() => placeMarker(marker, current));
-}
-
-function markLocked() {
-  for (const anchor of nav.querySelectorAll('a[data-section]')) {
-    const capability = SECTIONS[anchor.dataset.section]?.capability;
-    if (capability && !ctx.caps.has(capability)) {
-      anchor.dataset.locked = '';
-      anchor.title = 'Part of PigeonBox Cloud';
-    }
-  }
 }
 
 function showRouteHealth(data) {
@@ -222,11 +343,11 @@ function showRouteHealth(data) {
   document.getElementById('cp-status-detail').textContent = health.live.length
     ? `${plural(health.live.length, 'account')}${health.lastSync ? ` · synced ${ago(health.lastSync)}` : ''}`
     : 'Connect Google to start';
-  box.hidden = false;
+  box.hidden = ctx?.mode !== 'cloud';
 }
 
 async function refreshCounts(force = false) {
-  if (!ctx || (document.hidden && !force)) return;
+  if (!ctx || ctx.mode !== 'cloud' || !ctx.me || (document.hidden && !force)) return;
   try {
     const { pending } = await api('/v1/approvals/list', { method: 'POST', body: { status: 'pending', limit: 1 } });
     for (const badge of document.querySelectorAll('[data-count="approvals"]')) {
@@ -236,10 +357,28 @@ async function refreshCounts(force = false) {
     }
     document.getElementById('cp-top-count').hidden = !pending;
     document.getElementById('cp-top-count').setAttribute('aria-label', `${plural(pending, 'approval')} waiting`);
-    if (pending) nav.querySelector('details')?.setAttribute('open', '');
   } catch {
     // Counts are a convenience; the section shows errors itself.
   }
+}
+
+function showUser() {
+  const user = document.getElementById('cp-user');
+  const out = document.getElementById('cp-signout');
+  if (ctx.me) {
+    const email = ctx.me.user.email || '';
+    document.getElementById('cp-email').textContent = email;
+    document.getElementById('cp-email').title = email;
+    document.getElementById('cp-avatar').textContent = (email || 'P').slice(0, 1);
+    document.getElementById('cp-plan').textContent = ctx.plan === 'cloud' ? 'Cloud plan' : 'No Cloud plan';
+    out.hidden = false;
+  } else {
+    document.getElementById('cp-email').textContent = 'PigeonBox in this browser';
+    document.getElementById('cp-avatar').textContent = 'P';
+    document.getElementById('cp-plan').textContent = ctx.extension ? `Local · v${ctx.extension.version}` : '';
+    out.hidden = true;
+  }
+  user.hidden = false;
 }
 
 // ---------------------------------------------------------------------------
@@ -259,7 +398,8 @@ function signedOut() {
   }
   document.body.dataset.auth = 'out';
   const status = h('p', { class: 'hint', attrs: { role: 'status' } });
-  const head = masthead({ n: '00', path: 'PigeonBox Cloud / Sign in', heading: 'Your Cloud desk', lede: 'Connections, approvals, automations and privacy for PigeonBox Cloud, in one place.', scene: 'connections' });
+  const inCloudMode = ctx?.extension?.product?.runMode === 'cloud';
+  const head = masthead({ n: '00', path: 'PigeonBox / Sign in', heading: inCloudMode ? 'Sign in to PigeonBox Cloud' : 'Your PigeonBox desk', lede: inCloudMode ? 'PigeonBox in this browser runs on Cloud. Sign in to manage it.' : 'Connections, approvals, automations and privacy for PigeonBox Cloud, in one place.', scene: 'connections' });
   paint(
     head,
     [hasSignInError ? notice(signInErrorCode === 'signup_disabled' ? {
@@ -278,16 +418,27 @@ function signedOut() {
       surface(
         'stub',
         { title: 'Sign in', eyebrow: 'Account' },
-        h('p', { class: 'muted' }, 'Sign in to manage connections, approvals, automations and privacy for PigeonBox Cloud.'),
+        h('p', { class: 'muted' }, 'Sign in with the Google account you use for PigeonBox Cloud.'),
         h('div', { class: 'row' }, button('Sign in', () => startSignIn(status, location.hash))),
         status,
       ),
-      surface(
-        'slip',
-        { title: 'Not on Cloud yet?' },
-        h('p', { class: 'muted' }, 'PigeonBox works locally in Gmail without an account. Cloud adds sync while Gmail is closed, hosted AI, and approvals from anywhere.'),
-        h('div', { class: 'row' }, arrowLink('Compare plans', '/pricing')),
-      ),
+      inCloudMode
+        ? surface(
+          'slip',
+          { title: 'Rather run locally?' },
+          h('p', { class: 'muted' }, 'PigeonBox works in Gmail without an account. Switch this browser back to Local mode.'),
+          h('div', { class: 'row' }, button('Switch to Local', async () => {
+            await ext('SET_RUN_MODE', { mode: 'local' });
+            history.replaceState(null, '', '#general');
+            await boot();
+          }, { variant: 'ghost' })),
+        )
+        : surface(
+          'slip',
+          { title: 'Not on Cloud yet?' },
+          h('p', { class: 'muted' }, 'PigeonBox works locally in Gmail without an account. Install it, then open Settings from PigeonBox to set it up.'),
+          h('div', { class: 'row' }, arrowLink('Get PigeonBox for Chrome', STORE_URL, { target: '_blank', rel: 'noopener' })),
+        ),
     )],
   );
   document.getElementById('cp-signout').hidden = true;
@@ -344,25 +495,87 @@ narrow.addEventListener('change', () => {
   closeMenu();
   placeMarker(marker, nav.querySelector('a[aria-current="page"]'), { instant: true });
 });
-nav.querySelector('details')?.addEventListener('toggle', () => placeMarker(marker, nav.querySelector('a[aria-current="page"]'), { instant: true }));
 window.addEventListener('resize', () => placeMarker(marker, nav.querySelector('a[aria-current="page"]'), { instant: true }), { passive: true });
 
 // ---------------------------------------------------------------------------
 // Start
 // ---------------------------------------------------------------------------
 
-async function start() {
-  if (signInReturn && !hasSignInError) {
+/** Finish a sign-in, or a sign-in done for the extension, when this load returns from one. */
+async function completeAuthReturn() {
+  if (!authReturn || hasSignInError) return;
+  const linked = takeLinkReturn(authReturn);
+  if (linked) {
+    history.replaceState(null, '', `${location.pathname}${linked.back}`);
     try {
-      const back = await finishSignIn(signInReturn);
-      if (back) history.replaceState(null, '', `${location.pathname}${back}`);
+      await ext('LINK_COMPLETE', { code: linked.code, state: linked.state });
+      toast('PigeonBox in this browser is connected to Cloud.', 'success');
     } catch (error) {
-      signedOut();
-      toast(error?.message || 'Sign-in failed. Try again.', 'error');
-      return;
+      toast(error?.message || 'Connecting PigeonBox failed. Try again.', 'error');
+    }
+    return;
+  }
+  try {
+    const back = await finishSignIn(authReturn);
+    if (back) history.replaceState(null, '', `${location.pathname}${back}`);
+  } catch (error) {
+    toast(error?.message || 'Sign-in failed. Try again.', 'error');
+  }
+}
+
+/** What this dashboard knows: the extension, the mode, and (when signed in) the Cloud account. */
+async function loadContext(hello) {
+  const extension = hello ? { ...hello, product: hello.product } : null;
+  const mode = extension ? (extension.product.runMode === 'cloud' ? 'cloud' : 'local') : 'cloud';
+  let me = null;
+  let capabilities = { plan: 'local', capabilities: [] };
+  if (readSession()) {
+    try {
+      [me, capabilities] = await Promise.all([api('/v1/me'), api('/v1/capabilities')]);
+    } catch (error) {
+      if (readSession() && mode === 'cloud') throw error;
+      me = null;
     }
   }
-  if (!readSession()) return signedOut();
+  return {
+    api,
+    ext,
+    extension,
+    mode,
+    me,
+    plan: capabilities.plan,
+    caps: new Set(capabilities.capabilities),
+    refreshCounts: () => refreshCounts(true),
+    reload: () => boot(),
+    toast,
+  };
+}
+
+let listening = false;
+
+async function boot() {
+  const hello = await findExtension(extensionHint);
+  try {
+    ctx = await loadContext(hello);
+  } catch (error) {
+    ctx = { mode: 'cloud', extension: hello, caps: new Set() };
+    unreachable(error);
+    return;
+  }
+  // A Cloud setup that was waiting for a subscription finishes as soon as Stripe sends the person back.
+  if (landing.checkout === 'success' && readIntent() && ctx.mode === 'local') history.replaceState(null, '', '#cloud');
+  // Otherwise make sure the extension sees the new subscription now rather than later.
+  else if (landing.checkout === 'success' && ctx.extension) void ext('REFRESH').catch(() => undefined);
+  if (landing.setup === 'cloud' && ctx.mode === 'local') history.replaceState(null, '', '#cloud');
+  delete landing.setup;
+
+  const needsAccount = ctx.mode === 'cloud' && hashId() !== 'cloud';
+  if (needsAccount && !ctx.me) {
+    buildNav();
+    return signedOut();
+  }
+  document.body.dataset.auth = 'in';
+  document.body.dataset.mode = ctx.mode;
   try {
     const saved = sessionStorage.getItem(INVITE_KEY);
     if (saved && !landing.invite) landing.invite = saved;
@@ -370,38 +583,36 @@ async function start() {
   } catch {
     // Storage blocked.
   }
-  try {
-    const [me, capabilities] = await Promise.all([api('/v1/me'), api('/v1/capabilities')]);
-    ctx = { api, me, plan: capabilities.plan, caps: new Set(capabilities.capabilities), refreshCounts: () => refreshCounts(true), toast };
-  } catch (error) {
-    if (!readSession()) return signedOut();
-    unreachable(error);
-    return;
+  buildNav();
+  showUser();
+  document.getElementById('cp-status').hidden = true;
+  if (ctx.mode !== 'cloud') document.getElementById('cp-top-count').hidden = true;
+  if (ctx.mode === 'cloud' && ctx.caps.has('cloud_mail_sync')) import('./shared.js').then(({ accounts }) => accounts()).catch(() => undefined);
+  if (ctx.mode === 'cloud') {
+    if (!location.hash && landing.invite) history.replaceState(null, '', '#team');
+    if (!location.hash && (landing.connected || landing.error)) history.replaceState(null, '', '#connections');
+    if (!location.hash && landing.checkout) history.replaceState(null, '', '#billing');
   }
-  document.body.dataset.auth = 'in';
-  const email = ctx.me.user.email || '';
-  document.getElementById('cp-email').textContent = email;
-  document.getElementById('cp-email').title = email;
-  document.getElementById('cp-avatar').textContent = (email || 'P').slice(0, 1);
-  document.getElementById('cp-plan').textContent = ctx.plan === 'cloud' ? 'Cloud plan' : 'Local · free';
-  document.getElementById('cp-user').hidden = false;
-  markLocked();
-  const out = document.getElementById('cp-signout');
-  out.hidden = false;
-  out.addEventListener('click', async () => {
-    await signOut();
-    location.replace('/');
-  });
-  document.addEventListener('pigeonbox:accounts', (event) => showRouteHealth(event.detail));
-  if (ctx.caps.has('cloud_mail_sync')) import('./shared.js').then(({ accounts }) => accounts()).catch(() => undefined);
-  if (!location.hash && landing.invite) history.replaceState(null, '', '#team');
-  if (!location.hash && (landing.connected || landing.error)) history.replaceState(null, '', '#connections');
-  if (!location.hash && landing.checkout) history.replaceState(null, '', '#billing');
-  window.addEventListener('hashchange', () => render({ focus: true }));
+  if (!listening) {
+    listening = true;
+    window.addEventListener('hashchange', () => ctx?.mode && render({ focus: true }));
+    document.addEventListener('pigeonbox:accounts', (event) => showRouteHealth(event.detail));
+    document.getElementById('cp-signout').addEventListener('click', async () => {
+      await signOut();
+      location.replace(ctx?.extension && ctx.mode === 'local' ? '/dashboard' : '/');
+    });
+    setInterval(refreshCounts, 60_000);
+    document.addEventListener('visibilitychange', () => void refreshCounts());
+  }
   await render();
   void refreshCounts(true);
-  setInterval(refreshCounts, 60_000);
-  document.addEventListener('visibilitychange', () => void refreshCounts());
+}
+
+async function start() {
+  // The extension must be found before a sign-in done for it can be handed back.
+  await findExtension(extensionHint);
+  await completeAuthReturn();
+  await boot();
 }
 
 void start();
