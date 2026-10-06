@@ -71,7 +71,7 @@ export async function render({ api }) {
     approvals: checkbox('Approvals waiting', p.notifications.approvals),
     engagement: checkbox('Engagement (opens, clicks, document views)', p.notifications.engagement),
   };
-  const web = checkbox('Allow web research for drafts and Ask Pigeon', p.webResearch, {}, 'Off by default. Only your question is sent to the search provider, never email content.');
+  const web = checkbox('Allow web research for drafts and Ask Pigeon', false, { disabled: true }, 'Coming soon.');
 
   const save = button('Save preferences', async () => {
     const days = workdays.filter(checked).map((row) => Number(row.querySelector('input').value));
