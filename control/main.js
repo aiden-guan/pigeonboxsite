@@ -52,6 +52,7 @@ const PAGES = {
   automations: { title: 'Automations', heading: 'Standing orders', lede: 'Plain-language rules that run in Shadow Mode until you turn them on.', capability: 'cloud_automations', scene: 'automations', load: () => import('./sections/automations.js') },
   sequences: { title: 'Sequences', heading: 'Sequences', lede: 'Personal sequences for a small list of people you would write to anyway. Every batch waits for your approval, and replies stop it for that person.', capability: 'cloud_sequences', scene: 'sequences', load: () => import('./sections/sequences.js') },
   views: { title: 'Smart Views', heading: 'Smart Views', lede: 'Describe mail in your own words. PigeonBox turns it into rules you can read.', capability: 'cloud_automations', scene: 'views', load: () => import('./sections/views.js') },
+  subscriptions: { title: 'Mailing lists', heading: 'Mailing lists', lede: 'Newsletters and stores that email you. Leave any of them in one click, the way Gmail’s Unsubscribe button works, and PigeonBox keeps the ones that ignore it out of your inbox.', capability: 'cloud_mail_sync', scene: 'views', load: () => import('./sections/subscriptions.js') },
   contacts: { title: 'Contacts', heading: 'Correspondents', lede: 'Built from dates, counts and open promises in your synced mail. No hidden scores: every item says why it is here.', capability: 'cloud_relationships', scene: 'contacts', load: () => import('./sections/contacts.js') },
   documents: { title: 'Documents', heading: 'Tracked documents', lede: 'PDFs read in PigeonBox’s viewer. You see who opened what, never more than the viewer can observe.', capability: 'cloud_documents', scene: 'documents', load: () => import('./sections/documents.js') },
   briefings: { title: 'Briefings', heading: 'Briefings', lede: 'Built from your synced mail and calendar. Every line links to where it came from.', capability: 'cloud_automations', scene: 'briefings', load: () => import('./sections/briefings.js') },
@@ -68,7 +69,7 @@ const NAV = {
   cloud: [
     ['Account', [['overview', 'overview'], ['billing', 'billing'], ['connections', 'connections'], ['privacy', 'privacy']]],
     ['Settings', [['preferences', 'preferences'], ['inbox', 'inbox'], ['tracking', 'tracking'], ['personalization', 'personalization'], ['memory', 'memory']]],
-    ['Work', [['approvals', 'approvals'], ['activity', 'activity'], ['team', 'team'], ['developers', 'developers']]],
+    ['Work', [['approvals', 'approvals'], ['subscriptions', 'subscriptions'], ['activity', 'activity'], ['team', 'team'], ['developers', 'developers']]],
     ['Advanced workflows', [['automations', 'automations'], ['sequences', 'sequences'], ['views', 'views'], ['contacts', 'contacts'], ['documents', 'documents'], ['briefings', 'briefings']], true],
   ],
 };

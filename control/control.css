@@ -1457,3 +1457,10 @@ a.ov-account:hover strong { color: var(--copper); }
 
 .code-block { margin: 0; padding: 12px 14px; max-height: 420px; overflow: auto; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .cp-badge:empty { display: none; }
+
+/* ---------- Mailing lists ---------- */
+.cp .subs > li { flex-wrap: nowrap; }
+.cp .subs .sub-pick { flex: none; padding: 0; }
+.cp .subs .chips { flex: none; }
+.cp .subs .toggle { flex: none; padding: 0; border-top: 0; gap: 10px; font-size: 13px; }
+@media (max-width: 600px) { .cp .subs > li { flex-wrap: wrap; } }
