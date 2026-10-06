@@ -1,135 +1,291 @@
-import { button, clear, confirmDialog, day, emptyState, field, h, input, link, pill, select, surface, toast, toggle } from '../ui.js';
+import { ago, button, clear, confirmDialog, day, emptyState, h, input, link, note, plural, surface, toast, toggle } from '../ui.js';
 
-const CATEGORIES = [
-  ['', 'All categories'],
-  ['people', 'People'],
-  ['projects', 'Projects'],
-  ['classes', 'Classes'],
-  ['logistics', 'Recent context'],
-  ['decisions', 'Decisions'],
-  ['preferences', 'Preferences'],
-  ['other', 'Other'],
+// Memory as pages, the way a notebook or wiki holds it: one page for you, one
+// per person, one per topic. Each page leads with a short overview, then the
+// individual facts grouped by kind. Names of other pages become links.
+
+const CATEGORY = {
+  people: 'Relationships',
+  projects: 'Projects',
+  classes: 'School',
+  logistics: 'Recent context',
+  decisions: 'Plans and decisions',
+  preferences: 'Preferences',
+  other: 'Other',
+};
+const CATEGORY_ORDER = ['people', 'projects', 'classes', 'decisions', 'preferences', 'logistics', 'other'];
+const GROUPS = [
+  ['self', 'You'],
+  ['person', 'People'],
+  ['topic', 'Topics'],
 ];
-const CATEGORY = Object.fromEntries(CATEGORIES.filter(([value]) => value));
+const TYPE_LABEL = { self: 'About you', person: 'Person', topic: 'Topic' };
+const UNSORTED = 'unsorted';
 
 export async function render({ api }) {
   const root = h('div', { class: 'stack memory-view' });
-  const query = input({ type: 'search', placeholder: 'Search a person, class or project', maxLength: 500, attrs: { 'aria-label': 'Search memories' } });
-  const category = select(CATEGORIES, '');
-  category.setAttribute('aria-label', 'Memory category');
-  let cursor = null;
+  const state = { subjects: [], organizing: false, active: null, query: '', history: false };
+  const index = h('nav', { class: 'brain-index', attrs: { 'aria-label': 'Memory pages' } });
+  const page = h('article', { class: 'brain-page', attrs: { 'aria-live': 'polite', tabindex: '-1' } });
+  const filter = input({ type: 'search', placeholder: 'Find a page or search facts', maxLength: 500, attrs: { 'aria-label': 'Find a page or search facts' } });
   let revision = 0;
-  const list = h('div', { class: 'memory-slips', attrs: { 'aria-live': 'polite' } });
-  const more = button('Load more', () => load(true), { variant: 'ghost' });
-  more.hidden = true;
 
-  const nothing = () =>
-    emptyState({ state: 'map', title: query.value.trim() || category.value ? 'Nothing matches that search' : 'Nothing remembered yet', text: 'No memories yet. Useful facts appear here as connected mail is analyzed.', level: 'h3' });
+  // ---- Index ---------------------------------------------------------------
 
-  const drawItem = (memory) => {
-    const item = h('article', { class: 'memory-slip' });
-    const body = h('p', { class: 'ms-text' }, memory.text);
-    const correction = h('textarea', {
-      class: 'input',
-      value: memory.text,
-      required: true,
-      minLength: 10,
-      maxLength: 600,
-      attrs: { 'aria-label': 'Correct remembered fact' },
-    });
+  const drawIndex = () => {
+    const term = filter.value.trim().toLowerCase();
+    const shown = state.subjects.filter((subject) => !term || subject.label.toLowerCase().includes(term));
+    const entry = (id, label, count) =>
+      h(
+        'li',
+        {},
+        h(
+          'button',
+          { type: 'button', class: ['bi-item', state.active === id && 'is-active'], attrs: { 'aria-current': state.active === id ? 'page' : null }, on: { click: () => open(id) } },
+          h('span', { class: 'bi-label' }, label),
+          h('span', { class: 'bi-count', attrs: { 'aria-label': plural(count, 'fact') } }, String(count)),
+        ),
+      );
+    clear(
+      index,
+      GROUPS.map(([type, heading]) => {
+        const items = shown.filter((subject) => subject.type === type);
+        if (!items.length) return null;
+        return h(
+          'section',
+          { class: 'bi-group' },
+          h('h3', { class: 'bi-heading' }, heading, type !== 'self' ? h('span', {}, String(items.length)) : null),
+          h(
+            'ul',
+            {},
+            items.map((subject) => entry(subject.id, subject.label, subject.factCount)),
+          ),
+        );
+      }),
+      state.organizing && !term
+        ? h('section', { class: 'bi-group' }, h('h3', { class: 'bi-heading' }, 'Being organized'), h('ul', {}, entry(UNSORTED, 'Older memories', '…')))
+        : null,
+      term
+        ? h(
+            'button',
+            { type: 'submit', class: 'bi-search' },
+            h('span', { attrs: { 'aria-hidden': 'true' } }, '↵'),
+            ` Search every fact for “${filter.value.trim().slice(0, 60)}”`,
+          )
+        : null,
+      !shown.length && !term && !state.organizing ? h('p', { class: 'hint' }, 'Pages appear as Pidgy learns from your mail.') : null,
+    );
+  };
+
+  // ---- Text with links to other pages ---------------------------------------
+
+  /** Mentions of other pages' names become links, like wiki links. Text stays text. */
+  const linked = (text, self) => {
+    const names = state.subjects
+      .filter((subject) => subject.id !== self && subject.type !== 'self' && subject.label.length >= 4 && !subject.label.includes('@'))
+      .sort((a, b) => b.label.length - a.label.length);
+    if (!names.length) return [text];
+    const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`\\b(${names.map((subject) => escape(subject.label)).join('|')})\\b`, 'g');
+    const out = [];
+    let last = 0;
+    for (const match of text.matchAll(pattern)) {
+      const subject = names.find((candidate) => candidate.label === match[0]);
+      out.push(text.slice(last, match.index));
+      out.push(h('button', { type: 'button', class: 'wikilink', on: { click: () => open(subject.id) } }, match[0]));
+      last = match.index + match[0].length;
+    }
+    out.push(text.slice(last));
+    return out;
+  };
+
+  // ---- One fact -------------------------------------------------------------
+
+  const drawFact = (memory, { showPage = false } = {}) => {
+    const item = h('li', { class: ['fact', memory.status !== 'active' && 'is-history'] });
+    const expired = memory.validUntil && Date.parse(memory.validUntil) <= Date.now();
+    const text = h('p', { class: 'fact-text' }, linked(memory.text, memory.subject?.id));
+    const correction = h('textarea', { class: 'input', value: memory.text, required: true, minLength: 10, maxLength: 600, rows: 2, attrs: { 'aria-label': 'Correct this fact' } });
     const editor = h(
       'div',
-      { class: 'stack', hidden: true },
+      { class: 'fact-editor', hidden: true },
       correction,
       h(
         'div',
         { class: 'row tight' },
-        button('Save correction', async () => {
+        button('Save', async () => {
           const { memory: updated } = await api('/v1/memory/update', { method: 'POST', body: { memoryId: memory.id, text: correction.value } });
-          item.replaceWith(drawItem(updated));
-          toast('Correction saved.', 'success');
-        }),
-        button(
-          'Cancel',
-          () => {
-            editor.hidden = true;
-            body.hidden = false;
-          },
-          { variant: 'ghost' },
-        ),
+          item.replaceWith(drawFact(updated, { showPage }));
+          toast('Saved. Pidgy will use your wording from now on.', 'success');
+        }, { small: true }),
+        button('Cancel', () => {
+          editor.hidden = true;
+          text.hidden = false;
+        }, { variant: 'ghost', small: true }),
       ),
     );
+    const sourceCount = memory.sources.length;
     const sources = h(
       'details',
-      {},
-      h('summary', {}, 'Sources and freshness'),
-      memory.sources.map((source) => h('p', { class: 'hint' }, `From “${source.title}”${source.at ? ` · ${day(source.at)}` : ''}`)),
-      !memory.sources.length ? h('p', { class: 'hint' }, 'Saved correction; the original account is disconnected.') : null,
-      h('p', { class: 'hint' }, memory.validUntil ? `Useful until ${day(memory.validUntil)}.` : `Last confirmed ${day(memory.lastConfirmedAt)}.`),
-    );
-    return clear(
-      item,
+      { class: 'fact-sources' },
       h(
-        'div',
-        { class: 'ms-meta' },
-        h('span', { class: 'ms-cat' }, CATEGORY[memory.category] ?? memory.category),
-        memory.corrected ? pill('Corrected by you', 'good') : null,
-        memory.validUntil && Date.parse(memory.validUntil) <= Date.now() ? pill('Expired', 'neutral') : null,
+        'summary',
+        {},
+        memory.corrected ? 'Your wording' : sourceCount ? `From ${plural(sourceCount, 'email')}` : 'Saved by you',
+        ' · ',
+        memory.status !== 'active' ? 'replaced' : expired ? `expired ${day(memory.validUntil)}` : memory.validUntil ? `until ${day(memory.validUntil)}` : `confirmed ${ago(memory.lastConfirmedAt)}`,
       ),
       h(
-        'div',
-        { class: 'ms-body' },
-        body,
-        editor,
-        sources,
-        h(
-          'div',
-          { class: 'row' },
-          button(
-            'Correct',
-            () => {
+        'ul',
+        {},
+        memory.sources.map((source) => h('li', {}, `“${source.title}”`, source.at ? h('span', { class: 'hint' }, ` · ${day(source.at)}`) : null)),
+        !sourceCount ? h('li', { class: 'hint' }, 'Your correction. The original account is no longer connected.') : null,
+      ),
+    );
+    const actions =
+      memory.status === 'active'
+        ? h(
+            'div',
+            { class: 'fact-actions' },
+            button('Edit', () => {
               editor.hidden = false;
-              body.hidden = true;
+              text.hidden = true;
               correction.focus();
-            },
-            { variant: 'ghost', small: true },
-          ),
-          button(
-            'Forget',
-            async () => {
+            }, { variant: 'ghost', small: true, title: 'Correct this fact' }),
+            button('Forget', async () => {
               await api('/v1/memory/forget', { method: 'POST', body: { memoryId: memory.id } });
               item.classList.add('is-forgotten');
-              setTimeout(() => {
-                item.remove();
-                if (!list.children.length) list.append(nothing());
-              }, 220);
-              toast('Memory forgotten. Gmail is unchanged.', 'success');
-            },
-            { variant: 'danger-ghost', small: true },
-          ),
-        ),
-      ),
+              setTimeout(() => item.remove(), 220);
+              const subject = state.subjects.find((value) => value.id === memory.subject?.id);
+              if (subject) {
+                subject.factCount -= 1;
+                // The overview named this fact; it is withheld until rewritten.
+                subject.summary = null;
+                page.querySelector('.bp-summary')?.remove();
+                if (subject.factCount <= 0) state.subjects = state.subjects.filter((value) => value !== subject);
+                drawIndex();
+              }
+              toast('Forgotten. Gmail is unchanged.', 'success');
+            }, { variant: 'danger-ghost', small: true, title: 'Forget this fact' }),
+          )
+        : null;
+    return clear(
+      item,
+      showPage && memory.subject
+        ? h('button', { type: 'button', class: 'fact-page', on: { click: () => open(memory.subject.id) } }, memory.subject.label)
+        : null,
+      text,
+      editor,
+      h('div', { class: 'fact-meta' }, sources, actions),
     );
   };
 
-  async function load(append = false) {
-    const current = ++revision;
-    list.setAttribute('aria-busy', 'true');
-    try {
-      const result = await api('/v1/memory/list', {
-        method: 'POST',
-        body: { query: query.value.trim() || undefined, category: category.value || undefined, cursor: append ? cursor : undefined, limit: 20 },
-      });
-      if (current !== revision) return;
-      if (!append) clear(list);
-      for (const memory of result.memories) list.append(drawItem(memory));
-      if (!list.children.length) list.append(nothing());
+  const grouped = (memories, options) => {
+    const byCategory = new Map();
+    for (const memory of memories) byCategory.set(memory.category, [...(byCategory.get(memory.category) ?? []), memory]);
+    const order = CATEGORY_ORDER.filter((category) => byCategory.has(category));
+    // A short page reads better as one list.
+    if (memories.length <= 4 || order.length === 1) return h('ul', { class: 'brain-facts' }, memories.map((memory) => drawFact(memory, options)));
+    return order.map((category) => h('section', { class: 'fact-group' }, h('h4', {}, CATEGORY[category] ?? category), h('ul', { class: 'brain-facts' }, byCategory.get(category).map((memory) => drawFact(memory, options)))));
+  };
+
+  // ---- Pages ----------------------------------------------------------------
+
+  async function fetchAll(body) {
+    const out = [];
+    let cursor;
+    for (let i = 0; i < 5; i += 1) {
+      const result = await api('/v1/memory/list', { method: 'POST', body: { ...body, cursor, limit: 50 } });
+      out.push(...result.memories);
       cursor = result.nextCursor;
-      more.hidden = !cursor;
+      if (!cursor) break;
+    }
+    return out;
+  }
+
+  async function open(id) {
+    state.active = id;
+    state.query = '';
+    drawIndex();
+    const current = ++revision;
+    page.setAttribute('aria-busy', 'true');
+    try {
+      if (id === UNSORTED) {
+        const memories = (await fetchAll({})).filter((memory) => !memory.subject);
+        if (current !== revision) return;
+        clear(
+          page,
+          h('header', { class: 'bp-head' }, h('p', { class: 'eyebrow' }, 'Being organized'), h('h2', {}, 'Older memories')),
+          note('Pidgy is filing these into pages and merging repeats. This happens in the background and usually takes a few minutes.'),
+          memories.length ? h('ul', { class: 'brain-facts' }, memories.map((memory) => drawFact(memory))) : h('p', { class: 'hint' }, 'All filed.'),
+        );
+        return;
+      }
+      const subject = state.subjects.find((value) => value.id === id);
+      if (!subject) return;
+      const memories = await fetchAll({ subject: id, includeHistory: state.history });
+      if (current !== revision) return;
+      const active = memories.filter((memory) => memory.status === 'active');
+      const history = memories.filter((memory) => memory.status !== 'active');
+      const historyToggle = h('label', { class: 'bp-history' }, h('input', { type: 'checkbox', checked: state.history, on: { change: (event) => { state.history = event.target.checked; open(id); } } }), 'Show replaced facts');
+      clear(
+        page,
+        h(
+          'header',
+          { class: 'bp-head' },
+          h('p', { class: 'eyebrow' }, TYPE_LABEL[subject.type], ' · ', plural(subject.factCount, 'fact'), ' · ', `updated ${ago(subject.lastConfirmedAt)}`),
+          h('h2', {}, subject.type === 'self' ? 'You' : subject.label),
+        ),
+        subject.summary ? h('p', { class: 'bp-summary' }, linked(subject.summary, subject.id)) : null,
+        active.length ? grouped(active) : h('p', { class: 'hint' }, 'Nothing current on this page.'),
+        history.length ? h('section', { class: 'fact-group' }, h('h4', {}, 'Replaced'), h('ul', { class: 'brain-facts' }, history.map((memory) => drawFact(memory)))) : null,
+        h('footer', { class: 'bp-foot' }, historyToggle),
+      );
     } finally {
-      if (current === revision) list.removeAttribute('aria-busy');
+      if (current === revision) page.removeAttribute('aria-busy');
     }
   }
+
+  async function search() {
+    const query = filter.value.trim();
+    if (!query) return;
+    state.active = null;
+    state.query = query;
+    drawIndex();
+    const current = ++revision;
+    page.setAttribute('aria-busy', 'true');
+    try {
+      const { memories } = await api('/v1/memory/list', { method: 'POST', body: { query, limit: 30 } });
+      if (current !== revision) return;
+      clear(
+        page,
+        h('header', { class: 'bp-head' }, h('p', { class: 'eyebrow' }, 'Search'), h('h2', {}, `“${query.slice(0, 80)}”`)),
+        memories.length ? h('ul', { class: 'brain-facts' }, memories.map((memory) => drawFact(memory, { showPage: true }))) : h('p', { class: 'hint' }, 'Nothing remembered matches that.'),
+      );
+    } finally {
+      if (current === revision) page.removeAttribute('aria-busy');
+    }
+  }
+
+  async function refresh() {
+    const result = await api('/v1/memory/subjects', { method: 'POST', body: {} });
+    state.subjects = result.subjects;
+    state.organizing = result.organizing;
+    drawIndex();
+    if (state.query) return;
+    const keep = state.active && (state.active === UNSORTED ? state.organizing : state.subjects.some((subject) => subject.id === state.active));
+    const first = keep ? state.active : state.subjects[0]?.id ?? (state.organizing ? UNSORTED : null);
+    if (first) await open(first);
+    else
+      clear(
+        page,
+        emptyState({ state: 'map', title: 'Nothing remembered yet', text: 'As connected mail is analyzed, Pidgy keeps a page about you and the people and projects you write about.', level: 'h3' }),
+      );
+  }
+
+  filter.addEventListener('input', drawIndex);
+
+  // ---- Settings -------------------------------------------------------------
 
   const { preferences } = await api('/v1/preferences');
   const settings = Object.entries({
@@ -156,31 +312,35 @@ export async function render({ api }) {
     ),
   );
 
-  // Explicit search avoids network and vector work on every keystroke.
-  const search = button('Search', () => load(), { variant: 'ghost' });
   clear(
     root,
     surface(
       'ledger',
-      { title: 'Remembered facts' },
+      { title: 'Remembered', className: 'brain' },
       h(
-        'form',
-        {
-          class: 'memory-tools',
-          attrs: { role: 'search' },
-          on: {
-            submit: (event) => {
-              event.preventDefault();
-              search.click();
+        'div',
+        { class: 'brain-grid' },
+        h(
+          'aside',
+          { class: 'brain-side' },
+          h(
+            'form',
+            {
+              class: 'brain-find',
+              attrs: { role: 'search' },
+              on: {
+                submit: (event) => {
+                  event.preventDefault();
+                  search();
+                },
+              },
             },
-          },
-        },
-        field('Search memories', query),
-        field('Category', category),
-        h('span', {}, search),
+            filter,
+          ),
+          index,
+        ),
+        page,
       ),
-      list,
-      h('div', { class: 'row' }, more),
     ),
     h(
       'div',
@@ -188,7 +348,7 @@ export async function render({ api }) {
       surface(
         'card',
         { eyebrow: 'Learning', title: 'Personal context' },
-        h('p', { class: 'muted' }, 'Derived facts from communication are encrypted in Cloud. Saved memories support drafts and can be wrong. Original email stays in Gmail.'),
+        h('p', { class: 'muted' }, 'Pidgy keeps durable, useful facts from your mail, merges repeats, and writes a short overview for each page. Everything is encrypted in Cloud and can be wrong. Original email stays in Gmail.'),
         h('div', { class: 'toggles' }, settings),
         h('p', { class: 'hint' }, 'Turning learning off keeps saved facts available. Use Forget all to erase them.'),
         h('p', { class: 'hint' }, `Fast Recall is ${preferences.fastRecall.enabled ? 'on' : 'off'}. Its optional encrypted excerpts are managed separately. `, link('Manage Fast Recall', '#privacy')),
@@ -196,7 +356,7 @@ export async function render({ api }) {
       surface(
         'card',
         { eyebrow: 'Cannot be undone', title: 'Forget everything', className: 'danger-zone' },
-        h('p', { class: 'muted' }, 'Erase all personal facts, entity links, source references and their search data. Contacts, writing profiles and Fast Recall are managed separately. Gmail and your account stay connected.'),
+        h('p', { class: 'muted' }, 'Erase all personal facts, pages, entity links, source references and their search data. Contacts, writing profiles and Fast Recall are managed separately. Gmail and your account stay connected.'),
         h(
           'div',
           { class: 'row' },
@@ -214,7 +374,8 @@ export async function render({ api }) {
               )
                 return;
               await api('/v1/memory/purge', { method: 'POST', body: { confirm: 'forget all memories' } });
-              await load();
+              state.active = null;
+              await refresh();
               toast('All personal memories forgotten.', 'success');
             },
             { variant: 'danger-ghost' },
@@ -223,6 +384,6 @@ export async function render({ api }) {
       ),
     ),
   );
-  await load();
+  await refresh();
   return root;
 }
