@@ -1427,6 +1427,7 @@ a.ov-account:hover strong { color: var(--copper); }
 .setup-step.is-later .setup-step-n { color: var(--muted); }
 .setup-step-body { display: grid; gap: 12px; margin-top: 12px; padding-left: 30px; }
 .setup-step-body p { margin: 0; }
+.setup-step-summary { margin: 8px 0 0 30px; overflow-wrap: anywhere; }
 @media (max-width: 600px) { .setup-step-body { padding-left: 0; } }
 
 .code-block { margin: 0; padding: 12px 14px; max-height: 420px; overflow: auto; border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); font: 12px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }

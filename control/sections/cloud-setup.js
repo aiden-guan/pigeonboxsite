@@ -1,31 +1,16 @@
-import { API_BASE, linkRedirectUri, startLink, startSignIn } from '../../lib/session.js';
+import { API_BASE, linkRedirectUri, restoreExtensionAccount, startSignIn } from '../../lib/session.js';
 import { STORE_URL } from '../../lib/extension.js';
 import { arrowLink, button, checkbox, h, link, note, notice, pill, surface } from '../ui.js';
 import { clearIntent, readIntent, writeIntent } from '../setup-intent.js';
 
 const SIGNED_IN = new Set(['ready', 'not_entitled', 'unreachable']);
-const LINK_TRIED_KEY = 'pigeonbox.linkTried';
-
-/** Avoid sending someone round the sign-in loop twice in a row if connecting keeps failing. */
-function mayAutoLink() {
-  try {
-    const last = Number(sessionStorage.getItem(LINK_TRIED_KEY) || 0);
-    if (Date.now() - last < 120_000) return false;
-    sessionStorage.setItem(LINK_TRIED_KEY, String(Date.now()));
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 const apiOrigin = () => API_BASE || location.origin;
 const sameEmail = (a, b) => Boolean(a && b && a.toLowerCase() === b.toLowerCase());
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
- * Switching to Cloud, one step at a time: agree, sign in, connect PigeonBox in
- * this browser, subscribe, switch. Each trip away (sign-in, Stripe) comes back
- * here and setup continues on its own; nothing switches without the agreement.
+ * One PigeonBox account sign-in, explicit processing consent, then Gmail access.
+ * The installed extension receives its own PKCE-bound session without another login.
  */
 export async function render(ctx) {
   const { api, ext, extension, me, landing } = ctx;
@@ -60,137 +45,126 @@ export async function render(ctx) {
     });
   }
 
-  let intent = readIntent();
-  const consented = Boolean(intent) || product.runMode === 'cloud';
-  const linked = SIGNED_IN.has(product.cloud.status) && (!me || !product.cloud.email || sameEmail(product.cloud.email, me.user.email));
-  const otherAccount = SIGNED_IN.has(product.cloud.status) && me && product.cloud.email && !sameEmail(product.cloud.email, me.user.email);
-  let entitled = ctx.plan === 'cloud' || product.cloud.status === 'ready';
+  if (ctx.accountError) return notice({
+    tone: 'warn', label: 'Try again', title: 'Your PigeonBox account could not be loaded',
+    text: 'Your sign-in is saved. Check your connection and retry to load your Cloud subscription.',
+    actions: [button('Retry account connection', () => ctx.reload())],
+  });
+
+  const intent = readIntent();
+  const consented = product.runMode === 'cloud' || Boolean(me && intent?.userId === me.user.id);
+  const matchingAccount = me && (extension.account ? extension.account.id === me.user.id : sameEmail(product.cloud.email, me.user.email));
+  const linked = SIGNED_IN.has(product.cloud.status) && matchingAccount;
+  const otherAccount = SIGNED_IN.has(product.cloud.status) && me && product.cloud.email && !matchingAccount;
+  const entitled = Boolean(me && ctx.plan === 'cloud');
   const switched = product.runMode === 'cloud';
 
-  const connect = async () => {
-    const begin = await ext('LINK_BEGIN', { redirectUri: linkRedirectUri() });
-    startLink(begin, '#cloud');
-    await new Promise(() => undefined); // The page is leaving.
+  const allowCloud = async () => {
+    const origins = product.cloudOrigins ?? [];
+    if (!origins.length || (await ext('CHECK_ORIGINS', { origins })).granted) return;
+    const grant = await ext('GRANT', { origins });
+    if (grant.granted) return;
+    status.textContent = 'Click Allow in the PigeonBox window so this browser can reach Cloud.';
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      await wait(1_000);
+      if ((await ext('CHECK_ORIGINS', { origins })).granted) return;
+    }
+    throw new Error('Cloud access was not allowed. Click Start using Cloud to try again.');
   };
   const finishSwitch = async () => {
-    // The extension caches what the account may use; make sure it has seen the subscription.
-    await ext('REFRESH').catch(() => undefined);
-    const switchedTo = await ext('SET_RUN_MODE', { mode: 'cloud', consent: true });
+    if (!me || !entitled) throw new Error('Sign in to your subscribed PigeonBox account first.');
+    if (!agree.querySelector('input').checked) throw new Error('Tick the box to agree first.');
+    writeIntent(me.user.id);
+    await allowCloud();
+    if (!linked) {
+      status.textContent = 'Setting up Cloud with your PigeonBox account…';
+      const begin = await ext('LINK_BEGIN', { redirectUri: linkRedirectUri() });
+      const reply = await api('/v1/auth/link', { method: 'POST', body: {
+        redirect_uri: linkRedirectUri(), code_challenge: begin.codeChallenge,
+        code_challenge_method: 'S256', state: begin.state,
+      } });
+      if (reply.state !== begin.state) throw new Error('Your account connection could not be verified. Try again.');
+      const connected = await ext('LINK_COMPLETE', { code: reply.code, state: reply.state });
+      if (connected.user?.id !== me.user.id) throw new Error('PigeonBox connected a different account. Try again.');
+      product = connected.product ?? product;
+    }
+    const refreshed = await ext('REFRESH');
+    product = refreshed.product ?? product;
+    if (product.cloud.status !== 'ready') throw new Error(product.cloud.status === 'unreachable'
+      ? 'This browser could not reach Cloud. Check your connection and try again.'
+      : 'Your Cloud subscription is still being confirmed. Try again in a moment.');
+    await ext('SET_RUN_MODE', { mode: 'cloud', consent: true });
     clearIntent();
-    // Hosted tracking needs Chrome access to Cloud's addresses; the extension asks in its own window.
-    const origins = switchedTo.product?.cloudOrigins ?? product.cloudOrigins ?? [];
-    if (origins.length) await ext('GRANT', { origins }).catch(() => undefined);
+    status.textContent = '';
     ctx.toast('PigeonBox now runs on Cloud.', 'success');
     history.replaceState(null, '', ctx.caps.has('cloud_mail_sync') ? '#connections' : '#overview');
     await ctx.reload();
   };
-
-  // Continue on our own after each trip, but only with the person's agreement.
-  if (intent && me && !linked && !otherAccount && mayAutoLink()) {
-    status.textContent = 'Connecting PigeonBox in this browser…';
-    void connect().catch((error) => (status.textContent = error.message));
-  }
-  if (linked && landing.checkout === 'success') {
-    delete landing.checkout;
-    // Stripe tells Cloud a moment after it sends the person back, so ask again for a little while.
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      const reply = await ext('REFRESH').catch(() => null);
-      if (reply?.product) product = reply.product;
-      entitled = product.cloud.status === 'ready';
-      if (entitled || !intent) break;
-      await wait(2_500);
-    }
-  }
-  if (intent && linked && entitled && !switched) {
-    await finishSwitch();
-    return h('p', { class: 'muted' }, 'Switching to Cloud…');
-  }
+  const agree = checkbox('I understand that email content is sent to PigeonBox Cloud for processing.', consented);
 
   if (switched && linked && entitled) {
-    return [
-      surface(
-        'card',
-        { eyebrow: 'Mode', title: 'PigeonBox runs on Cloud', meta: product.cloud.email ? `Connected as ${product.cloud.email}` : null },
-        h('p', { class: 'muted' }, 'Cloud keeps working while Gmail is closed. Connect Google so it can sync your mail and calendar.'),
-        h('div', { class: 'row' }, link('Connected accounts', '#connections', { class: 'btn btn-primary' }), link('Overview', '#overview', { class: 'btn btn-ghost' })),
-      ),
-    ];
+    return surface(
+      'card',
+      { eyebrow: 'Mode', title: 'PigeonBox runs on Cloud', meta: `PigeonBox account: ${me.user.email}` },
+      h('p', { class: 'muted' }, 'Connect the Gmail account you want Cloud to work with. It can be different from your PigeonBox account.'),
+      h('div', { class: 'row' }, link('Set up your email', '#connections', { class: 'btn btn-primary' }), link('Overview', '#overview', { class: 'btn btn-ghost' })),
+    );
   }
 
-  // The steps, in order. The first unfinished one carries the action.
-  const agree = checkbox('I understand that email content is sent to PigeonBox Cloud for processing.', consented);
   const steps = [
     {
-      title: 'Agree to Cloud processing',
-      done: consented,
-      body: () => [
-        h('p', { class: 'muted' }, 'When PigeonBox summarizes, sorts, drafts or answers a question, the email content involved is sent over an encrypted connection to PigeonBox Cloud and its AI provider. Cloud stores encrypted summaries, prepared drafts and related intelligence. Keeping message excerpts is a separate opt-in. Your local index and settings stay on this computer.'),
-        agree,
-        h('div', { class: 'row' }, button('Continue', async () => {
-          if (!agree.querySelector('input').checked) throw new Error('Tick the box to agree first.');
-          writeIntent();
-          intent = readIntent();
-          await ctx.rerender();
-        })),
-      ],
-    },
-    {
-      title: 'Sign in',
-      done: Boolean(me),
-      body: () => [
-        h('p', { class: 'muted' }, 'Sign in with the Google account from your Cloud beta invitation.'),
+      title: 'Your PigeonBox account',
+      done: Boolean(me && entitled),
+      summary: me ? `${me.user.email}${entitled ? ' · Cloud subscription active' : ''}` : null,
+      body: () => !me ? [
+        h('p', { class: 'muted' }, 'Sign in with the account you used to subscribe to PigeonBox Cloud. You’ll choose which Gmail account Cloud works with separately.'),
         h('div', { class: 'row' }, button('Sign in with Google', () => startSignIn(status, '#cloud'), { busy: 'Opening sign-in…' })),
-      ],
-    },
-    {
-      title: 'Connect PigeonBox in this browser',
-      done: linked,
-      body: () => [
-        otherAccount
-          ? note(`PigeonBox here is signed in as ${product.cloud.email}, but this dashboard is signed in as ${me.user.email}. Connect it again to use one account.`, 'warn')
-          : h('p', { class: 'muted' }, 'PigeonBox gets its own sign-in through this page. Google may ask you to choose the account again.'),
-        h('div', { class: 'row' }, button(otherAccount ? 'Connect as this account' : 'Connect PigeonBox', connect, { busy: 'Opening sign-in…' })),
-      ],
-    },
-    {
-      title: 'Subscribe',
-      done: entitled,
-      body: () => [
-        h('p', { class: 'muted' }, 'Cloud is invite-only during the beta. Enter the code from your invitation at checkout; with a beta code no card is needed.'),
+      ] : [
+        h('p', { class: 'muted' }, `Signed in as ${me.user.email}. This account does not have an active Cloud subscription yet.`),
+        extension.accountLink && extension.account && extension.account.id !== me.user.id && product.cloud.status === 'ready' ? [
+          note(`PigeonBox in this browser already has an active Cloud account: ${extension.account.email}.`, 'info'),
+          button('Use your signed-in PigeonBox account', async () => {
+            await restoreExtensionAccount(extension, ext, { replace: true });
+            await ctx.reload();
+          }),
+        ] : null,
+        h('p', { class: 'muted' }, 'Already subscribed? Switch to the PigeonBox account you used at checkout. Otherwise, subscribe with your beta invitation code; no card is needed with a beta code.'),
         h('div', { class: 'row' }, button('Subscribe', async () => {
           const { url } = await api('/v1/billing/checkout', { method: 'POST', body: {} });
           location.assign(url);
-          await new Promise(() => undefined);
-        }, { busy: 'Opening Stripe…' }), link('Billing details', '#billing', { class: 'btn btn-ghost' })),
-        landing.checkout === 'success' ? note('Stripe is still confirming your subscription. This updates in a moment; reload if it does not.', 'info') : null,
+        }, { busy: 'Opening Stripe…' }), button('Use another account', () => startSignIn(status, '#cloud'), { variant: 'ghost' })),
+        landing.checkout === 'success' ? note('Stripe is confirming your subscription. Click Check subscription in a moment.', 'info') : null,
+        landing.checkout === 'success' ? button('Check subscription', () => ctx.reload(), { variant: 'ghost' }) : null,
       ],
     },
     {
-      title: 'Switch PigeonBox to Cloud',
-      done: switched,
+      title: 'Start using Cloud',
+      done: switched && linked && entitled,
       body: () => [
-        h('p', { class: 'muted' }, 'PigeonBox in this browser starts using Cloud. Connect Google next so Cloud can work while Gmail is closed.'),
-        h('div', { class: 'row' }, button('Start using Cloud', finishSwitch, { busy: 'Switching…' })),
+        otherAccount ? note(`This browser was connected to ${product.cloud.email}. Starting Cloud will use your PigeonBox account ${me.user.email}.`, 'warn') : null,
+        h('p', { class: 'muted' }, 'Email content used for summaries, sorting, drafts and answers is sent over an encrypted connection to PigeonBox Cloud and its AI provider. Cloud stores encrypted summaries, prepared drafts and related intelligence. Keeping message excerpts is a separate opt-in.'),
+        agree,
+        h('div', { class: 'row' }, button('Start using Cloud', finishSwitch, { busy: 'Setting up Cloud…' })),
+        status,
       ],
+    },
+    {
+      title: 'Connect your email',
+      done: false,
+      summary: 'Choose the Gmail account Cloud should work with. It can be different from your PigeonBox account.',
+      body: () => [],
     },
   ];
   const current = steps.findIndex((step) => !step.done);
-
   return [
-    switched && !entitled ? notice({ tone: 'warn', label: 'Cloud mode', title: 'PigeonBox is set to Cloud but the subscription is not active', text: 'Until it is, PigeonBox sorts with on-device rules and sends nothing to an AI provider. Subscribe below or switch back to Local.' }) : null,
-    h(
-      'ol',
-      { class: 'setup-steps' },
-      steps.map((step, index) =>
-        h(
-          'li',
-          { class: ['setup-step', step.done ? 'is-done' : index === current ? 'is-current' : 'is-later'], attrs: { 'aria-current': index === current ? 'step' : null } },
-          h('div', { class: 'setup-step-head' }, h('span', { class: 'setup-step-n', attrs: { 'aria-hidden': 'true' } }, String(index + 1).padStart(2, '0')), h('h2', {}, step.title), step.done ? pill('Done', 'good') : null),
-          index === current ? h('div', { class: 'setup-step-body' }, step.body()) : null,
-        ),
-      ),
-    ),
-    status,
-    h('p', { class: 'hint' }, 'Changed your mind? PigeonBox keeps running on this computer until the last step.'),
+    h('ol', { class: 'setup-steps' }, steps.map((step, index) => h(
+      'li',
+      { class: ['setup-step', step.done ? 'is-done' : index === current ? 'is-current' : 'is-later'], attrs: { 'aria-current': index === current ? 'step' : null } },
+      h('div', { class: 'setup-step-head' }, h('span', { class: 'setup-step-n', attrs: { 'aria-hidden': 'true' } }, String(index + 1).padStart(2, '0')), h('h2', {}, step.title), step.done ? pill('Done', 'good') : null),
+      step.summary ? h('p', { class: 'hint setup-step-summary' }, step.summary) : null,
+      index === current ? h('div', { class: 'setup-step-body' }, step.body()) : null,
+    ))),
+    current === 0 ? status : null,
+    h('p', { class: 'hint' }, 'PigeonBox keeps running on this computer until you start Cloud.'),
   ];
 }

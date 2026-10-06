@@ -10,7 +10,7 @@
 // Without the extension, the dashboard shows Cloud account pages only.
 // Each section is its own module, loaded on first visit. Decoration (motion,
 // halftone prints) is layered on afterwards and never blocks a page.
-import { api, finishSignIn, readSession, signOut, startSignIn, takeLinkReturn } from '../lib/session.js';
+import { api, finishSignIn, readSession, restoreExtensionAccount, signOut, startSignIn, takeLinkReturn } from '../lib/session.js';
 import { ext, findExtension, STORE_URL } from '../lib/extension.js';
 import { ago, arrowLink, button, clear, confirmDialog, emptyState, h, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
 import { enter, leave, placeMarker } from './motion.js';
@@ -528,12 +528,16 @@ async function loadContext(hello) {
   const extension = hello ? { ...hello, product: hello.product } : null;
   const mode = extension ? (extension.product.runMode === 'cloud' ? 'cloud' : 'local') : 'cloud';
   let me = null;
+  let accountError = null;
   let capabilities = { plan: 'local', capabilities: [] };
+  try { await restoreExtensionAccount(hello, ext); }
+  catch (error) { accountError = error; }
   if (readSession()) {
     try {
       [me, capabilities] = await Promise.all([api('/v1/me'), api('/v1/capabilities')]);
     } catch (error) {
       if (readSession() && mode === 'cloud') throw error;
+      accountError = readSession() ? error : null;
       me = null;
     }
   }
@@ -543,6 +547,7 @@ async function loadContext(hello) {
     extension,
     mode,
     me,
+    accountError,
     plan: capabilities.plan,
     caps: new Set(capabilities.capabilities),
     refreshCounts: () => refreshCounts(true),
@@ -566,12 +571,14 @@ async function boot() {
   if (landing.checkout === 'success' && readIntent() && ctx.mode === 'local') history.replaceState(null, '', '#cloud');
   // Otherwise make sure the extension sees the new subscription now rather than later.
   else if (landing.checkout === 'success' && ctx.extension) void ext('REFRESH').catch(() => undefined);
-  if (landing.setup === 'cloud' && ctx.mode === 'local') history.replaceState(null, '', '#cloud');
+  if (landing.setup === 'cloud') history.replaceState(null, '', ctx.mode === 'cloud' && ctx.plan === 'cloud'
+    ? (ctx.caps.has('cloud_mail_sync') ? '#connections' : '#overview') : '#cloud');
   delete landing.setup;
 
   const needsAccount = ctx.mode === 'cloud' && hashId() !== 'cloud';
   if (needsAccount && !ctx.me) {
     buildNav();
+    if (ctx.accountError) return unreachable(ctx.accountError);
     return signedOut();
   }
   document.body.dataset.auth = 'in';

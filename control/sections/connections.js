@@ -95,7 +95,7 @@ function accountCard(account, position, api, redraw) {
           h('summary', {}, 'Add permissions'),
           h('p', { class: 'hint' }, 'Google asks you to approve only what is new. Existing permissions stay as they are.'),
           add.el,
-          h('div', { class: 'row' }, button('Continue to Google', () => {
+          h('div', { class: 'row' }, button('Connect Gmail with Google', () => {
             const picked = add.picked().filter((feature) => !account.features.includes(feature));
             if (!picked.length) throw new Error('Choose at least one new permission.');
             return connect(api, [...account.features, ...picked], account.id);
@@ -137,7 +137,7 @@ function accountCard(account, position, api, redraw) {
   );
 }
 
-export async function render({ api, landing }) {
+export async function render({ api, landing, me }) {
   const root = h('div', { class: 'stack' });
   const justConnected = landing.connected === '1';
   const banner =
@@ -168,10 +168,11 @@ export async function render({ api, landing }) {
       data.googleConfigured && data.accounts.length < data.maxAccounts
         ? surface(
             'slip',
-            { title: data.accounts.length ? 'Connect another account' : 'Connect Google', className: 'composer' },
+            { title: data.accounts.length ? 'Connect another email account' : 'Connect your Gmail', className: 'composer' },
+            me ? h('p', { class: 'hint' }, `PigeonBox account: ${me.user.email}. Choose the Gmail account you want Cloud to work with; it can be a different account.`) : null,
             h('p', { class: 'muted' }, 'Pick what PigeonBox Cloud may do. Reading mail is required for always-on features; everything else is optional and can be added later.'),
             fresh.el,
-            h('div', { class: 'row' }, button('Continue to Google', () => connect(api, fresh.picked()))),
+            h('div', { class: 'row' }, button('Connect Gmail with Google', () => connect(api, fresh.picked()))),
             h('p', { class: 'hint' }, 'Credentials are encrypted and stay on PigeonBox’s servers. The extension never receives them.'),
           )
         : data.accounts.length >= data.maxAccounts
