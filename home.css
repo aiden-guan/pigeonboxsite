@@ -66,11 +66,11 @@
 .route-steps [aria-selected="true"] .step-bar { transform: scaleX(1); transition: transform 300ms var(--ease); }
 .route.is-auto .route-steps [aria-selected="true"] .step-bar { transform: scaleX(0); animation: step-fill var(--dwell, 4200ms) linear forwards; transition: none; }
 @keyframes step-fill { to { transform: scaleX(1); } }
-.route-panels { position: sticky; top: 96px; display: grid; min-height: 340px; align-items: center; }
+.route-panels { position: sticky; top: 96px; display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; min-height: 340px; align-items: center; }
 .stage.is-entering > * { animation: stage-in 420ms var(--ease) both; }
 @keyframes stage-in { from { opacity: 0; transform: translateY(10px); } }
 @media (max-width: 860px) {
-  .route { grid-template-columns: 1fr; }
+  .route { grid-template-columns: minmax(0, 1fr); }
   .route-panels { position: static; min-height: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .step-h, .step-desc { transition: none; } }
@@ -131,7 +131,14 @@
 .stage.is-entering .track-log li:nth-child(2) { animation-delay: 140ms; }
 .stage.is-entering .track-log li:nth-child(3) { animation-delay: 220ms; }
 .stage.is-entering .track-log li:nth-child(4) { animation-delay: 320ms; }
-@media (max-width: 480px) { .track-log { --rail: 68px; padding-inline: 16px; } .track-log::before { left: calc(16px + var(--rail) - 15px); } .track-head, .track-foot { padding-inline: 16px; } .track-tag { display: none; } }
+@media (max-width: 480px) {
+  .track-log { --rail: 68px; padding-inline: 16px; }
+  .track-log::before { left: calc(16px + var(--rail) - 15px); }
+  .track-head, .track-foot { padding-inline: 16px; }
+  .track-log li { grid-template-columns: calc(var(--rail) - 30px) minmax(0, 1fr); }
+  .track-route { grid-column: 2; justify-self: start; margin-top: 6px; }
+  .track-tag { display: none; }
+}
 
 /* ---------- C. Capability glyphs ---------- */
 
