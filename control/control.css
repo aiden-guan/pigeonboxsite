@@ -258,20 +258,49 @@ code, pre, kbd { font-family: var(--mono); }
   color: var(--copper); border: 1px solid currentColor; border-radius: 2px;
 }
 
-/* Appearance: light by default (control/theme.js). One icon, cycling light, dark, system. */
+/* Appearance: light by default. A lamp pull chain hangs from the top of the
+   sidebar; pull it to switch light/dark (control/theme.js drives the motion). */
 :root[data-pb-theme-switching], :root[data-pb-theme-switching] *, :root[data-pb-theme-switching] *::before, :root[data-pb-theme-switching] *::after { transition: none !important; }
-.cp-theme {
-  display: grid; place-items: center; width: 30px; height: 30px; margin-left: auto; padding: 0; flex: none;
-  border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer;
-  transition: color var(--t-hover) ease, border-color var(--t-hover) ease, background-color var(--t-hover) ease, transform 160ms var(--ease);
+.cp-brand { position: relative; padding-right: 54px; }
+.cp-lamp {
+  position: absolute; top: 0; right: 13px; width: 44px; height: 56px; padding: 0; border: 0; background: none;
+  color: var(--muted); cursor: grab; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent;
+  /* Clip only above the ceiling, so the chain can swing and stretch freely. */
+  clip-path: inset(0 -60px -80px -60px);
+  transition: color var(--t-hover) ease;
 }
-.cp-theme:hover { color: var(--text); border-color: var(--rule-strong); background: color-mix(in srgb, var(--text) 5%, transparent); }
-.cp-theme:active { transform: scale(.94); }
-.cp-theme svg { grid-area: 1 / 1; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform: rotate(-60deg) scale(.6); transition: opacity 200ms ease, transform 360ms var(--ease); }
-.cp-theme[data-value="light"] svg[data-icon="light"],
-.cp-theme[data-value="dark"] svg[data-icon="dark"],
-.cp-theme[data-value="system"] svg[data-icon="system"] { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) { .cp-theme svg { transform: none; } }
+.cp-lamp:active, .cp-lamp[data-dragging] { cursor: grabbing; }
+.cp-lamp:focus-visible { outline: none; }
+.cp-lamp-swing { position: absolute; left: 50%; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
+.cp-lamp-drop { position: absolute; left: 0; top: 0; will-change: transform; }
+.cp-lamp-chain {
+  position: absolute; left: -2px; top: -90px; width: 4px; height: 125px;
+  background:
+    radial-gradient(circle at 50% 50%, currentColor 0 1.2px, transparent 1.55px) 0 100% / 4px 5px repeat-y,
+    linear-gradient(currentColor, currentColor) 50% 0 / .6px 100% no-repeat;
+  opacity: .85;
+}
+.cp-lamp-pull {
+  position: absolute; left: -5px; top: 34px; width: 10px; height: 15px;
+  border-radius: 45% 45% 50% 50% / 38% 38% 62% 62%;
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, #fff 70%, var(--copper)) 0 1.5px, transparent 2.5px), linear-gradient(165deg, color-mix(in srgb, var(--copper) 72%, #fff) 0%, var(--copper) 55%, color-mix(in srgb, var(--copper) 70%, #000) 100%);
+  box-shadow: 0 3px 5px -1px rgba(20, 16, 12, .28), inset 0 -1px 0 rgba(0, 0, 0, .18);
+  transition: transform 160ms var(--ease), box-shadow 220ms ease;
+}
+.cp-lamp-pull::before { content: ""; position: absolute; left: 50%; top: -3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 1px; background: currentColor; }
+@media (hover: hover) and (pointer: fine) {
+  .cp-lamp:hover { color: var(--text); }
+  .cp-lamp:hover:not([data-dragging]) .cp-lamp-pull { transform: translateY(1px); }
+}
+.cp-lamp[data-armed] { color: var(--copper); }
+.cp-lamp[data-armed] .cp-lamp-pull { transform: scale(1.12); }
+:root[data-pb-theme="dark"] .cp-lamp-pull { box-shadow: 0 0 12px -1px color-mix(in srgb, var(--copper) 70%, transparent), inset 0 -1px 0 rgba(0, 0, 0, .25); }
+.cp-lamp:focus-visible .cp-lamp-pull { box-shadow: 0 0 0 2px var(--paper-2), 0 0 0 4px var(--copper); }
+@media (prefers-reduced-motion: reduce) { .cp-lamp .cp-lamp-pull { transform: none; } }
+@media (forced-colors: active) {
+  .cp-lamp-pull { background: ButtonText; border: 1px solid ButtonText; }
+  .cp-lamp:focus-visible { outline: 2px solid Highlight; outline-offset: -2px; }
+}
 
 /* Local / Cloud: which mode PigeonBox runs in. The rail below follows it. */
 .cp-mode { padding: 0 18px 12px 14px; }
