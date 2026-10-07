@@ -258,6 +258,20 @@ code, pre, kbd { font-family: var(--mono); }
   color: var(--copper); border: 1px solid currentColor; border-radius: 2px;
 }
 
+/* Appearance: light by default (control/theme.js). One icon, cycling light, dark, system. */
+.cp-theme {
+  display: grid; place-items: center; width: 30px; height: 30px; margin-left: auto; padding: 0; flex: none;
+  border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer;
+  transition: color var(--t-hover) ease, border-color var(--t-hover) ease, background-color var(--t-hover) ease, transform 160ms var(--ease);
+}
+.cp-theme:hover { color: var(--text); border-color: var(--rule-strong); background: color-mix(in srgb, var(--text) 5%, transparent); }
+.cp-theme:active { transform: scale(.94); }
+.cp-theme svg { grid-area: 1 / 1; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform: rotate(-60deg) scale(.6); transition: opacity 200ms ease, transform 360ms var(--ease); }
+.cp-theme[data-value="light"] svg[data-icon="light"],
+.cp-theme[data-value="dark"] svg[data-icon="dark"],
+.cp-theme[data-value="system"] svg[data-icon="system"] { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .cp-theme svg { transform: none; } }
+
 /* Local / Cloud: which mode PigeonBox runs in. The rail below follows it. */
 .cp-mode { padding: 0 18px 12px 14px; }
 .cp-mode-title { margin: 0 0 6px 6px; font: 500 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
