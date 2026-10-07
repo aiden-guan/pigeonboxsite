@@ -84,7 +84,7 @@ async function renderPublicPrice() {
     const period = document.createElement('small');
     period.textContent = '/ ' + price.interval;
     output.append(period);
-    $('#cloud-price-detail').textContent = 'Hosted AI, tracking and always-on work, billed through Stripe. Cancel from your account.';
+    $('#cloud-price-detail').textContent = 'Hosted AI and background Gmail sync. More Cloud features are still rolling out in beta. Cancel from your account.';
     $('#cloud-cta').href = '/dashboard#billing';
     $('#cloud-cta').textContent = 'Subscribe from your dashboard →';
   } catch {

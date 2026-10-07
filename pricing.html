@@ -39,7 +39,7 @@
       <div class="wrap">
         <div class="meta"><span class="label">Pricing</span></div>
         <h1 class="display">Start free.</h1>
-        <p class="lede">Local costs nothing. Cloud has no public price yet.</p>
+        <p class="lede">Local is free and available now. Cloud is invite-only beta; pricing isn’t public yet.</p>
       </div>
     </header>
 
@@ -56,7 +56,7 @@
           <div class="price-col price-cloud on-ink">
             <p class="label">Cloud <span class="tag tag-copper">Beta</span></p>
             <p class="price" id="cloud-price">Early access</p>
-            <p class="price-note" id="cloud-price-detail">Cloud is on its way. Join the waitlist.</p>
+            <p class="price-note" id="cloud-price-detail">Invite-only beta. Join the waitlist for an invite.</p>
             <a class="btn btn-primary" id="cloud-cta" href="/waitlist">Join the Cloud waitlist <span class="arr right" aria-hidden="true">→</span></a>
           </div>
         </div>
@@ -66,12 +66,13 @@
             <caption class="label">Compare</caption>
             <thead><tr><th scope="col"></th><th scope="col">Local</th><th scope="col">Cloud beta</th></tr></thead>
             <tbody>
-              <tr><th scope="row">Triage, companion, drafts</th><td data-col="Local"><strong>●</strong></td><td data-col="Cloud beta"><strong>●</strong></td></tr>
-              <tr><th scope="row">Ask Pigeon</th><td data-col="Local"><strong>●</strong> Browser index</td><td data-col="Cloud beta"><strong>●</strong> + synced index</td></tr>
-              <tr><th scope="row">AI</th><td data-col="Local">Device, Ollama or your key</td><td data-col="Cloud beta">Hosted</td></tr>
-              <tr><th scope="row">Tracking</th><td data-col="Local">Self-hosted</td><td data-col="Cloud beta">Managed</td></tr>
-              <tr><th scope="row">Works with Gmail closed</th><td data-col="Local">—</td><td data-col="Cloud beta"><strong>●</strong></td></tr>
-              <tr><th scope="row">Account</th><td data-col="Local">None</td><td data-col="Cloud beta">Required</td></tr>
+              <tr><th scope="row">Triage and thread analysis</th><td data-col="Local"><strong>Included</strong></td><td data-col="Cloud beta"><strong>Live beta:</strong> Focus Queue and thread analysis</td></tr>
+              <tr><th scope="row">AI drafts</th><td data-col="Local"><strong>Included</strong></td><td data-col="Cloud beta"><strong>Testing:</strong> prepared drafts</td></tr>
+              <tr><th scope="row">Ask Pigeon</th><td data-col="Local">Cited answers over the browser index</td><td data-col="Cloud beta"><strong>Testing:</strong> answers over synced Gmail</td></tr>
+              <tr><th scope="row">AI provider</th><td data-col="Local">On-device, Ollama or your key</td><td data-col="Cloud beta"><strong>Live beta:</strong> hosted AI</td></tr>
+              <tr><th scope="row">Tracking</th><td data-col="Local">Optional; self-hosted</td><td data-col="Cloud beta"><strong>Testing:</strong> managed PigeonBox tracking</td></tr>
+              <tr><th scope="row">Works with Gmail closed</th><td data-col="Local">Gmail tab stays open</td><td data-col="Cloud beta">Background sync after you connect Google</td></tr>
+              <tr><th scope="row">Account and access</th><td data-col="Local">No PigeonBox account</td><td data-col="Cloud beta">Account required; invite-only beta</td></tr>
             </tbody>
           </table>
         </div>
@@ -85,12 +86,12 @@
           <h2 class="h-section" id="faq-title">Short answers.</h2>
         </div>
         <div class="faq" data-reveal>
-          <details><summary><span class="n">01</span>Is Local a trial?</summary><div><p>No. It’s the full extension, free, with no time limit.</p></div></details>
+          <details><summary><span class="n">01</span>Is Local a trial?</summary><div><p>No. It’s the complete Local feature set, free and open source, with no time limit. Cloud is a separate hosted mode.</p></div></details>
           <details><summary><span class="n">02</span>Can I buy Cloud?</summary><div><p>Not yet. It’s a private beta with test-mode billing.</p></div></details>
           <details><summary><span class="n">03</span>Does PigeonBox use the Gmail API?</summary><div><p>Local doesn’t request Gmail API OAuth. Cloud uses Google APIs only after you connect your account.</p></div></details>
           <details><summary><span class="n">04</span>Does Cloud store my mail?</summary><div><p>Not the bodies, by default. It keeps metadata and encrypted summaries so it can work while Gmail is closed. Opt-in Fast Recall adds encrypted excerpts.</p></div></details>
-          <details><summary><span class="n">05</span>Does Local send mail to PigeonBox?</summary><div><p>No. Only to a provider you add with your own key, or a tracker you host.</p></div></details>
-          <details><summary><span class="n">06</span>Will it send email for me?</summary><div><p>No. You press Send. In Cloud, every send waits for your approval.</p></div></details>
+          <details><summary><span class="n">05</span>Does Local send mail to PigeonBox?</summary><div><p>No. If you choose an external AI provider, it receives the text you send it; an optional tracker you host receives tracking metadata.</p></div></details>
+          <details><summary><span class="n">06</span>Will it send email for me?</summary><div><p>No. Local drafts stay in Gmail for you to review and send. Any Cloud action that sends mail requires your approval.</p></div></details>
           <details><summary><span class="n">07</span>Is an open a read receipt?</summary><div><p>No. It’s a signal. Privacy proxies can hide or fake it.</p></div></details>
           <details><summary><span class="n">08</span>Do I need a powerful computer?</summary><div><p>No. Sorting works with AI off. Ollama or your own key are options too.</p></div></details>
           <details><summary><span class="n">09</span>What if I delete my Cloud account?</summary><div><p>Your Cloud data is designed to be deleted with it. Browser data stays until you clear it.</p></div></details>

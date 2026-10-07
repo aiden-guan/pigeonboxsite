@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cloud beta · PigeonBox</title>
-  <meta name="description" content="Hosted AI and always-on work for the same extension. Private beta.">
+  <meta name="description" content="PigeonBox Cloud adds hosted AI, background Gmail sync, thread analysis and a Focus Queue. See what is live in the invite-only beta and what is still testing.">
   <link rel="canonical" href="https://usepigeonbox.com/cloud">
   <meta property="og:url" content="https://usepigeonbox.com/cloud">
   <meta name="theme-color" content="#f3f0e8">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PigeonBox">
   <meta property="og:title" content="Cloud beta · PigeonBox">
-  <meta property="og:description" content="Hosted AI and always-on work for the same extension. Private beta.">
+  <meta property="og:description" content="PigeonBox Cloud adds hosted AI, background Gmail sync, thread analysis and a Focus Queue. See what is live in the invite-only beta and what is still testing.">
   <meta property="og:image" content="https://usepigeonbox.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/brand/pigeon-icon.png">
@@ -39,8 +39,8 @@
       <div class="wrap page-head-split">
         <div>
           <div class="meta"><span class="tag tag-copper">Early access / Beta</span></div>
-          <h1 class="display">Same extension. The desk stays open.</h1>
-          <p class="lede">Local is ownership. Cloud is convenience: hosted AI, and work that continues while Gmail is closed.</p>
+          <h1 class="display">Cloud keeps Gmail moving after you close it.</h1>
+          <p class="lede">Local runs in the Gmail tab you have open. Cloud adds hosted AI; connect Google for background sync, thread analysis and a Focus Queue while Gmail is closed. Prepared drafts, synced Ask and managed tracking are still testing.</p>
           <div class="actions">
             <a class="btn btn-primary" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span class="arr" aria-hidden="true">↗</span></a>
             <a class="btn btn-line" href="/waitlist">Join the waitlist <span class="arr" aria-hidden="true">↗</span></a>
@@ -62,19 +62,22 @@
     <section class="section" aria-labelledby="pay-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>01</b> — The difference</span></div>
+          <div class="index"><span class="label"><b>01</b> — The difference</span><span class="label">Local now · Cloud invite-only beta</span></div>
           <h2 class="h-section" id="pay-title">What Cloud adds.</h2>
         </div>
         <div class="matrix-wrap" data-reveal>
           <table class="matrix matrix-stack">
-            <thead><tr><th scope="col"></th><th scope="col">Local</th><th scope="col">Cloud</th></tr></thead>
+            <thead><tr><th scope="col"></th><th scope="col">Local · available now</th><th scope="col">Cloud · invite-only beta</th></tr></thead>
             <tbody>
-              <tr><th scope="row">Gmail closed</th><td data-col="Local">Runs while Gmail is open</td><td data-col="Cloud"><strong>Keeps syncing and preparing</strong></td></tr>
-              <tr><th scope="row">AI</th><td data-col="Local">Your device or key</td><td data-col="Cloud"><strong>Hosted</strong></td></tr>
-              <tr><th scope="row">Tracking</th><td data-col="Local">Self-hosted</td><td data-col="Cloud"><strong>Managed</strong></td></tr>
-              <tr><th scope="row">Rules</th><td data-col="Local">Inbox rules</td><td data-col="Cloud">Automations, Shadow Mode first</td></tr>
-              <tr><th scope="row">Gmail API</th><td data-col="Local">Not used</td><td data-col="Cloud">Only if you connect Google</td></tr>
-              <tr><th scope="row">If it fails</th><td data-col="Local">Works offline</td><td data-col="Cloud">Clear error, no silent fallback</td></tr>
+              <tr><th scope="row">Inbox work</th><td data-col="Local">Triage and thread summaries in Gmail</td><td data-col="Cloud"><strong>Live beta:</strong> thread analysis and Focus Queue</td></tr>
+              <tr><th scope="row">When it runs</th><td data-col="Local">While your Gmail tab is open</td><td data-col="Cloud"><strong>Background sync:</strong> keeps working after you close Gmail, once Google is connected</td></tr>
+              <tr><th scope="row">AI</th><td data-col="Local">Choose on-device, Ollama or your own key</td><td data-col="Cloud"><strong>Live beta:</strong> hosted AI, no model download or key</td></tr>
+              <tr><th scope="row">Drafts and Ask</th><td data-col="Local">AI drafts and cited Ask Pigeon over your browser index</td><td data-col="Cloud"><strong>Testing:</strong> prepared drafts and Ask across synced mail</td></tr>
+              <tr><th scope="row">Tracking</th><td data-col="Local">Optional; use a tracker you host</td><td data-col="Cloud"><strong>Testing:</strong> managed PigeonBox tracking</td></tr>
+              <tr><th scope="row">Rules and automation</th><td data-col="Local">Inbox sorting rules; triage works with AI off</td><td data-col="Cloud">Focus Queue is live; Smart Views and automations are testing</td></tr>
+              <tr><th scope="row">Google access</th><td data-col="Local">No Gmail API OAuth or Google connection</td><td data-col="Cloud">Google connection is optional; it enables background Gmail sync</td></tr>
+              <tr><th scope="row">Where data lives</th><td data-col="Local">Index, settings, drafts and downloaded models stay in this browser</td><td data-col="Cloud">Metadata and encrypted summaries are stored; mail bodies aren’t kept by default. Opt-in Fast Recall stores encrypted excerpts</td></tr>
+              <tr><th scope="row">Account and price</th><td data-col="Local">Free, open source; no PigeonBox account</td><td data-col="Cloud">Invite-only beta; account required, no public price</td></tr>
             </tbody>
           </table>
         </div>
@@ -84,16 +87,15 @@
     <section class="section" aria-labelledby="arch-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>02</b> — How it works</span><span class="label">Optional</span></div>
-          <h2 class="h-section" id="arch-title">Six steps, all yours to approve.</h2>
+          <div class="index"><span class="label"><b>02</b> — Live beta flow</span><span class="label">Connect Google for background sync</span></div>
+          <h2 class="h-section" id="arch-title">A desk that keeps working.</h2>
         </div>
         <div class="spec-grid arch" data-reveal>
-          <div><p class="label"><b>01</b> Connect</p><h3>Scope by scope.</h3><p>Each permission asked only when needed.</p></div>
-          <div><p class="label"><b>02</b> Sync</p><h3>Gmail pushes changes.</h3><p>Durable jobs, every minute.</p></div>
-          <div><p class="label"><b>03</b> Prepare</p><h3>Read before you open.</h3><p>Encrypted summaries and commitments.</p></div>
-          <div><p class="label"><b>04</b> Focus</p><h3>A queue with reasons.</h3><p>Plus follow-ups on your working week.</p></div>
-          <div><p class="label"><b>05</b> Context</p><h3>Drafts that know your week.</h3><p>Unverified facts become placeholders.</p></div>
-          <div><p class="label"><b>06</b> Approve</p><h3>Nothing sends itself.</h3><p>Every send or invite waits for you.</p></div>
+          <div><p class="label"><b>01</b> Connect</p><h3>You choose the access.</h3><p>Connect Google only when you want Gmail to sync in the background.</p></div>
+          <div><p class="label"><b>02</b> Sync</p><h3>Gmail keeps moving.</h3><p>Cloud receives mailbox changes while Gmail is closed.</p></div>
+          <div><p class="label"><b>03</b> Analyze</p><h3>Know what changed.</h3><p>Thread analysis prepares summaries and context in Cloud.</p></div>
+          <div><p class="label"><b>04</b> Focus</p><h3>Start with what needs you.</h3><p>Focus Queue shows the threads that need attention, and why.</p></div>
+          <div><p class="label"><b>05</b> Ask</p><h3>Hosted AI, ready to use.</h3><p>No model setup. If the service fails, PigeonBox shows an error; it never switches providers silently.</p></div>
         </div>
       </div>
     </section>
@@ -101,12 +103,12 @@
     <section class="section on-ink cloud-board" aria-labelledby="board-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>03</b> — Status</span><span class="label">Oct 1, 2026</span></div>
-          <h2 class="h-section" id="board-title">Verified, testing, off.</h2>
+          <div class="index"><span class="label"><b>03</b> — Beta status</span><span class="label">Live · Testing · Not enabled</span></div>
+          <h2 class="h-section" id="board-title">What’s live. What’s still being built.</h2>
         </div>
         <div class="city" data-reveal>
           <canvas data-halftone="always" aria-hidden="true"></canvas>
-          <p class="city-cap label" aria-hidden="true"><span class="state state-live">Always on</span><span>Cloud still sorting</span></p>
+          <p class="city-cap label" aria-hidden="true"><span class="state state-live">Live beta</span><span>Syncing after you connect Google</span></p>
         </div>
                 <div class="board" data-reveal>
           <div class="board-legend">
