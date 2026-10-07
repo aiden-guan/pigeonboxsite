@@ -259,6 +259,7 @@ code, pre, kbd { font-family: var(--mono); }
 }
 
 /* Appearance: light by default (control/theme.js). One icon, cycling light, dark, system. */
+:root[data-pb-theme-switching], :root[data-pb-theme-switching] *, :root[data-pb-theme-switching] *::before, :root[data-pb-theme-switching] *::after { transition: none !important; }
 .cp-theme {
   display: grid; place-items: center; width: 30px; height: 30px; margin-left: auto; padding: 0; flex: none;
   border: 1px solid var(--rule); border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer;

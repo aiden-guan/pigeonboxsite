@@ -19,20 +19,22 @@
     }
   };
 
-  /** Swap in one frame: colour transitions would otherwise animate every element at once. */
+  /**
+   * Swap in one frame: colour transitions would otherwise animate every element
+   * at once. The pause is a stylesheet rule (control.css), since the CSP blocks
+   * inline styles.
+   */
   let current = 'light';
   const apply = (value) => {
     current = value;
-    const freeze = document.createElement('style');
-    freeze.textContent = '*,*::before,*::after{transition:none!important}';
-    document.head.append(freeze);
+    root.dataset.pbThemeSwitching = '';
     root.dataset.pbTheme = value;
     for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
       const scheme = meta.media.includes('dark') ? 'dark' : 'light';
       meta.content = COLOR[value === 'system' ? scheme : value];
     }
     void root.offsetHeight;
-    requestAnimationFrame(() => requestAnimationFrame(() => freeze.remove()));
+    requestAnimationFrame(() => requestAnimationFrame(() => { delete root.dataset.pbThemeSwitching; }));
     const button = document.getElementById('cp-theme');
     if (button) {
       const next = ORDER[(ORDER.indexOf(value) + 1) % ORDER.length];
