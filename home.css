@@ -13,8 +13,6 @@
 .hero-line2 { display: block; color: var(--pigeon-deep); }
 .hero .lede { margin-top: clamp(22px, 2.6vw, 30px); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
-.hero-utility { margin-top: 26px; color: var(--muted); }
-.hero-utility i { font-style: normal; color: var(--copper); padding: 0 6px; }
 @media (max-width: 1000px) { .hero-grid { grid-template-columns: 1fr; } .hero-copy { max-width: 720px; } }
 
 /* Automatic walkthrough, built from the extension's current UI. */
