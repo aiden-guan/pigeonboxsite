@@ -443,7 +443,7 @@ if (!reduceMotion.matches && 'IntersectionObserver' in window) {
 /* ---------------- Halftone art (lazy) ---------------- */
 
 let halftone = null;
-const loadHalftone = () => (halftone ||= import('/halftone.js'));
+const loadHalftone = () => (halftone ||= import('/halftone.js?v=4'));
 const artCanvases = [...document.querySelectorAll('canvas[data-halftone]')];
 if (artCanvases.length && 'IntersectionObserver' in window) {
   const io = new IntersectionObserver((entries) => {

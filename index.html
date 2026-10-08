@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PigeonBox — Find what needs a reply in Gmail</title>
-  <meta name="description" content="Sort Gmail, catch up from thread summaries, find cited answers and draft replies in your voice. Local is free; Cloud is an invite-only beta.">
+  <meta name="description" content="PigeonBox is a free, open-source Gmail extension for triage, thread summaries, cited answers and reply drafts. You review and send.">
   <link rel="canonical" href="https://usepigeonbox.com/">
   <meta property="og:url" content="https://usepigeonbox.com/">
   <meta name="theme-color" content="#f3f0e8">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PigeonBox">
   <meta property="og:title" content="PigeonBox — Find what needs a reply in Gmail">
-  <meta property="og:description" content="Sort Gmail, catch up from thread summaries, find cited answers and draft replies in your voice. Local is free; Cloud is an invite-only beta.">
+  <meta property="og:description" content="PigeonBox is a free, open-source Gmail extension for triage, thread summaries, cited answers and reply drafts. You review and send.">
   <meta property="og:image" content="https://usepigeonbox.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="/brand/pigeon-icon.png">
@@ -24,7 +24,7 @@
   <link rel="preload" href="/assets/gmail-demo/assets/workspace-Bz4LVo_3.css" as="style" crossorigin>
   <link rel="preload" href="/assets/gmail-demo/brand/pigeon-sprites.webp" as="image" type="image/webp">
   <link rel="stylesheet" href="/dispatch.css?v=3">
-  <link rel="stylesheet" href="/home.css?v=8">
+  <link rel="stylesheet" href="/home.css?v=12">
 </head>
 <body data-page="home">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -49,9 +49,9 @@
       <canvas class="hero-postmark" data-halftone="postmark" aria-hidden="true"></canvas>
       <div class="wrap hero-grid">
         <div class="hero-copy">
-          <p class="eyebrow">PigeonBox <b>/</b> Gmail intelligence</p>
+          <p class="eyebrow">PigeonBox <b>/</b> Free Gmail extension</p>
           <h1 class="display" id="hero-title">Find what needs a reply. <span class="hero-line2">Get it moving.</span></h1>
-          <p class="lede">Sort Gmail into what needs your answer, what’s waiting and what can wait. Catch up from a thread summary, find cited answers and start a reply in your voice. You press Send.</p>
+          <p class="lede">Summarize long threads, find cited answers, and start a reply in your voice. You press Send.</p>
           <div class="hero-actions">
             <a class="btn btn-primary" data-install data-install-label href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span class="arr" aria-hidden="true">↗</span></a>
             <a class="btn btn-line" href="/waitlist">Join the Cloud waitlist <span class="arr right" aria-hidden="true">→</span></a>
@@ -77,151 +77,55 @@
       </div>
     </section>
 
-    <!-- B. Workflow -->
-    <section class="section dispatch" id="dispatch" aria-labelledby="dispatch-title">
+    <!-- Product capabilities -->
+    <section class="section caps" id="dispatch" aria-labelledby="features-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>01</b> — Workflow</span></div>
-          <h2 class="h-section" id="dispatch-title">From inbox to follow-up.</h2>
+          <div class="index"><span class="label">Features</span><span class="label">Local available now · Cloud in beta</span></div>
+          <h2 class="h-section" id="features-title">From triage to follow-up.</h2>
         </div>
-
-        <div class="route" data-route>
-          <div class="route-steps" role="tablist" aria-orientation="vertical" aria-label="Workflow stages">
-            <button type="button" role="tab" id="stop-1" aria-controls="stage-1" aria-selected="true" data-stop="0">
-              <span class="step-n">01</span>
-              <span class="step-body"><span class="step-name">Arrives</span><span class="step-h">A thread lands in Gmail.</span><span class="step-desc">PigeonBox reads it in the Gmail tab you already have open. No Gmail API OAuth. No account.</span></span>
-              <span class="step-bar" aria-hidden="true"></span>
-            </button>
-            <button type="button" role="tab" id="stop-2" aria-controls="stage-2" aria-selected="false" tabindex="-1" data-stop="1">
-              <span class="step-n">02</span>
-              <span class="step-body"><span class="step-name">Triage</span><span class="step-h">Sorted by what it needs.</span><span class="step-desc">Respond, Waiting, FYI or Follow-ups. Works with AI off. Your labels stay untouched.</span></span>
-              <span class="step-bar" aria-hidden="true"></span>
-            </button>
-            <button type="button" role="tab" id="stop-3" aria-controls="stage-3" aria-selected="false" tabindex="-1" data-stop="2">
-              <span class="step-n">03</span>
-              <span class="step-body"><span class="step-name">Understand</span><span class="step-h">Caught up without rereading.</span><span class="step-desc">Summary, actions, dates and open questions, right beside the thread.</span></span>
-              <span class="step-bar" aria-hidden="true"></span>
-            </button>
-            <button type="button" role="tab" id="stop-4" aria-controls="stage-4" aria-selected="false" tabindex="-1" data-stop="3">
-              <span class="step-n">04</span>
-              <span class="step-body"><span class="step-name">Reply</span><span class="step-h">A draft that already read the thread.</span><span class="step-desc">In your voice, in Gmail’s composer. You press Send. Never PigeonBox.</span></span>
-              <span class="step-bar" aria-hidden="true"></span>
-            </button>
-            <button type="button" role="tab" id="stop-5" aria-controls="stage-5" aria-selected="false" tabindex="-1" data-stop="4">
-              <span class="step-n">05</span>
-              <span class="step-body"><span class="step-name">Follow up</span><span class="step-h">Know whether it moved.</span><span class="step-desc">Optional open and click signals. A signal, never proof of a read.</span></span>
-              <span class="step-bar" aria-hidden="true"></span>
-            </button>
-          </div>
-          <div class="route-panels">
-            <div class="stage" role="tabpanel" id="stage-1" aria-labelledby="stop-1" tabindex="0">
-              <div class="slip" aria-hidden="true">
-                <div class="slip-row"><span>From</span><b>Maya Chen</b></div>
-                <div class="slip-row"><span>Subject</span><b>Final review on the launch note</b></div>
-                <div class="slip-row"><span>Received</span><b>09:42 · 6 messages</b></div>
-                <div class="slip-row"><span>Route</span><b class="slip-pending">pending<span class="dots">…</span></b></div>
-                <span class="stamp">PB</span>
-              </div>
-            </div>
-            <div class="stage" role="tabpanel" id="stage-2" aria-labelledby="stop-2" tabindex="0" hidden>
-              <div class="bins" aria-hidden="true">
-                <div class="bin is-hit"><span>Respond</span><i>Maya Chen · launch note</i></div>
-                <div class="bin"><span>Waiting</span></div>
-                <div class="bin"><span>FYI</span></div>
-                <div class="bin"><span>Follow-ups</span></div>
-                <p class="bin-rule"><span>rule</span> asks me a direct question → Respond</p>
-              </div>
-            </div>
-            <div class="stage" role="tabpanel" id="stage-3" aria-labelledby="stop-3" tabindex="0" hidden>
-              <div class="mini-companion" aria-hidden="true">
-                <p class="label">Thread companion</p>
-                <p class="mc-sum">Maya approved the direction. Two edits before Friday’s review.</p>
-                <ul>
-                  <li><span>Action</span>Soften the opening line</li>
-                  <li><span>Action</span>Swap in the new-build screenshot</li>
-                  <li><span>Date</span>Fri 10:00 · review</li>
-                  <li><span>Open</span>Does legal need to see it?</li>
-                </ul>
-              </div>
-            </div>
-            <div class="stage" role="tabpanel" id="stage-4" aria-labelledby="stop-4" tabindex="0" hidden>
-              <div class="mini-compose" aria-hidden="true">
-                <div class="mcp-top"><span>Re: Final review on the launch note</span><span class="tag tag-copper">Draft · not sent</span></div>
-                <p>Hi Maya — thanks for the clear notes. I’ll soften the opening and swap in the new screenshot before Friday’s review.</p>
-                <p>Best,<br>Alex</p>
-                <div class="mcp-bottom"><span class="mcp-send">Send</span><span>only you can press this</span></div>
-              </div>
-            </div>
-            <div class="stage" role="tabpanel" id="stage-5" aria-labelledby="stop-5" tabindex="0" hidden>
-              <div class="track" aria-hidden="true">
-                <div class="track-head">
-                  <span class="track-subj">Re: Final review on the launch note</span>
-                  <span class="track-on">Tracking on</span>
-                </div>
-                <ol class="track-log">
-                  <li class="is-done"><time>09:58</time><span class="track-ev">Sent from Gmail</span></li>
-                  <li class="is-sig"><time>10:21</time><span class="track-ev">Opened</span><span class="track-tag">signal</span></li>
-                  <li class="is-sig"><time>10:23</time><span class="track-ev">Link clicked</span><span class="track-tag">signal</span></li>
-                  <li class="is-wait"><time>Mon</time><span class="track-ev">No reply yet</span><span class="track-route">→ Follow-ups</span></li>
-                </ol>
-                <p class="track-foot">Signals can be wrong. Pidgy never calls it a read.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- C. Capabilities -->
-    <section class="section caps" id="capabilities" aria-labelledby="caps-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>02</b> — Availability</span><span class="label">Local available now · Cloud in beta</span></div>
-          <h2 class="h-section" id="caps-title">Five jobs. Two different modes.</h2>
-          <p class="lede">Local includes the full free feature set. Cloud adds hosted AI and background work; more Cloud features are still in testing.</p>
-        </div>
-        <ol class="glyphs" data-reveal>
+        <ul class="glyphs" data-reveal>
           <li class="glyph">
             <canvas data-halftone="triage" aria-hidden="true"></canvas>
-            <p class="label"><b>01</b> Triage</p><h3>Know what needs you.</h3>
+            <p class="label">Triage</p><h3>Know what needs you.</h3>
             <dl class="glyph-status"><div><dt>Local</dt><dd>Included</dd></div><div><dt>Cloud</dt><dd>Live beta</dd></div></dl>
             <p>Respond, Waiting, FYI and Follow-ups. Sorting works with AI off.</p>
           </li>
           <li class="glyph">
             <canvas data-halftone="companion" aria-hidden="true"></canvas>
-            <p class="label"><b>02</b> Thread companion</p><h3>Catch up without rereading.</h3>
+            <p class="label">Thread companion</p><h3>Catch up without rereading.</h3>
             <dl class="glyph-status"><div><dt>Local</dt><dd>Included</dd></div><div><dt>Cloud</dt><dd>Live beta</dd></div></dl>
             <p>See summaries, actions, dates and open questions beside a thread.</p>
           </li>
           <li class="glyph">
             <canvas data-halftone="drafting" aria-hidden="true"></canvas>
-            <p class="label"><b>03</b> Drafting</p><h3>Start in your voice.</h3>
+            <p class="label">Drafting</p><h3>Start in your voice.</h3>
             <dl class="glyph-status"><div><dt>Local</dt><dd>Included</dd></div><div><dt>Cloud</dt><dd>Testing</dd></div></dl>
             <p>AI starts a reply in Gmail. You edit and send it.</p>
           </li>
           <li class="glyph">
             <canvas data-halftone="ask" aria-hidden="true"></canvas>
-            <p class="label"><b>04</b> Ask Pigeon</p><h3>Answers with sources.</h3>
+            <p class="label">Ask Pigeon</p><h3>Answers with sources.</h3>
             <dl class="glyph-status"><div><dt>Local</dt><dd>Included</dd></div><div><dt>Cloud</dt><dd>Testing</dd></div></dl>
             <p>Ask over your local index and open the cited source threads.</p>
           </li>
           <li class="glyph">
             <canvas data-halftone="tracking" aria-hidden="true"></canvas>
-            <p class="label"><b>05</b> Tracking</p><h3>Signals, not receipts.</h3>
+            <p class="label">Tracking</p><h3>Signals, not receipts.</h3>
             <dl class="glyph-status"><div><dt>Local</dt><dd>Self-hosted</dd></div><div><dt>Cloud</dt><dd>Testing</dd></div></dl>
             <p>Optional open and click signals. Managed Cloud tracking is still in testing.</p>
           </li>
-        </ol>
+        </ul>
       </div>
     </section>
 
-    <!-- D. Local vs Cloud -->
+    <!-- Local vs Cloud -->
     <section class="section" id="modes" aria-labelledby="modes-title">
       <div class="wrap">
         <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>03</b> — Choose how it runs</span><span class="label">Switch in Settings</span></div>
+          <div class="index"><span class="label">Choose how it runs</span></div>
           <h2 class="h-section" id="modes-title">One extension. <br>Two ways to run.</h2>
-          <p class="lede">Local works in the Gmail tab you have open. Cloud adds hosted AI; connect Google to keep Gmail syncing in the background.</p>
+          <p class="lede">Start free in your open Gmail tab, or join the beta for background sync.</p>
         </div>
         <div class="modes" data-reveal>
           <article class="mode">
@@ -230,9 +134,7 @@
             <ul class="ledger">
               <li><span>→</span><span>Free and open source. No PigeonBox account.</span></li>
               <li><span>→</span><span>Runs in your open Gmail tab; no Gmail API OAuth.</span></li>
-              <li><span>→</span><span>Index, settings, drafts and downloaded models stay in this browser.</span></li>
               <li><span>→</span><span>Choose on-device AI, Ollama or your own key.</span></li>
-              <li><span>→</span><span>Optional tracking on a server you host.</span></li>
             </ul>
             <div class="actions"><a class="btn btn-primary" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span class="arr" aria-hidden="true">↗</span></a><a class="text-link" href="/local">About Local →</a></div>
           </article>
@@ -243,91 +145,18 @@
               <li><span>→</span><span>Hosted AI, thread analysis and Focus Queue are live in beta.</span></li>
               <li><span>→</span><span>Connect Google for background Gmail sync.</span></li>
               <li><span>→</span><span>Prepared drafts, synced Ask and managed tracking are still testing.</span></li>
-              <li><span>→</span><span>Mail bodies aren’t logged or stored by default; summaries are encrypted.</span></li>
             </ul>
             <div class="actions"><a class="btn btn-primary" href="/waitlist">Join the Cloud waitlist <span class="arr right" aria-hidden="true">→</span></a></div>
           </article>
         </div>
-      </div>
-    </section>
-
-    <!-- E. Cloud intelligence -->
-    <section class="section on-ink cloud-board" id="cloud-intelligence" aria-labelledby="board-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>04</b> — Cloud beta</span></div>
-          <h2 class="h-section" id="board-title">Gmail closed. Desk open.</h2>
-          <p class="lede">Connect Google and Cloud keeps syncing, analyzes threads and builds a Focus Queue while Gmail is closed.</p>
-        </div>
-        <div class="city" data-reveal>
-          <canvas data-halftone="always" aria-hidden="true"></canvas>
-          <p class="city-cap label" aria-hidden="true"><span class="state state-live" data-city-clock>Live beta</span><span>Syncing after you connect Google</span></p>
-        </div>
-        <div class="board-compact" data-reveal>
-          <div class="bc-col">
-            <p class="label"><span class="state state-live">Live beta</span><span class="bc-n">5</span></p>
-            <ul><li>Google connection</li><li>Background Gmail sync</li><li>Thread analysis</li><li>Focus Queue</li><li>Hosted AI</li></ul>
-          </div>
-          <div class="bc-col">
-            <p class="label"><span class="state state-testing">Testing</span><span class="bc-n">13</span></p>
-            <ul><li>Prepared drafts</li><li>Approvals</li><li>Briefings</li><li>Calendar Copilot</li><li><a class="text-link" href="/cloud#board-title">+ 9 more →</a></li></ul>
-          </div>
-          <div class="bc-col">
-            <p class="label"><span class="state state-off">Off in beta</span><span class="bc-n">2</span></p>
-            <ul><li>Tracked documents</li><li>Sequences</li></ul>
-          </div>
-        </div>
-        <div class="board-cta" data-reveal>
-          <p>Invite-only beta. Join the waitlist for an invite; pricing isn’t public yet.</p>
-          <a class="btn btn-line" href="/cloud">How Cloud works <span class="arr right" aria-hidden="true">→</span></a>
+        <div class="mode-trust" data-reveal>
+          <p>Local keeps its index in your browser. Cloud doesn’t store message bodies by default. You approve every send.</p>
+          <nav aria-label="Privacy resources"><a class="text-link" href="/privacy">Privacy →</a><a class="text-link" href="/security">Security →</a></nav>
         </div>
       </div>
     </section>
 
-    <!-- F. Privacy / data flow -->
-    <section class="section privacy-flow" id="privacy" aria-labelledby="flow-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>05</b> — Privacy</span></div>
-          <h2 class="h-section" id="flow-title">Follow the data.</h2>
-          <p class="lede">Choose a data type to trace its path.</p>
-        </div>
-        <div class="flow-module" data-flow data-reveal>
-          <div class="flow-keys" role="group" aria-label="Highlight a kind of data">
-            <button type="button" class="flow-key k-raw" data-key="raw" aria-pressed="false"><i aria-hidden="true"></i>Raw mail content</button>
-            <button type="button" class="flow-key k-meta" data-key="meta" aria-pressed="false"><i aria-hidden="true"></i>Metadata</button>
-            <button type="button" class="flow-key k-derived" data-key="derived" aria-pressed="false"><i aria-hidden="true"></i>Derived intelligence</button>
-            <button type="button" class="flow-key k-track" data-key="track" aria-pressed="false"><i aria-hidden="true"></i>Tracking events</button>
-          </div>
-          <div class="flows" data-flows>
-            <div class="flow">
-              <div class="flow-head"><h3>Local</h3><span class="tag">Free · Open source</span></div>
-              <ol>
-                <li class="flow-node"><strong>Gmail</strong><p>The tab you have open. No Gmail API OAuth.</p><div class="flow-data"><span class="k-raw">Raw</span><span class="k-meta">Meta</span></div></li>
-                <li class="flow-node"><strong>PigeonBox extension</strong><p>Keys stay in the extension, never the page.</p><div class="flow-data"><span class="k-raw">Raw</span></div></li>
-                <li class="flow-node"><strong>Browser index</strong><p>Index, drafts and settings on this computer.</p><div class="flow-data"><span class="k-raw">Raw</span><span class="k-meta">Meta</span><span class="k-derived">Derived</span></div></li>
-                <li class="flow-node"><strong>Local AI</strong><p>On-device or Ollama. Your own key only if you add one.</p><div class="flow-data"><span class="k-raw">Raw · request</span><span class="k-derived">Derived</span></div></li>
-                <li class="flow-node"><strong>Your tracker (optional)</strong><p>A tracker you host. Never bodies.</p><div class="flow-data"><span class="k-meta">Meta</span><span class="k-track">Events</span></div></li>
-              </ol>
-            </div>
-            <div class="flow">
-              <div class="flow-head"><h3>Cloud beta</h3><span class="tag tag-copper">Early access</span></div>
-              <ol>
-                <li class="flow-node"><strong>Gmail</strong><p>Via the extension, plus Google APIs if you connect.</p><div class="flow-data"><span class="k-raw">Raw</span><span class="k-meta">Meta</span></div></li>
-                <li class="flow-node"><strong>Cloud, over TLS</strong><p>Processed for the task. Never logged.</p><div class="flow-data"><span class="k-raw">Raw · in transit</span></div></li>
-                <li class="flow-node"><strong>Hosted processing</strong><p>One model. No silent fallback.</p><div class="flow-data"><span class="k-raw">Raw · in memory</span><span class="k-derived">Derived</span></div></li>
-                <li class="flow-node"><strong>Cloud store</strong><p>Metadata and encrypted summaries. Deleted with your account.</p><div class="flow-data"><span class="k-meta">Meta</span><span class="k-derived">Derived · encrypted</span></div></li>
-                <li class="flow-node"><strong>Cloud tracker · testing</strong><p>Metadata and events. Never bodies.</p><div class="flow-data"><span class="k-meta">Meta</span><span class="k-track">Events</span></div></li>
-              </ol>
-            </div>
-          </div>
-          <p class="flow-explain" data-flow-explain aria-live="polite">Cloud doesn’t keep mail bodies by default. Opt-in Fast Recall stores encrypted excerpts until you turn it off.</p>
-        </div>
-        <div class="flow-links"><a class="text-link" href="/privacy">Privacy →</a><a class="text-link" href="/security">Security →</a></div>
-      </div>
-    </section>
-
-    <!-- G. Final dispatch -->
+    <!-- Final dispatch -->
     <section class="section final" aria-labelledby="final-title">
       <div class="wrap">
         <div class="ticket" data-reveal>
@@ -345,8 +174,7 @@
             <div class="stub-row"><span>Fare</span><b>$0</b></div>
             <div class="stub-row"><span>Account</span><b>None</b></div>
             <div class="stub-row"><span>Courier</span><b>Pidgy</b></div>
-            <span class="pidgy pidgy-lg ticket-bird" data-state="idle"></span>
-            <span class="stamp stamp-lg">PB<small>LOCAL</small></span>
+            <canvas class="ticket-seal" data-halftone="local-seal" aria-hidden="true"></canvas>
           </div>
         </div>
       </div>
@@ -373,8 +201,8 @@
       </span>
     </div>
   </footer>
-  <script type="module" src="/site.js"></script>
+  <script type="module" src="/site.js?v=4"></script>
   <script type="module" src="/app.js"></script>
-  <script type="module" src="/home.js?v=2"></script>
+  <script type="module" src="/home.js?v=3"></script>
 </body>
 </html>

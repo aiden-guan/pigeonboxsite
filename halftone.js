@@ -941,6 +941,61 @@ export function sealed() {
   };
 }
 
+/* Scene: local seal (homepage CTA): a pigeon at the inbox on your device. */
+export function localSeal() {
+  return {
+    static: true,
+    options: { cell: 3.4, dot: 0.48, color: [24, 25, 27], accent: [168, 80, 44], alphas: [0.22, 0.6, 0.98], flashlight: 0.3, radius: 64 },
+    build(ctx, W, H) {
+      const scale = Math.min(W, H) / 240;
+      ctx.save();
+      ctx.translate((W - 240 * scale) / 2, (H - 240 * scale) / 2);
+      ctx.scale(scale, scale);
+
+      const cx = 120; const cy = 120;
+      ctx.strokeStyle = ink(0.92); ctx.lineWidth = 4.5; ctx.setLineDash([2, 5]);
+      ctx.beginPath(); ctx.arc(cx, cy, 104, 0, TAU); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = acc(0.82); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, 91, -0.62, 0.58); ctx.stroke();
+      for (let i = 0; i < 24; i++) {
+        const a = -Math.PI / 2 + i * TAU / 24;
+        ctx.fillStyle = i % 6 === 0 ? acc(1) : ink(0.98);
+        ctx.beginPath(); ctx.arc(cx + Math.cos(a) * 104, cy + Math.sin(a) * 104, i % 6 === 0 ? 3 : 2.4, 0, TAU); ctx.fill();
+      }
+
+      // A compact browser window, with the next message marked for attention.
+      const x = 48; const y = 86; const w = 144; const h = 92;
+      ctx.fillStyle = ink(0.24); ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = ink(1); ctx.lineWidth = 6; ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = ink(0.86); ctx.fillRect(x + 3, y + 3, w - 6, 14);
+      ctx.fillStyle = acc(1); ctx.beginPath(); ctx.arc(x + 10, y + 8, 2, 0, TAU); ctx.fill();
+      ctx.fillStyle = CUT; ctx.beginPath(); ctx.arc(x + 18, y + 8, 2, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 26, y + 8, 2, 0, TAU); ctx.fill();
+
+      // Pidgy lands on the window; one copper envelope leads the inbox.
+      printPidgy(ctx, cx, y + 2, 44, 0);
+      ctx.fillStyle = acc(0.62); ctx.fillRect(70, 119, 63, 39);
+      ctx.strokeStyle = acc(1); ctx.lineWidth = 4;
+      ctx.strokeRect(70, 119, 63, 39);
+      ctx.beginPath(); ctx.moveTo(72, 121); ctx.lineTo(101, 143); ctx.lineTo(131, 121); ctx.stroke();
+      ctx.fillStyle = ink(0.9); ctx.fillRect(145, 124, 31, 5);
+      ctx.fillRect(145, 139, 24, 5);
+      ctx.fillStyle = ink(0.52); ctx.fillRect(70, 165, 63, 4);
+      ctx.fillRect(145, 152, 31, 4);
+
+      // The stand closes the composition and keeps the screen grounded.
+      ctx.strokeStyle = ink(0.98); ctx.lineWidth = 4.5;
+      ctx.beginPath(); ctx.moveTo(120, 178); ctx.lineTo(120, 190); ctx.moveTo(95, 191); ctx.lineTo(145, 191); ctx.stroke();
+      ctx.strokeStyle = acc(1); ctx.lineWidth = 3; ctx.setLineDash([2, 5]);
+      ctx.beginPath(); ctx.moveTo(40, 143); ctx.bezierCurveTo(46, 127, 53, 119, 65, 119); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = acc(1); ctx.beginPath(); ctx.arc(39, 145, 3.4, 0, TAU); ctx.fill();
+      ctx.restore();
+    },
+  };
+}
+
 /* ------------------------------------------------------------------ */
 /* Mounting                                                            */
 /* ------------------------------------------------------------------ */
@@ -982,7 +1037,7 @@ export function waitlistPostmark() {
   };
 }
 
-const SCENES = { waitlist: waitlistPostmark, night: nightShift, always: alwaysOn, postmark, loft, sealed, ...glyphs };
+const SCENES = { waitlist: waitlistPostmark, night: nightShift, always: alwaysOn, postmark, loft, sealed, 'local-seal': localSeal, ...glyphs };
 
 export function mount(root = document) {
   const fields = [];
