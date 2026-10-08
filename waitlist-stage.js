@@ -6,7 +6,7 @@
 const CELL = 96;                                   // sprite cell on /brand/pidgy-world.webp
 const INK = '24,25,27', COPPER = '168,80,44';
 const BIRD = 24;                                   // 20% smaller; pose bounds normalize to one visible height
-const BODY_ANCHOR_X = 44, GROUND_ANCHOR_Y = 92;    // stable pigeon pivot in the sprite atlas
+const BODY_ANCHOR_X = 44, GROUND_ANCHOR_Y = 92;    // fallbacks until the sprite atlas is measured
 const RES = 1.6;                                   // dots per world unit
 const PIDGY_RES = 2.4;                             // denser print grid for Pidgy only
 
@@ -282,9 +282,10 @@ export function startStage() {
   function spritePoint(row, col, atlasX, atlasY) {
     const size = BIRD * (spriteScale[row]?.[col] || 1);
     const bodyX = BIRD * (BODY_ANCHOR_X / CELL - .5);
-    const centerX = spriteBounds[row]?.[col]?.bodyCenterX ?? CELL / 2;
+    const bounds = spriteBounds[row]?.[col];
+    const centerX = bounds?.bodyCenterX ?? CELL / 2;
     return { x: bodyX + size * (atlasX - centerX) / CELL,
-      y: size * (atlasY - GROUND_ANCHOR_Y) / CELL };
+      y: size * (atlasY - (bounds?.bottom ?? GROUND_ANCHOR_Y)) / CELL };
   }
 
   function makeWishSpark(now) {
@@ -380,7 +381,7 @@ export function startStage() {
     const bodyCenterX = bounds?.bodyCenterX ?? CELL / 2;
     const bodyAnchorX = BIRD * (BODY_ANCHOR_X / CELL - .5);
     const x = bodyAnchorX - size * bodyCenterX / CELL;
-    const y = -size * GROUND_ANCHOR_Y / CELL;
+    const y = -size * (bounds?.bottom ?? GROUND_ANCHOR_Y) / CELL;
     c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(bodyAnchorX, -.2, 12 * BIRD / 30, 1.4 * BIRD / 30, 0, 0, 6.2832); c.fill();
     if (sheet.complete && sheet.naturalWidth) {
       c.drawImage(sheet, col * CELL, row * CELL, CELL, CELL, x, y, size, size);
@@ -389,8 +390,8 @@ export function startStage() {
     return { row, col, x, y, size };
   }
 
-  // Atlas frames use different padding. Normalize each frame, then align the pigeon core and
-  // foot line to fixed world anchors so props and empty margins cannot pull it around.
+  // Atlas frames use different padding. Normalize each frame, align its body core, and place
+  // its visible bottom edge on the shared floor so props and empty margins cannot shift Pidgy.
   function measureSpriteFrames() {
     if (!sheet.naturalWidth || !sheet.naturalHeight) return;
     const columns = Math.floor(sheet.naturalWidth / CELL);
@@ -411,7 +412,7 @@ export function startStage() {
       }
       const height = bottom - top;
       maxHeight = Math.max(maxHeight, height);
-      return { height, bodyCenterX: neutralBodyCenterX(rgba, mask, stack) };
+      return { bottom, height, bodyCenterX: neutralBodyCenterX(rgba, mask, stack) };
     }));
     spriteScale = spriteBounds.map(row => row.map(frame => maxHeight / Math.max(1, frame.height)));
     const maxScale = Math.max(1, ...spriteBounds.flat().filter(frame => frame.height > 0).map(frame => maxHeight / frame.height));
