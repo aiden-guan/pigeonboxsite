@@ -16,7 +16,8 @@ function stats(row) {
     { class: 'link-stats' },
     h('div', { class: 'row' }, pill(label, tone), row.views ? h('span', { class: 'muted' }, `${plural(row.views, 'view')} · first ${ago(row.firstViewedAt)} · last ${ago(row.lastViewedAt)}`) : null),
     h('p', { class: 'hint' }, detail),
-    row.visibleSeconds !== null ? h('p', {}, `On screen for ${Math.round(row.visibleSeconds / 60) ? `${Math.round(row.visibleSeconds / 60)} min` : `${row.visibleSeconds} s`}${row.downloads ? ` · ${plural(row.downloads, 'download')}` : ''}`) : null,
+    row.visibleSeconds !== null ? h('p', {}, `On screen for ${Math.round(row.visibleSeconds / 60) ? `${Math.round(row.visibleSeconds / 60)} min` : `${row.visibleSeconds} s`}`) : null,
+    row.downloads ? h('p', {}, plural(row.downloads, 'download')) : null,
     row.pages
       ? h(
           'div',
@@ -43,16 +44,17 @@ async function detail(document, { api, back }) {
     clear(
       holder,
       h('button', { type: 'button', class: 'back', on: { click: () => back() } }, '← Documents'),
+      button('Refresh activity', draw, { small: true, variant: 'ghost' }),
       surface(
         'card',
         {},
         h('header', { class: 'detail-head' }, h('div', {}, eyebrow(`${data.document.filename} · ${data.document.pageCount === null ? 'page count unknown' : plural(data.document.pageCount, 'page')} · uploaded ${day(data.document.createdAt)}`), h('h2', {}, data.document.title)), pill(data.document.status, data.document.status === 'ready' ? 'good' : 'neutral')),
         data.notes.map((text) => h('p', { class: 'hint' }, text)),
       ),
-      surface(
+      data.document.status === 'ready' ? surface(
         'slip',
         { title: 'New link', className: 'composer' },
-        h('p', {}, 'One link per person tells you who opened what. Anyone with the link can open it until it expires or you revoke it.'),
+        h('p', {}, 'Make one link per recipient to keep activity separate. Anyone holding a link can open it; the recipient label does not verify identity.'),
         h('div', { class: 'grid-2' }, field('Recipient', recipient), field('Expires', expires)),
         allowDownload,
         watermark,
@@ -74,7 +76,7 @@ async function detail(document, { api, back }) {
             await secretDialog('Link ready', link.url, [link.recipientEmail ? `For ${link.recipientEmail}. Send it however you like; each open is attributed to this link.` : 'Anyone with this link can open the document.']);
           }),
         ),
-      ),
+      ) : note(data.document.status === 'deleted' ? 'File removal is pending. Links are disabled. Retry deleting to finish removal.' : 'Upload this PDF before creating a link. If an upload failed, delete this entry and try again.', 'info'),
       surface(
         'ledger',
         { title: 'Links' },
@@ -88,12 +90,21 @@ async function detail(document, { api, back }) {
                   { class: row.link.revokedAt ? 'revoked' : null },
                   h('div', { class: 'list-main' }, h('strong', {}, row.link.recipientEmail ?? 'Anyone with the link'), h('span', { class: 'muted' }, [`Created ${ago(row.link.createdAt)}`, row.link.expiresAt ? `expires ${day(row.link.expiresAt)}` : null, row.link.allowDownload ? 'download on' : 'view only', row.link.revokedAt ? `revoked ${ago(row.link.revokedAt)}` : null].filter(Boolean).join(' · '))),
                   stats(row),
-                  row.link.revokedAt
+                  row.link.revokedAt || data.document.status !== 'ready' || (row.link.expiresAt && Date.parse(row.link.expiresAt) <= Date.now())
                     ? null
                     : h(
                         'div',
                         { class: 'row' },
                         button('Copy link', () => copyText(row.link.url), { small: true, variant: 'ghost' }),
+                        button('Preview', async () => {
+                          const tab = window.open('about:blank', '_blank');
+                          if (tab) tab.opener = null;
+                          try {
+                            const { url } = await api('/v1/control/documents/preview', { method: 'POST', body: { linkId: row.link.id } });
+                            if (tab) tab.location.replace(url);
+                            else await secretDialog('Sender preview', url, ['Open this preview within five minutes. It is excluded from recipient activity.']);
+                          } catch (error) { tab?.close(); throw error; }
+                        }, { small: true, variant: 'ghost' }),
                         button('Revoke', async () => {
                           if (!(await confirmDialog({ title: 'Revoke this link?', body: ['It stops working immediately for everyone who has it.'], confirm: 'Revoke', danger: true }))) return;
                           await api('/v1/documents/links/revoke', { method: 'POST', body: { linkId: row.link.id } });
@@ -140,8 +151,8 @@ export async function render({ api }) {
         surface(
           'slip',
           { title: 'Share a PDF', className: 'composer' },
-          h('p', {}, 'Recipients read it in PigeonBox’s viewer. You see who opened it and which pages were on screen — never more than the viewer can actually observe.'),
-          h('div', { class: 'grid-2' }, field('PDF', file, `Up to ${MAX_MB} MB.`), field('Title', title)),
+          h('p', {}, 'Share a PDF through PigeonBox’s viewer and see activity for each link: opens, pages on screen, visible time, and downloads.'),
+          h('div', { class: 'grid-2' }, field('PDF', file, `Up to ${MAX_MB} MB and 500 pages. Unencrypted PDFs only.`), field('Title', title)),
           h(
             'div',
             { class: 'row' },
@@ -151,7 +162,13 @@ export async function render({ api }) {
               if (pdf.type && pdf.type !== 'application/pdf') throw new Error('Only PDF files can be shared.');
               if (pdf.size > MAX_MB * 1_000_000) throw new Error(`That file is larger than ${MAX_MB} MB.`);
               const created = await api('/v1/control/documents/create', { method: 'POST', body: { title: title.value.trim() || pdf.name, filename: pdf.name.slice(0, 255) } });
-              await upload(created.uploadPath, new File([pdf], pdf.name, { type: 'application/pdf' }));
+              try { await upload(created.uploadPath, new File([pdf], pdf.name, { type: 'application/pdf' })); }
+              catch (error) {
+                // Remove an abandoned upload when possible; otherwise it stays
+                // visible as an incomplete document the owner can remove.
+                try { await api('/v1/control/documents/delete', { method: 'POST', body: { id: created.document.id } }); } catch { /* retry from Documents */ }
+                throw error;
+              }
               toast('Uploaded. Create a link to share it.', 'success');
               await open(created.document);
             }, { busy: 'Uploading…' }),
@@ -173,7 +190,7 @@ export async function render({ api }) {
               ),
             )
           : emptyState({ state: 'parcel', title: 'No documents yet', text: 'Upload a PDF above, then make one link per person to see who opened what.' }),
-        note('Forwarded links, screenshots and printouts are invisible to PigeonBox. Views from link scanners are not counted.', 'info'),
+        note('Use Preview to open your own links without adding recipient activity. Recipient labels identify links, not verified people. Known scanners, screenshots and reading outside this viewer are excluded.', 'info'),
       ),
     );
   };

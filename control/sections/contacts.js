@@ -19,13 +19,13 @@ async function brief(contactId, { api, emails, back }) {
   const vip = checkbox('VIP', c.vip, {}, 'Mail from VIPs is always treated as important.');
   const commitments = (items, emptyText) =>
     items.length
-      ? h('ul', { class: 'list' }, items.map((item) => h('li', {}, h('div', { class: 'list-main' }, h('span', {}, item.text), h('span', { class: 'muted' }, item.dueAt ? `Due ${day(item.dueAt)}` : 'No date')), item.source?.gmailThreadId ? gmailLink('Open thread', emails.get(item.source.accountId), item.source.gmailThreadId) : null)))
+      ? h('ul', { class: 'list' }, items.map((item) => h('li', {}, h('div', { class: 'list-main' }, h('span', {}, item.text), h('span', { class: 'muted' }, item.dueAt ? `Due ${day(item.dueAt)}` : 'No date')), h('div', { class: 'row tight' }, item.source?.gmailThreadId ? gmailLink('Promise thread', emails.get(item.source.accountId), item.source.gmailThreadId) : null, item.resolution?.source.gmailThreadId ? gmailLink(`Completed ${ago(item.resolution.at)} · view evidence`, emails.get(item.resolution.source.accountId), item.resolution.source.gmailThreadId) : null))))
       : h('p', { class: 'muted' }, emptyText);
 
   return h(
     'div',
     { class: 'stack' },
-    h('button', { type: 'button', class: 'back', on: { click: () => back() } }, '← Contacts'),
+    button('← Correspondents', back, { variant: 'ghost' }),
     surface(
       'card',
       {},
@@ -37,14 +37,15 @@ async function brief(contactId, { api, emails, back }) {
         ['Last contact', c.lastInteractionAt ? ago(c.lastInteractionAt) : 'Never'],
         ['Next meeting', b.nextMeeting ? `${b.nextMeeting.title} · ${day(b.nextMeeting.start)}` : 'None scheduled'],
       ]),
-      b.lastDiscussed ? h('p', {}, h('strong', {}, 'Last discussed: '), b.lastDiscussed.text) : null,
+      b.lastDiscussed ? h('p', {}, h('strong', {}, 'Last discussed: '), b.lastDiscussed.text, b.lastDiscussed.source.gmailThreadId ? gmailLink(' · Open conversation', emails.get(b.lastDiscussed.source.accountId), b.lastDiscussed.source.gmailThreadId) : null) : null,
     ),
     h('div', { class: 'grid-2' }, card('You owe them', commitments(b.youOwe, 'Nothing open.')), card('They owe you', commitments(b.theyOwe, 'Nothing open.'))),
+    b.recentlyCompleted?.length ? surface('ledger', { title: 'Recently completed', className: 'contact-completed' }, commitments(b.recentlyCompleted, '')) : null,
     b.importantThreads.length
       ? surface('ledger', { title: 'Threads' }, h('ul', { class: 'list' }, b.importantThreads.map((thread) => h('li', {}, h('div', { class: 'list-main' }, gmailLink(thread.subject || '(no subject)', emails.get(thread.accountId), thread.threadId), h('span', { class: 'muted' }, `${STATES[thread.state] ?? thread.state} · ${ago(thread.lastMessageAt)}`))))))
       : null,
     b.signals.length ? surface('ledger', { title: 'Signals' }, h('ul', { class: 'list' }, b.signals.map((signal) => h('li', {}, h('div', { class: 'list-main' }, h('strong', {}, signal.label), h('span', { class: 'muted' }, signal.explanation)))))) : null,
-    surface('ledger', { title: 'Timeline' }, b.timeline.length ? timeline(b.timeline.map((entry) => ({ at: entry.at, title: entry.label, tone: 'neutral' }))) : empty('No activity yet.')),
+    surface('ledger', { title: 'Timeline' }, b.timeline.length ? timeline(b.timeline.map((entry) => ({ at: entry.at, title: entry.label, tone: entry.kind === 'commitment' ? 'good' : 'neutral', aside: entry.source?.gmailThreadId ? gmailLink('View email', emails.get(entry.source.accountId), entry.source.gmailThreadId) : null }))) : empty('No activity yet.')),
     card(
       'Your notes',
       notes,
@@ -65,13 +66,32 @@ async function brief(contactId, { api, emails, back }) {
 export async function render({ api }) {
   const emails = await accountEmails();
   const root = h('div');
+  const filters = { query: '', vipOnly: false };
+  let listScroll = 0;
+  let revision = 0;
 
   const drawList = async () => {
-    const [radar, first] = await Promise.all([api('/v1/contacts/radar'), api('/v1/contacts/list', { method: 'POST', body: { limit: 50 } })]);
-    const search = input({ type: 'search', placeholder: 'Search people or companies', attrs: { 'aria-label': 'Search contacts' } });
-    const vipOnly = checkbox('VIPs only', false);
+    const current = ++revision;
+    const [radar, first] = await Promise.all([api('/v1/contacts/radar'), api('/v1/contacts/list', { method: 'POST', body: { limit: 50, query: filters.query, vipOnly: filters.vipOnly } })]);
+    if (current !== revision) return;
+    let contacts = first.contacts;
+    let cursor = first.nextCursor;
+    const search = input({ value: filters.query, type: 'search', placeholder: 'Search people or companies', attrs: { 'aria-label': 'Search contacts' } });
+    const vipOnly = checkbox('VIPs only', filters.vipOnly);
     const listEl = h('div');
-    const open = async (id) => clear(root, await brief(id, { api, emails, back: drawList }));
+    const open = async (id) => {
+      const token = ++revision;
+      listScroll = window.scrollY;
+      try {
+        const detail = await brief(id, { api, emails, back: async () => {
+          await drawList();
+          window.scrollTo({ top: listScroll, behavior: 'instant' });
+        } });
+        if (token !== revision) return;
+        clear(root, detail);
+        root.querySelector('.back, .btn')?.focus({ preventScroll: true });
+      } catch (error) { toast(error?.message || 'Could not load this person. Try again.', 'error'); }
+    };
     const drawContacts = (contacts) =>
       clear(
         listEl,
@@ -91,12 +111,26 @@ export async function render({ api }) {
             )
           : empty('No contacts match.'),
       );
+    const more = button('Load more people', async () => {
+      if (!cursor) return;
+      const token = ++revision;
+      const result = await api('/v1/contacts/list', { method: 'POST', body: { limit: 50, cursor, query: filters.query, vipOnly: filters.vipOnly } });
+      if (token !== revision) return;
+      contacts.push(...result.contacts); cursor = result.nextCursor;
+      drawContacts(contacts); more.hidden = !cursor;
+    }, { variant: 'ghost' });
+    more.hidden = !cursor;
     let timer = 0;
+    let searchRevision = 0;
     const query = () => {
       clearTimeout(timer);
+      filters.query = search.value.trim(); filters.vipOnly = vipOnly.querySelector('input').checked;
+      const token = ++searchRevision;
       timer = setTimeout(async () => {
         const result = await api('/v1/contacts/list', { method: 'POST', body: { limit: 50, ...(search.value.trim() ? { query: search.value.trim() } : {}), ...(vipOnly.querySelector('input').checked ? { vipOnly: true } : {}) } }).catch(() => null);
-        if (result) drawContacts(result.contacts);
+        if (token !== searchRevision || !listEl.isConnected) return;
+        if (result) { contacts = result.contacts; cursor = result.nextCursor; drawContacts(contacts); more.hidden = !cursor; }
+        else toast('Search could not load. Try again.', 'error');
       }, 250);
     };
     search.addEventListener('input', query);
@@ -122,8 +156,8 @@ export async function render({ api }) {
       h(
         'div',
         { class: 'stack' },
-        radarCards.length ? h('div', { class: 'bins' }, radarCards) : null,
-        surface('ledger', { title: 'People' }, h('div', { class: 'row tight people-tools' }, search, vipOnly), listEl),
+        radarCards.length ? h('div', { class: 'bins contacts-radar' }, radarCards) : null,
+        surface('ledger', { title: 'People' }, h('div', { class: 'row tight people-tools' }, search, vipOnly, button('Refresh', drawList, { variant: 'ghost', small: true })), listEl, more),
       ),
     );
   };

@@ -44,7 +44,7 @@ const PAGES = {
   inbox: { title: 'In Gmail', heading: 'In Gmail', lede: 'What the PigeonBox extension does inside Gmail in this browser.', scene: 'views', load: settingsPage('inbox') },
   tracking: { title: 'Email tracking', heading: 'Email tracking', lede: 'Opens and clicks on mail you send, recorded by PigeonBox Cloud.', scene: 'documents', load: settingsPage('tracking') },
   personalization: { title: 'Your voice', heading: 'Your voice', lede: 'How drafts should sound, here and in Cloud’s background drafts.', scene: 'memory', load: settingsPage('voice') },
-  memory: { title: 'Memory', heading: 'What Pidgy remembers', lede: 'The useful details you should not have to explain twice. Correct or forget any of it.', scene: 'memory', load: () => import('./sections/memory.js') },
+  memory: { title: 'Memory', heading: 'What Pidgy remembers', lede: 'The useful details you should not have to explain twice. Correct or forget any of it.', scene: 'memory', load: () => import('./sections/memory.js?v=memory-context-1') },
   activity: { title: 'Audit & activity', heading: 'Dispatch log', lede: 'Everything done on your behalf, with who asked for it and why.', scene: 'activity', load: () => import('./sections/activity.js') },
   team: { title: 'Team', heading: 'Shared desk', lede: 'Share a thread’s summary with teammates, assign it, and discuss it. The email itself never leaves the sharer’s mailbox.', capability: 'cloud_team', scene: 'team', load: () => import('./sections/team.js') },
   developers: { title: 'API & MCP', heading: 'Service entrance', lede: 'Connect tools to PigeonBox with scoped tokens and signed webhooks. Everything they do is audited.', capability: 'cloud_mcp', scene: 'developers', load: () => import('./sections/developers.js') },
@@ -53,8 +53,8 @@ const PAGES = {
   sequences: { title: 'Sequences', heading: 'Sequences', lede: 'Personal sequences for a small list of people you would write to anyway. Every batch waits for your approval, and replies stop it for that person.', capability: 'cloud_sequences', scene: 'sequences', load: () => import('./sections/sequences.js') },
   views: { title: 'Smart Views', heading: 'Smart Views', lede: 'Describe mail in your own words. PigeonBox turns it into rules you can read.', capability: 'cloud_automations', scene: 'views', load: () => import('./sections/views.js') },
   subscriptions: { title: 'Mailing lists', heading: 'Mailing lists', lede: 'Newsletters and stores that email you. Leave any of them in one click, the way Gmail’s Unsubscribe button works, and PigeonBox keeps the ones that ignore it out of your inbox.', capability: 'cloud_mail_sync', scene: 'views', load: () => import('./sections/subscriptions.js') },
-  contacts: { title: 'Contacts', heading: 'Correspondents', lede: 'Built from dates, counts and open promises in your synced mail. No hidden scores: every item says why it is here.', capability: 'cloud_relationships', scene: 'contacts', load: () => import('./sections/contacts.js') },
-  documents: { title: 'Documents', heading: 'Tracked documents', lede: 'PDFs read in PigeonBox’s viewer. You see who opened what, never more than the viewer can observe.', capability: 'cloud_documents', scene: 'documents', load: () => import('./sections/documents.js') },
+  contacts: { title: 'Contacts', heading: 'Correspondents', lede: 'People, open promises and recent progress from your synced conversations. Pidgy checks later emails for evidence that a promise was fulfilled.', capability: 'cloud_relationships', scene: 'contacts', load: () => import('./sections/contacts.js?v=memory-context-1') },
+  documents: { title: 'Documents', heading: 'Tracked documents', lede: 'Share PDFs with per-recipient links and see the activity observed in PigeonBox’s viewer.', capability: 'cloud_documents', scene: 'documents', load: () => import('./sections/documents.js') },
   briefings: { title: 'Briefings', heading: 'Briefings', lede: 'Built from your synced mail and calendar. Every line links to where it came from.', capability: 'cloud_automations', scene: 'briefings', load: () => import('./sections/briefings.js') },
 };
 
@@ -180,7 +180,9 @@ function lockedBody(page) {
 // Rendering
 // ---------------------------------------------------------------------------
 
-async function render({ focus = false } = {}) {
+async function render({ focus = false, preserveScroll = false } = {}) {
+  const scroll = preserveScroll ? { x: window.scrollX, y: window.scrollY, height: view.getBoundingClientRect().height } : null;
+  view.style.minHeight = scroll ? `${scroll.height}px` : '';
   const { hash, page: pageId } = currentPage();
   if (hashId() !== hash) history.replaceState(null, '', `#${hash}`);
   const page = PAGES[pageId];
@@ -208,7 +210,7 @@ async function render({ focus = false } = {}) {
 
   try {
     const module = await page.load();
-    const result = await module.render({ ...ctx, landing, section: hash, rerender: () => render() });
+    const result = await module.render({ ...ctx, landing, section: hash, rerender: () => render({ preserveScroll: true }) });
     if (token !== renderToken) return;
     clearTimeout(slow);
     paint(head, dress(head, result), { settle: skeleton });
@@ -227,6 +229,10 @@ async function render({ focus = false } = {}) {
       }),
       { settle: skeleton },
     );
+  }
+  if (scroll && token === renderToken) {
+    window.scrollTo({ left: scroll.x, top: scroll.y, behavior: 'instant' });
+    view.style.minHeight = '';
   }
   finish(page, focus);
 }

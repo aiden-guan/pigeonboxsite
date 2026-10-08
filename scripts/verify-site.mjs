@@ -84,13 +84,14 @@ try {
     assert.equal(await page.locator('button[type=submit]').isDisabled(), true);
     assert.equal(requests, 3);
     await page.goto(origin + '/');
-    for (let stop = 1; stop <= 5; stop++) {
-      await page.locator(`#stop-${stop}`).click();
-      assert.equal(await page.locator(`#stop-${stop}`).getAttribute('aria-selected'), 'true');
-      assert.equal(await page.locator(`#stage-${stop}`).isVisible(), true, `dispatch stop ${stop} must show its panel`);
-      // Compare with the requested width: mobile engines can widen innerWidth to fit overflow.
-      assert.equal(await page.evaluate(width => document.documentElement.scrollWidth <= width, width), true, `dispatch overflow at ${width}, stop ${stop}`);
+    const capabilities = page.locator('#dispatch .glyph');
+    assert.equal(await capabilities.count(), 5, 'the five current product capabilities are present');
+    for (const capability of await capabilities.all()) {
+      assert.equal(await capability.locator('h3').isVisible(), true, 'capability heading is visible');
+      assert.equal(await capability.locator('.glyph-status div').count(), 2, 'Local and Cloud availability are shown');
     }
+    // Compare with the requested width: mobile engines can widen innerWidth to fit overflow.
+    assert.equal(await page.evaluate(width => document.documentElement.scrollWidth <= width, width), true, `dispatch overflow at ${width}`);
     await page.locator('[data-demo-expand]').click();
     assert.equal(await page.locator('[data-demo-dialog]').evaluate(dialog => {
       const bounds = dialog.getBoundingClientRect();

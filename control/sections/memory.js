@@ -6,7 +6,7 @@ import { ago, button, clear, confirmDialog, day, emptyState, h, input, link, not
 
 const CATEGORY = {
   people: 'Relationships',
-  projects: 'Projects',
+  projects: 'Work & plans',
   classes: 'School',
   logistics: 'Recent context',
   decisions: 'Plans and decisions',
@@ -29,6 +29,53 @@ export async function render({ api }) {
   const page = h('article', { class: 'brain-page', attrs: { 'aria-live': 'polite', tabindex: '-1' } });
   const filter = input({ type: 'search', placeholder: 'Find a page or search facts', maxLength: 500, attrs: { 'aria-label': 'Find a page or search facts' } });
   let revision = 0;
+  const expanded = new Set();
+  let conversation = [];
+  let chatRevision = 0;
+  let chatting = false;
+  const response = h('div', { class: 'memory-response', attrs: { 'aria-live': 'polite' } });
+  const message = h('textarea', { class: 'input', rows: 2, maxLength: 2_000, placeholder: 'Ask or update…', attrs: { 'aria-label': 'Ask or update memory' } });
+  const send = h('button', { type: 'submit', class: 'btn btn-primary' }, 'Send');
+  const chat = h('form', { class: 'memory-chat', on: { submit: async (event) => {
+    event.preventDefault();
+    const text = message.value.trim();
+    if (!text || chatting) return;
+    const subject = state.active && state.active !== UNSORTED ? state.active : undefined;
+    const currentChat = chatRevision;
+    chatting = true;
+    send.disabled = true;
+    send.textContent = 'Thinking…';
+    message.readOnly = true;
+    response.setAttribute('aria-busy', 'true');
+    try {
+      const result = await api('/v1/memory/chat', { method: 'POST', body: { message: text, subject, history: conversation.slice(-8) } });
+      if (currentChat !== chatRevision || !root.isConnected) {
+        if (result.changes.length) { toast(result.answer, 'success'); if (root.isConnected) await refresh(); }
+        return;
+      }
+      conversation.push({ role: 'user', text }, { role: 'assistant', text: result.answer });
+      conversation = conversation.slice(-8);
+      message.value = '';
+      clear(response, h('p', { class: 'memory-question' }, text), h('p', { class: 'memory-answer' }, result.answer),
+        result.memories.length ? h('details', { class: 'memory-used' }, h('summary', {}, result.changes.length ? 'Saved changes' : 'Memories used'), h('ul', { class: 'brain-facts' }, result.memories.map((memory) => drawFact(memory)))) : null);
+      if (result.changes.length) await refresh();
+    } catch (error) {
+      if (currentChat === chatRevision && root.isConnected) clear(response, note(error?.message || 'Could not answer. Your message is still here; try again.', 'error'));
+    } finally {
+      chatting = false;
+      send.disabled = false;
+      send.textContent = 'Send';
+      message.readOnly = false;
+      response.removeAttribute('aria-busy');
+      if (currentChat === chatRevision && root.isConnected) message.focus({ preventScroll: true });
+    }
+  } } }, h('label', { class: 'eyebrow', attrs: { for: 'memory-message' } }, 'Ask or update memory'),
+  h('p', { class: 'hint' }, 'Ask what Pidgy knows, say “Remember…” to save a detail, or “Update…” / “Forget…” to change it.'), response,
+  h('div', { class: 'memory-composer' }, message, send));
+  message.id = 'memory-message';
+  message.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); chat.requestSubmit(); }
+  });
 
   // ---- Index ---------------------------------------------------------------
 
@@ -131,7 +178,7 @@ export async function render({ api }) {
       h(
         'summary',
         {},
-        memory.corrected ? 'Your wording' : sourceCount ? `From ${plural(sourceCount, 'email')}` : 'Saved by you',
+        !sourceCount ? 'Saved by you' : memory.corrected ? 'Your wording' : `From ${plural(sourceCount, 'email')}`,
         ' · ',
         memory.status !== 'active' ? 'replaced' : expired ? `expired ${day(memory.validUntil)}` : memory.validUntil ? `until ${day(memory.validUntil)}` : `confirmed ${ago(memory.lastConfirmedAt)}`,
       ),
@@ -139,7 +186,7 @@ export async function render({ api }) {
         'ul',
         {},
         memory.sources.map((source) => h('li', {}, `“${source.title}”`, source.at ? h('span', { class: 'hint' }, ` · ${day(source.at)}`) : null)),
-        !sourceCount ? h('li', { class: 'hint' }, 'Your correction. The original account is no longer connected.') : null,
+        !sourceCount ? h('li', { class: 'hint' }, 'Saved directly in your memory. No email source.') : null,
       ),
     );
     const actions =
@@ -150,7 +197,7 @@ export async function render({ api }) {
             button('Edit', () => {
               editor.hidden = false;
               text.hidden = true;
-              correction.focus();
+              correction.focus({ preventScroll: true });
             }, { variant: 'ghost', small: true, title: 'Correct this fact' }),
             button('Forget', async () => {
               await api('/v1/memory/forget', { method: 'POST', body: { memoryId: memory.id } });
@@ -183,10 +230,14 @@ export async function render({ api }) {
   const grouped = (memories, options) => {
     const byCategory = new Map();
     for (const memory of memories) byCategory.set(memory.category, [...(byCategory.get(memory.category) ?? []), memory]);
-    const order = CATEGORY_ORDER.filter((category) => byCategory.has(category));
-    // A short page reads better as one list.
-    if (memories.length <= 4 || order.length === 1) return h('ul', { class: 'brain-facts' }, memories.map((memory) => drawFact(memory, options)));
-    return order.map((category) => h('section', { class: 'fact-group' }, h('h4', {}, CATEGORY[category] ?? category), h('ul', { class: 'brain-facts' }, byCategory.get(category).map((memory) => drawFact(memory, options)))));
+    return CATEGORY_ORDER.filter((category) => byCategory.has(category)).map((category) => {
+      const key = `${state.active}:${category}`;
+      const items = byCategory.get(category);
+      return h('details', { class: 'fact-group', open: expanded.has(key), on: { toggle: (event) => {
+        if (event.target.open) expanded.add(key); else expanded.delete(key);
+      } } }, h('summary', {}, h('span', {}, CATEGORY[category] ?? category), h('span', { class: 'hint' }, plural(items.length, 'memory', 'memories'))),
+      h('ul', { class: 'brain-facts' }, items.map((memory) => drawFact(memory, options))));
+    });
   };
 
   // ---- Pages ----------------------------------------------------------------
@@ -203,7 +254,8 @@ export async function render({ api }) {
     return out;
   }
 
-  async function open(id) {
+  async function open(id, preserveConversation = false) {
+    if (state.active !== id && !preserveConversation) { chatRevision += 1; conversation = []; message.value = ''; clear(response); }
     state.active = id;
     state.query = '';
     drawIndex();
@@ -249,6 +301,7 @@ export async function render({ api }) {
   async function search() {
     const query = filter.value.trim();
     if (!query) return;
+    chatRevision += 1; conversation = []; clear(response);
     state.active = null;
     state.query = query;
     drawIndex();
@@ -275,12 +328,14 @@ export async function render({ api }) {
     if (state.query) return;
     const keep = state.active && (state.active === UNSORTED ? state.organizing : state.subjects.some((subject) => subject.id === state.active));
     const first = keep ? state.active : state.subjects[0]?.id ?? (state.organizing ? UNSORTED : null);
-    if (first) await open(first);
-    else
+    if (first) await open(first, true);
+    else {
+      state.active = null;
       clear(
         page,
         emptyState({ state: 'map', title: 'Nothing remembered yet', text: 'As connected mail is analyzed, Pidgy keeps a page about you and the people and projects you write about.', level: 'h3' }),
       );
+    }
   }
 
   filter.addEventListener('input', drawIndex);
@@ -339,7 +394,7 @@ export async function render({ api }) {
           ),
           index,
         ),
-        page,
+        h('div', { class: 'brain-reader' }, page, chat),
       ),
     ),
     h(
@@ -375,6 +430,7 @@ export async function render({ api }) {
                 return;
               await api('/v1/memory/purge', { method: 'POST', body: { confirm: 'forget all memories' } });
               state.active = null;
+              chatRevision += 1; conversation = []; clear(response);
               await refresh();
               toast('All personal memories forgotten.', 'success');
             },

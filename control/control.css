@@ -1508,3 +1508,27 @@ a.ov-account:hover strong { color: var(--copper); }
 .cp .subs .chips { flex: none; }
 .cp .subs .toggle { flex: none; padding: 0; border-top: 0; gap: 10px; font-size: 13px; }
 @media (max-width: 600px) { .cp .subs > li { flex-wrap: wrap; } }
+
+/* Memory is a readable summary first; individual facts expand on request. */
+.brain-reader { min-width: 0; display: flex; flex-direction: column; }
+.brain-reader .brain-page { flex: 1; }
+.fact-group > summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 13px 0; cursor: pointer; color: var(--copper); font: 500 11px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; border-top: 1px solid var(--rule); }
+.fact-group > summary::before { content: '+'; }
+.fact-group[open] > summary::before { content: '−'; }
+.fact-group > summary > span:first-child { flex: 1; }
+.fact-group > summary .hint { text-transform: none; letter-spacing: 0; }
+.fact-group > summary:focus-visible, .memory-used > summary:focus-visible { outline: 2px solid var(--copper); outline-offset: 3px; }
+.memory-chat { padding: 18px clamp(18px,3vw,34px); border-top: 1px solid var(--rule); background: var(--paper-2); border-radius: 0 0 var(--r-lg) 0; }
+.memory-composer { display: flex; align-items: flex-end; gap: 10px; }
+.memory-composer textarea { flex: 1; min-width: 0; resize: vertical; }
+.memory-question { margin: 12px 0 6px; color: var(--muted); font-size: 13px; }
+.memory-answer { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 12px; line-height: 1.6; }
+.memory-used > summary { cursor: pointer; margin-bottom: 10px; font-size: 13px; }
+.contacts-radar { align-items: start; }
+.contacts-radar .bin { min-height: 0; }
+.contact-completed .list-main { gap: 4px; }
+@media (max-width: 600px) {
+  .memory-chat { padding: 16px; border-radius: 0 0 var(--r-lg) var(--r-lg); }
+  .memory-composer { flex-wrap: wrap; }
+  .memory-composer textarea { flex-basis: 100%; }
+}
