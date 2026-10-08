@@ -1,0 +1,137 @@
+/* A compact comparison opens into the Cloud feature orbit. */
+.pricing-section { padding-top: clamp(28px, 4vw, 48px); }
+.pricing-stage { position: relative; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); align-items: stretch; }
+.pricing-stage.is-ready .local-plan, .pricing-stage.is-ready .cloud-plan { height: 560px; }
+.local-plan, .cloud-plan { min-width: 0; min-height: 560px; padding: clamp(22px, 2.6vw, 30px); border: 1px solid var(--text); }
+.local-plan { background: var(--sheet); border-radius: var(--r-lg) 0 0 var(--r-lg); display: flex; flex-direction: column; align-items: flex-start; }
+.local-plan .price { margin-top: 20px; font-size: clamp(58px, 6vw, 72px); }
+.local-plan .price-note { font-size: 14px; line-height: 1.6; margin-top: 14px; }
+.local-features { list-style: none; padding: 0; margin: 16px 0 22px; width: 100%; }
+.local-features li { position: relative; padding: 12px 0 12px 22px; border-bottom: 1px solid var(--rule); font-size: 13px; font-weight: 550; }
+.local-features li::before { content: '↳'; position: absolute; left: 0; color: var(--copper); font-family: var(--mono); }
+.local-features span { display: block; color: var(--muted); font-size: 12px; font-weight: 400; margin-top: 2px; }
+.local-plan > .btn { margin-top: auto; }
+.cloud-column { min-width: 0; position: relative; display: flex; flex-direction: column; }
+.cloud-plan { flex: none; width: 100%; position: relative; display: flex; flex-direction: column; border-radius: 0 var(--r-lg) var(--r-lg) 0; background: radial-gradient(ellipse at 60% 32%, #292526 0, #171719 42%, var(--ink) 72%); }
+.cloud-heading h3 { display: flex; align-items: center; gap: 10px; }
+.pricing-stage.is-ready .cloud-art { position: relative; height: clamp(150px, 16vw, 190px); margin: 8px -12px 0; }
+.cloud-art canvas { width: 100%; height: 100%; display: block; }
+.cloud-art-mark { position: absolute; right: 20px; bottom: 10px; color: var(--copper-bright); font: 300 26px/1 var(--mono); }
+.cloud-trigger { display: block; width: 100%; text-align: left; padding: 6px 0 0; margin: 0; background: none; border: 0; cursor: pointer; position: relative; -webkit-tap-highlight-color: transparent; }
+.cloud-question { display: block; font: 400 clamp(40px, 4.2vw, 58px)/.98 var(--serif); letter-spacing: -.035em; color: var(--ink-text); transform-origin: left bottom; }
+.cloud-question em { color: var(--copper-bright); font-weight: 400; }
+.cloud-trigger-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; padding-bottom: 14px; border-bottom: 1px solid #3b3531; }
+.cloud-trigger-hint { font: 500 10px/1.5 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #c4baaf; }
+.cloud-trigger-icon { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #6e4a39; border-radius: 50%; color: var(--copper-bright); font-size: 20px; transition: transform 180ms var(--ease), background 180ms, color 180ms; }
+.cloud-trigger[aria-expanded="true"] .cloud-trigger-icon { transform: rotate(180deg); background: var(--copper-bright); color: var(--ink); }
+.cloud-trigger:active .cloud-question { transform: scale(.98); }
+@media (hover: hover) and (pointer: fine) {
+  .cloud-column:hover .cloud-trigger-icon { background: var(--copper-bright); color: var(--ink); }
+}
+.cloud-offer { margin-top: auto; padding-top: 18px; display: grid; grid-template-columns: 1fr auto; gap: 9px 16px; align-items: start; }
+.cloud-offer #cloud-price { color: var(--ink-text); letter-spacing: .07em; }
+.cloud-offer #cloud-price-detail { grid-row: 2; font-size: 12px; color: #a7a5a2; max-width: 30ch; }
+.cloud-offer .text-link { grid-column: 2; grid-row: 1 / 3; align-self: center; font-size: 12px; gap: 10px; }
+@media (max-width: 1000px) {
+  .local-plan, .cloud-plan { min-height: 560px; }
+  .cloud-question { font-size: clamp(38px, 4.8vw, 50px); }
+  .cloud-offer { grid-template-columns: 1fr; }
+  .cloud-offer .text-link { grid-column: 1; grid-row: 3; justify-self: start; margin-top: 5px; }
+}
+@media (max-width: 760px) {
+  .pricing-stage { grid-template-columns: 1fr; }
+  .local-plan, .cloud-plan { min-height: 0; padding: 24px; }
+  .local-plan { border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  .cloud-plan { border-radius: 0 0 var(--r-lg) var(--r-lg); }
+  .local-plan .price { margin-top: 20px; }
+  .pricing-stage.is-ready .cloud-art { height: 160px; margin-top: 8px; }
+  .cloud-question { font-size: clamp(40px, 8vw, 52px); }
+  .cloud-offer { grid-template-columns: 1fr auto; }
+  .cloud-offer .text-link { grid-column: 2; grid-row: 1 / 3; margin: 0; }
+}
+@media (max-width: 440px) {
+  .cloud-offer { grid-template-columns: 1fr; }
+  .cloud-offer .text-link { grid-column: 1; grid-row: 3; margin-top: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pricing-stage *, .pricing-stage *::before, .pricing-stage *::after { transition: none !important; animation: none !important; }
+}
+
+/* On hover the Cloud card grows across the spread, holding its own universe. */
+.cloud-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; z-index: 5; pointer-events: none; }
+.cloud-art { isolation: isolate; }
+.cloud-art canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cloud-orbit-list { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; list-style: none; margin: 0; padding: 12px; }
+/* Feature names read like annotations on an astronomical chart. */
+.orbit-feature { position: relative; display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-height: 44px; padding: 7px 4px; border: 0; border-radius: 0; background: transparent; color: #d7d0c3; font: 450 12px/1.3 var(--sans); text-align: left; text-shadow: 0 1px 3px #111214, 0 0 8px #111214; transition: color 150ms ease; }
+.orbit-feature::after { content: ''; position: absolute; left: 44px; bottom: 2px; width: 18px; height: 1px; background: #a39b8b; opacity: .45; transition: width 150ms ease, opacity 150ms ease; }
+.orbit-feature > span { min-width: 0; }
+.feature-icon { display: block; width: 30px; height: 30px; flex: none; overflow: visible; color: #e8e0d1; filter: drop-shadow(0 1px 3px #111214); transition: color 150ms ease, transform 150ms ease; }
+.orbit-feature:focus-visible { outline: 1px dotted #e8e0d1; outline-offset: 4px; }
+.orbit-feature:hover, .orbit-feature:focus { color: #fff7eb; }
+.orbit-feature:hover::after, .orbit-feature:focus::after { width: 36px; opacity: .85; }
+.orbit-feature:hover .feature-icon, .orbit-feature:focus .feature-icon { color: #fff7eb;  }
+.orbit-path { display: none; position: absolute; left: 50%; top: 50%; border: 1px solid #ad6b4138; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.orbit-path::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 1px dotted #aa78551c; }
+.orbit-path-outer { width: calc(100% - var(--orbit-inset, 178px)); height: calc(100% - 64px); }
+.orbit-path-inner { width: calc((100% - var(--orbit-inset, 178px)) * .58); height: 48%; transform: translate(-50%, -50%) rotate(-8deg); }
+.pricing-stage.is-ready .cloud-orbit-list { position: absolute; inset: 0; display: block; padding: 0; z-index: 3; }
+.pricing-stage.is-ready .orbit-feature { position: absolute; left: 0; top: 0; width: max-content; max-width: 174px; will-change: transform; }
+.pricing-stage.is-ready .cloud-art { overflow: clip; }
+.cloud-column.is-expanded { display: block; position: absolute; inset: 0; width: 100%; z-index: 10; }
+.cloud-column.is-expanded .cloud-plan { height: min(640px, calc(100dvh - 96px)); min-height: 0; padding: 22px 24px; display: grid; grid-template-rows: 36px minmax(0, 1fr) 64px; border-radius: var(--r-lg); box-shadow: 0 24px 64px #24160940, 0 0 0 1px #b5754440; overflow: clip; background: radial-gradient(ellipse at 50% 48%, #36251e 0, #201b1b 30%, #111214 68%); }
+.pricing-stage[data-open="true"] > .local-plan { visibility: hidden; }
+.pricing-stage[data-open="true"] { min-height: min(640px, calc(100dvh - 96px)); }
+.cloud-column.is-expanded .cloud-art { height: 100%; min-height: 0; margin: 0; }
+.cloud-column.is-expanded .orbit-path { display: block; }
+.cloud-column.is-expanded .cloud-trigger { position: absolute; top: 25px; left: 185px; width: auto; max-width: calc(100% - 290px); padding: 0; z-index: 4; }
+.cloud-column.is-expanded .cloud-question { font-size: 26px; line-height: 1.05; }
+.cloud-column.is-expanded .cloud-question br { display: none; }
+.cloud-column.is-expanded .cloud-question em::before { content: ' '; white-space: pre; }
+.cloud-column.is-expanded .cloud-trigger-foot { display: none; }
+.cloud-column.is-expanded .cloud-offer { grid-template-columns: 1fr auto; margin: 0; padding-top: 12px; border-top: 1px solid #68422b66; z-index: 4; }
+.cloud-column.is-expanded .cloud-offer .text-link { grid-column: 2; grid-row: 1 / 3; margin: 0; }
+@media (max-width: 1100px) {
+  .feature-icon { width: 24px; height: 24px; }
+  .orbit-feature::after { left: 34px; }
+  .pricing-stage.is-ready .orbit-feature { font-size: 11px; max-width: 142px; padding: 6px 4px; gap: 6px; }
+}
+@media (max-width: 760px) {
+  .cloud-column.is-expanded { position: relative; inset: auto; grid-column: 1; }
+  .pricing-stage[data-open="true"] > .local-plan { visibility: visible; }
+  .pricing-stage[data-open="true"] { min-height: 0; }
+  .cloud-column.is-expanded .cloud-plan { padding: 16px 12px; grid-template-rows: 54px minmax(0, 1fr) 78px; }
+  .cloud-column.is-expanded .cloud-trigger { left: 12px; top: 53px; max-width: calc(100% - 24px); min-height: 44px; }
+  .cloud-column.is-expanded .cloud-question { font-size: 20px; }
+  .pricing-stage.is-ready .orbit-feature { font-size: 10px; max-width: 100px; min-height: 30px; padding: 5px 2px; gap: 4px; }
+  .feature-icon { width: 18px; height: 18px; }
+  .orbit-feature::after { left: 24px; bottom: 1px; width: 12px; }
+  .orbit-feature:hover::after, .orbit-feature:focus::after { width: 24px; }
+  .orbit-path-outer { width: calc(100% - 100px); height: calc(100% - 40px); }
+  .orbit-path-inner { display: none !important; }
+  .cloud-column.is-expanded .cloud-offer { grid-template-columns: 1fr auto; gap: 6px 12px; }
+  .cloud-column.is-expanded .cloud-offer .text-link { grid-column: 2; grid-row: 1 / 3; font-size: 10px; max-width: 13ch; line-height: 1.4; }
+  .cloud-column.is-expanded #cloud-price-detail { font-size: 10px; max-width: 24ch; }
+}
+.cloud-art { position: relative; min-height: 190px; }
+
+/* Short phone viewports scroll naturally rather than compressing the orbit. */
+@media (max-width: 900px) {
+  .cloud-column.is-expanded .cloud-plan { min-height: 504px; }
+}
+@media (hover: none), (pointer: coarse) {
+  .cloud-column.is-expanded .cloud-trigger { min-height: 44px; }
+}
+
+@media (max-height: 700px) and (max-width: 900px) {
+  .feature-icon { width: 16px; height: 16px; }
+  .orbit-feature::after { left: 22px; }
+  .pricing-stage.is-ready .orbit-feature { font-size: 9px; line-height: 1.15; min-height: 22px; padding: 4px 2px; max-width: 100px; }
+}
+
+.cloud-art[data-orbit-layout="single"] .orbit-path-inner { display: none; }
+.cloud-art[data-orbit-layout="single"] .orbit-path-outer { width: calc(100% - var(--orbit-inset, 108px)); height: calc(100% - 60px); }
+
+.feature-icon [data-icon-part] { transform-box: view-box; transform-origin: 16px 16px; }
+
+.orbit-feature[data-icon-active="true"] .feature-icon { transform: scale(1.16); }

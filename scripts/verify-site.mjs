@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+import { layoutFeatureOrbit } from '../pricing-orbit.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const { chromium } = createRequire(resolve(root, '../../PigeonBox/package.json'))('@playwright/test');
@@ -108,11 +109,242 @@ try {
       await categorySelect.selectOption(category);
       assert.equal(await categorySelect.inputValue(), category);
     }
-    results.push({ width, layout: 'pass', reducedMotion: 'pass', invalid: 'pass', persistenceFailureRetry: 'pass', rateLimit: 'pass', signup: 'pass', dispatchViewport: 'pass', expandedDemo: 'pass', inboxCategories: 'pass', workspacePause: 'pass' });
+    await page.goto(origin + '/pricing');
+    const cloudTrigger = page.locator('[data-cloud-trigger]');
+    const cloudList = page.locator('.cloud-orbit-list');
+    await page.locator('.pricing-stage.is-ready').waitFor();
+    assert.equal(await cloudTrigger.getAttribute('aria-expanded'), 'false');
+    assert.equal(await cloudList.isVisible(), false);
+    const cards = await page.locator('.pricing-stage').evaluate(stage => ({
+      local: stage.querySelector('.local-plan').getBoundingClientRect().height,
+      cloud: stage.querySelector('.cloud-plan').getBoundingClientRect().height,
+    }));
+    assert.ok(Math.abs(cards.local - cards.cloud) < 1, `plan heights match at ${width}`);
+    assert.equal(await page.locator('.local-features li').count(), 5);
+    await page.locator('.cloud-orbit-list[data-feature-icons-ready="true"]').waitFor({ state: 'attached' });
+    assert.equal(await page.locator('.feature-icon[data-icon-name]').count(), 18);
+    assert.equal(await page.locator('[data-orbit-pause]').count(), 0);
+    assert.equal(await page.locator('[data-cloud-close]').count(), 0);
+    await page.screenshot({ path: `${output}/pricing-comparison-${width}.png`, fullPage: true });
+    await cloudTrigger.scrollIntoViewIfNeeded();
+    await cloudTrigger.press('Enter');
+    assert.equal(await cloudTrigger.getAttribute('aria-expanded'), 'true');
+    assert.equal(await cloudList.isVisible(), true);
+    await page.waitForFunction(() => {
+      const card = document.querySelector('.cloud-plan').getBoundingClientRect();
+      const header = document.querySelector('.site-header').getBoundingClientRect();
+      return card.top >= header.bottom && card.bottom <= innerHeight;
+    });
+    assert.equal(await page.locator('#cloud-cta').evaluate(node => {
+      const box = node.getBoundingClientRect();
+      const card = node.closest('.cloud-plan').getBoundingClientRect();
+      return box.bottom <= card.bottom && box.right <= card.right;
+    }), true, `Cloud CTA stays inside the card at ${width}`);
+    await page.waitForFunction(() => document.querySelector('[data-cloud-art]').dataset.cloudPainted === 'true');
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    assert.equal(await page.locator('.orbit-feature').count(), 18);
+    assert.equal(await cloudList.innerText().then(text => /Testing|Tracked documents|Sequences/.test(text)), false);
+    const geometry = await page.locator('.cloud-art').evaluate(world => {
+      const bounds = world.getBoundingClientRect();
+      const labels = [...world.querySelectorAll('.orbit-feature')].map(node => node.getBoundingClientRect());
+      return {
+        clipped: labels.some(box => box.left < bounds.left - 1 || box.right > bounds.right + 1 || box.top < bounds.top - 1 || box.bottom > bounds.bottom + 1),
+        overlaps: labels.flatMap((a, i) => labels.slice(i + 1).filter(b => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2)).length,
+      };
+    });
+    await page.screenshot({ path: `${output}/pricing-orbit-${width}.png` });
+    assert.equal(geometry.clipped, false, `orbit labels clipped at ${width}`);
+    assert.equal(geometry.overlaps, 0, `orbit labels overlap at ${width}`);
+    assert.equal(await page.evaluate(width => document.documentElement.scrollWidth <= width, width), true, `pricing overflow at ${width}`);
+    const art = await page.locator('[data-cloud-art]').evaluate(canvas => canvas.toDataURL());
+    const positions = await page.locator('.orbit-feature').evaluateAll(nodes => nodes.map(node => node.style.transform));
+    await page.waitForTimeout(150);
+    assert.ok(await page.locator('[data-cloud-art]').evaluate(canvas => canvas.toDataURL()) === art, 'reduced motion cloud must be static');
+    assert.deepEqual(await page.locator('.orbit-feature').evaluateAll(nodes => nodes.map(node => node.style.transform)), positions, 'reduced motion orbit must be static');
+    assert.equal(await page.evaluate(() => document.querySelector('.pricing-stage').getAnimations({ subtree: true }).filter(a => a.playState === 'running').length), 0);
+    await cloudTrigger.press('Escape');
+    assert.equal(await cloudList.isVisible(), false);
+    assert.equal(await cloudTrigger.evaluate(node => node === document.activeElement), true, 'closing restores trigger focus');
+    await cloudTrigger.click();
+    assert.equal(await cloudTrigger.getAttribute('aria-expanded'), 'true');
+    await cloudTrigger.press('Escape');
+    assert.equal(await cloudList.isVisible(), false);
+    results.push({ width, layout: 'pass', reducedMotion: 'pass', invalid: 'pass', persistenceFailureRetry: 'pass', rateLimit: 'pass', signup: 'pass', dispatchViewport: 'pass', expandedDemo: 'pass', inboxCategories: 'pass', workspacePause: 'pass', pricingOrbit: 'pass' });
     await context.close();
+  }
+  // Exercise touch opening/closing with motion, including short screens and rotation.
+  for (const [width, height] of [[320, 480], [320, 600], [390, 844], [430, 932], [768, 1024], [844, 390], [667, 375], [568, 320]]) {
+    const context = await browser.newContext({ viewport: { width, height }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
+    const touchPage = await context.newPage();
+    observe(touchPage);
+    await touchPage.goto(origin + '/pricing');
+    const trigger = touchPage.locator('[data-cloud-trigger]');
+    await trigger.tap();
+    await touchPage.waitForFunction(() => !document.querySelector('.cloud-orbit-list').inert);
+    await touchPage.waitForTimeout(850);
+    const geometry = await touchPage.locator('.cloud-art').evaluate(world => {
+      const bounds = world.getBoundingClientRect();
+      const card = world.closest('.cloud-plan').getBoundingClientRect();
+      const offer = document.querySelector('.cloud-offer').getBoundingClientRect();
+      const cta = document.querySelector('#cloud-cta').getBoundingClientRect();
+      const labels = [...world.querySelectorAll('.orbit-feature')].map(node => node.getBoundingClientRect());
+      return {
+        clipped: labels.some(box => box.left < bounds.left - 1 || box.right > bounds.right + 1 || box.top < bounds.top - 1 || box.bottom > bounds.bottom + 1),
+        overlaps: labels.some((a, i) => labels.slice(i + 1).some(b => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2)),
+        offerClear: bounds.bottom <= offer.top + 1,
+        ctaInside: cta.bottom <= card.bottom && cta.right <= card.right,
+        cappedDpr: world.querySelector('canvas').width <= bounds.width * 2 + 1,
+      };
+    });
+    assert.deepEqual(geometry, { clipped: false, overlaps: false, offerClear: true, ctaInside: true, cappedDpr: true }, `touch geometry at ${width}×${height}`);
+    assert.equal(await touchPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.equal(await touchPage.locator('[data-icon-active]').count(), 0, 'touch does not leave sticky icon hover animations');
+    await touchPage.screenshot({ path: `${output}/pricing-touch-${width}x${height}.png` });
+    if (width === 390) {
+      for (const viewport of [{ width: 844, height: 390 }, { width, height }]) {
+        await touchPage.setViewportSize(viewport);
+        await touchPage.waitForFunction(() => {
+          const card = document.querySelector('.cloud-plan').getBoundingClientRect();
+          const header = document.querySelector('.site-header').getBoundingClientRect();
+          return card.top >= header.bottom && card.top < header.bottom + 24;
+        });
+        assert.equal(await trigger.getAttribute('aria-expanded'), 'true', 'rotation keeps Cloud open and framed');
+      }
+    }
+    await trigger.tap();
+    assert.equal(await trigger.getAttribute('aria-expanded'), 'false', 'touch closes Cloud without an intercepted tap');
+    const closed = await touchPage.locator('.pricing-stage').evaluate(stage => [...stage.querySelectorAll('.local-plan, .cloud-plan')].map(node => node.getBoundingClientRect().height));
+    assert.equal(closed[0], closed[1], 'touch close restores matching plan heights');
+    if (width === 430) {
+      await trigger.tap();
+      await touchPage.waitForFunction(() => !document.querySelector('.cloud-orbit-list').inert);
+      await touchPage.locator('#cloud-cta').tap();
+      await touchPage.waitForURL(origin + '/waitlist');
+    }
+    await context.close();
+  }
+  // Sample a complete five-minute revolution at 60 Hz using actual rendered
+  // label dimensions. This caught intermittent jumps missed by a still screenshot.
+  for (const [width, height] of [[1440, 800], [1024, 800], [834, 838], [768, 1000], [390, 844], [320, 600], [844, 390], [667, 375], [568, 320]]) {
+    const orbitPage = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
+    observe(orbitPage);
+    await orbitPage.goto(origin + '/pricing');
+    await orbitPage.locator('[data-cloud-trigger]').press('Enter');
+    await orbitPage.evaluate(() => document.fonts.ready);
+    const geometry = await orbitPage.locator('.cloud-art').evaluate(world => ({
+      width: world.clientWidth, height: world.clientHeight,
+      sizes: [...world.querySelectorAll('.orbit-feature')].map(node => ({ w: node.offsetWidth, h: node.offsetHeight })),
+    }));
+    let previous, peakMovement = 0;
+    for (let frame = 0; frame <= 18000; frame++) {
+      const positions = layoutFeatureOrbit(geometry.width, geometry.height, geometry.sizes, frame / 60);
+      positions.forEach((a, i) => {
+        assert.ok(Number.isFinite(a.x + a.y), `orbit coordinates valid at ${width}`);
+        assert.ok(a.x >= a.w / 2 - 1 && a.x <= geometry.width - a.w / 2 + 1 && a.y >= a.h / 2 - 1 && a.y <= geometry.height - a.h / 2 + 1, `orbit stays inside at ${width}, ${frame}`);
+        if (previous) peakMovement = Math.max(peakMovement, Math.hypot(a.x - previous[i].x, a.y - previous[i].y));
+        for (const b of positions.slice(i + 1)) {
+          assert.ok(Math.abs(a.x - b.x) >= (a.w + b.w) / 2 - 2 || Math.abs(a.y - b.y) >= (a.h + b.h) / 2 - 2, `orbit labels stay separate at ${width}, ${frame}`);
+        }
+      });
+      previous = positions;
+    }
+    // This is a deterministic geometry bound, independent of runner frame cadence.
+    assert.ok(peakMovement < 1, `orbit has no sudden position jumps at ${width}: ${peakMovement}`);
+    await orbitPage.close();
   }
   const page = await browser.newPage();
   observe(page);
+  await page.setViewportSize({ width: 1440, height: 800 });
+  await page.goto(origin + '/pricing');
+  await page.locator('.pricing-stage.is-ready').waitFor();
+  const animatedTrigger = page.locator('[data-cloud-trigger]');
+  await animatedTrigger.scrollIntoViewIfNeeded();
+  // Observe the cloud's actual painted anchor through the layout change.
+  await page.evaluate(() => {
+    window.cloudTravelFrames = [];
+    const ellipse = CanvasRenderingContext2D.prototype.ellipse;
+    CanvasRenderingContext2D.prototype.ellipse = function (x, y, rx, ry, rotation, ...rest) {
+      if (this.canvas.matches('[data-cloud-art]') && rotation === -.24 && Math.abs(rx / ry - .54 / .19) < .001) {
+        const box = this.canvas.getBoundingClientRect();
+        const list = document.querySelector('.cloud-orbit-list');
+        window.cloudTravelFrames.push({
+          x: box.left + x, y: box.top + scrollY + y - (rx / .54) * .03, scale: rx / .54,
+          targetX: box.left + box.width / 2, targetY: box.top + scrollY + box.height / 2,
+          open: document.querySelector('[data-cloud-trigger]').getAttribute('aria-expanded') === 'true',
+          opacity: list.hidden ? 0 : Math.max(...[...list.children].map(node => Number(getComputedStyle(node).opacity))),
+        });
+      }
+      return ellipse.call(this, x, y, rx, ry, rotation, ...rest);
+    };
+  });
+  await page.locator('[data-cloud-art]').hover();
+  await page.waitForFunction(() => document.querySelector('[data-cloud-trigger]').getAttribute('aria-expanded') === 'true');
+  const expandedBounds = await page.locator('.cloud-plan').boundingBox();
+  await page.mouse.move(expandedBounds.x + 20, expandedBounds.y + 20);
+  await page.waitForFunction(() => document.querySelector('.cloud-plan').getAnimations().every(a => a.playState !== 'running'));
+  await page.waitForTimeout(250);
+  const travelFrames = await page.evaluate(() => window.cloudTravelFrames);
+  const firstOpen = travelFrames.findIndex(frame => frame.open);
+  assert.ok(firstOpen > 0, 'cloud has a painted starting location');
+  const originalCloud = travelFrames[firstOpen - 1], expandingCloud = travelFrames[firstOpen];
+  assert.ok(Math.hypot(originalCloud.x - expandingCloud.x, originalCloud.y - expandingCloud.y) < 1, 'cloud retains its original location on expansion');
+  assert.ok(Math.abs(originalCloud.scale - expandingCloud.scale) < 1, 'cloud retains its original scale on expansion');
+  assert.ok(travelFrames.some(frame => frame.open && frame.opacity === 0 && Math.hypot(frame.x - frame.targetX, frame.y - frame.targetY) > 20), 'features stay hidden while the cloud travels');
+  const revealedFrames = travelFrames.filter(frame => frame.open && frame.opacity > 0);
+  assert.ok(revealedFrames.length > 0, 'features reveal after the cloud arrives');
+  assert.ok(revealedFrames.every(frame => Math.hypot(frame.x - frame.targetX, frame.y - frame.targetY) < 1), 'features appear only around the centered cloud');
+  const startPositions = await page.locator('.orbit-feature').evaluateAll(nodes => nodes.map(node => node.style.transform));
+  await page.waitForTimeout(250);
+  assert.notDeepEqual(await page.locator('.orbit-feature').evaluateAll(nodes => nodes.map(node => node.style.transform)), startPositions, 'features orbit the cloud');
+  await page.locator('.cloud-orbit-list[data-feature-icons-ready="true"]').waitFor({ state: 'attached' });
+  assert.equal(await page.locator('[data-orbit-pause]').count(), 0);
+  const iconPose = node => [...node.querySelectorAll('[data-icon-part]')].map(part => {
+    const style = getComputedStyle(part);
+    return [style.transform, style.opacity, style.clipPath];
+  });
+  for (const feature of await page.locator('.orbit-feature').all()) {
+    const name = await feature.locator('.feature-icon').getAttribute('data-icon-name');
+    const resting = await feature.evaluate(iconPose);
+    await feature.hover({ force: true });
+    await page.waitForTimeout(650);
+    const heldPositions = await page.locator('.orbit-feature').evaluateAll(nodes => nodes.map(node => node.style.transform));
+    const first = await feature.evaluate(iconPose);
+    await page.waitForTimeout(400);
+    assert.notDeepEqual(first, resting, `${name} icon tells its story on hover`);
+    assert.notDeepEqual(await feature.evaluate(iconPose), first, `${name} icon animation progresses`);
+    assert.deepEqual(await page.locator('.orbit-feature').evaluateAll(nodes => nodes.map(node => node.style.transform)), heldPositions, 'hover holds the orbit steady');
+    assert.equal(await page.locator('.orbit-feature:not([data-icon-active]) [data-icon-part]').evaluateAll(parts => parts.some(part => part.getAnimations().some(animation => animation.playState === 'running'))), false, 'other icons remain still');
+    if (name === 'tracking') await page.screenshot({ path: `${output}/pricing-icon-hover.png` });
+    await page.mouse.move(expandedBounds.x + 20, expandedBounds.y + 20);
+    await page.waitForTimeout(260);
+    assert.deepEqual(await feature.evaluate(iconPose), resting, `${name} returns cleanly to its static drawing`);
+  }
+  await page.screenshot({ path: `${output}/pricing-orbit-desktop.png` });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('.orbit-feature').first().hover();
+  await page.waitForTimeout(260);
+  assert.equal(await page.locator('[data-icon-part]').evaluateAll(parts => parts.some(part => part.getAnimations().some(animation => animation.playState === 'running'))), false, 'reduced motion suppresses hover icon animation');
+  await page.mouse.move(expandedBounds.x + 20, expandedBounds.y + 20);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.mouse.move(10, 10);
+  await page.waitForFunction(() => document.querySelector('[data-cloud-trigger]').getAttribute('aria-expanded') === 'false');
+  assert.equal(await page.locator('.cloud-orbit-list').isVisible(), false, 'leaving Cloud restores the comparison');
+  const restored = await page.locator('.pricing-stage').evaluate(stage => ({
+    local: stage.querySelector('.local-plan').getBoundingClientRect().height,
+    cloud: stage.querySelector('.cloud-plan').getBoundingClientRect().height,
+  }));
+  assert.equal(restored.local, restored.cloud);
+  await animatedTrigger.press('Enter');
+  await animatedTrigger.press('Escape');
+  await animatedTrigger.press('Enter');
+  assert.equal(await animatedTrigger.getAttribute('aria-expanded'), 'true', 'rapid reversal settles open');
+  const noJs = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 900 } });
+  const fallback = await noJs.newPage();
+  await fallback.goto(origin + '/pricing');
+  assert.equal(await fallback.locator('.cloud-orbit-list').isVisible(), true, 'features stay readable without JavaScript');
+  assert.equal(await fallback.locator('.orbit-feature').count(), 18);
+  assert.equal(await fallback.evaluate(() => document.documentElement.scrollWidth <= 390), true);
+  await noJs.close();
   for (const path of ['/', '/local', '/cloud', '/pricing', '/docs', '/privacy', '/security', '/terms']) {
     const response = await page.goto(origin + path); assert.equal(response.status(), 200);
     for (const link of await page.locator('a[href="/waitlist"]').all()) assert.equal(await link.getAttribute('href'), '/waitlist');

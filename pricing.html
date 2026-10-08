@@ -17,6 +17,7 @@
   <link rel="icon" href="/brand/pigeon-icon.png">
   <link rel="preload" href="/brand/pidgy.webp" as="image" type="image/webp">
   <link rel="stylesheet" href="/dispatch.css?v=3">
+  <link rel="stylesheet" href="/pricing.css?v=9">
 </head>
 <body data-page="pricing">
   <a class="skip-link" href="#main">Skip to content</a>
@@ -43,38 +44,57 @@
       </div>
     </header>
 
-    <section class="section" aria-labelledby="plans-title">
+    <section class="section pricing-section" aria-labelledby="plans-title">
       <div class="wrap">
         <h2 class="sr-only" id="plans-title">Plans</h2>
-        <div class="price-sheet" data-reveal>
-          <div class="price-col">
-            <p class="label">Local</p>
+        <div class="pricing-stage" data-cloud-stage>
+          <article class="local-plan" aria-labelledby="local-plan-title">
+            <h3 class="label" id="local-plan-title">Local</h3>
             <p class="price">$0</p>
             <p class="price-note">Open source. No account.</p>
+            <ul class="local-features">
+              <li>Triage and thread analysis</li>
+              <li>AI drafts</li>
+              <li>Ask Pigeon <span>Cited answers over the browser index</span></li>
+              <li>AI provider <span>On-device, Ollama or your key</span></li>
+              <li>Tracking <span>Optional; self-hosted</span></li>
+            </ul>
             <a class="btn btn-primary" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span class="arr" aria-hidden="true">↗</span></a>
+          </article>
+          <div class="cloud-column" data-cloud-hover>
+            <article class="cloud-plan on-ink" aria-labelledby="cloud-plan-title">
+              <div class="cloud-heading"><h3 class="label" id="cloud-plan-title">Cloud <span class="tag tag-copper">Beta</span></h3></div>
+              <div class="cloud-art" id="cloud-features" role="region" aria-label="Cloud features">
+                <canvas data-cloud-art aria-hidden="true"></canvas>
+                <div class="orbit-path orbit-path-outer" aria-hidden="true"></div><div class="orbit-path orbit-path-inner" aria-hidden="true"></div>
+                <ul class="cloud-orbit-list">
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#connection"/></svg><span>Google connection</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#sync"/></svg><span>Background Gmail sync</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#analysis"/></svg><span>Thread analysis</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#focus"/></svg><span>Focus Queue</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#ai"/></svg><span>Hosted AI</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#drafts"/></svg><span>Prepared drafts</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#approval"/></svg><span>Approval queue</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#ask"/></svg><span>Ask Pigeon, synced</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#reminders"/></svg><span>Follow-ups &amp; reminders</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#briefings"/></svg><span>Briefings</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#activity"/></svg><span>Overview &amp; activity</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#calendar"/></svg><span>Calendar Copilot</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#relationships"/></svg><span>Relationships</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#views"/></svg><span>Smart Views &amp; Shadow Mode</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#automations"/></svg><span>Automations</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#tracking"/></svg><span>Managed tracking</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#teams"/></svg><span>Teams &amp; snippets</span></li>
+                  <li class="orbit-feature" tabindex="0"><svg class="feature-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="/brand/feature-icons.svg?v=2#api"/></svg><span>MCP, API &amp; webhooks</span></li>
+                </ul>
+              </div>
+              <button class="cloud-trigger" type="button" aria-expanded="true" aria-controls="cloud-features" data-cloud-trigger>
+                <span class="cloud-question">Isn’t it a<br><em>no-brainer?</em></span>
+                <span class="cloud-trigger-foot"><span class="cloud-trigger-hint">Explore the features</span><span class="cloud-trigger-icon" aria-hidden="true">↗</span></span>
+              </button>
+              <div class="cloud-offer"><p id="cloud-price" class="label">Early access</p><p id="cloud-price-detail">Invite-only beta. Join the waitlist for an invite.</p><a class="text-link" id="cloud-cta" href="/waitlist">Join the Cloud waitlist <span aria-hidden="true">→</span></a></div>
+            </article>
           </div>
-          <div class="price-col price-cloud on-ink">
-            <p class="label">Cloud <span class="tag tag-copper">Beta</span></p>
-            <p class="price" id="cloud-price">Early access</p>
-            <p class="price-note" id="cloud-price-detail">Invite-only beta. Join the waitlist for an invite.</p>
-            <a class="btn btn-primary" id="cloud-cta" href="/waitlist">Join the Cloud waitlist <span class="arr right" aria-hidden="true">→</span></a>
-          </div>
-        </div>
-
-        <div class="matrix-wrap" data-reveal>
-          <table class="matrix matrix-stack compare">
-            <caption class="label">Compare</caption>
-            <thead><tr><th scope="col"></th><th scope="col">Local</th><th scope="col">Cloud beta</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">Triage and thread analysis</th><td data-col="Local"><strong>Included</strong></td><td data-col="Cloud beta"><strong>Live beta:</strong> Focus Queue and thread analysis</td></tr>
-              <tr><th scope="row">AI drafts</th><td data-col="Local"><strong>Included</strong></td><td data-col="Cloud beta"><strong>Testing:</strong> prepared drafts</td></tr>
-              <tr><th scope="row">Ask Pigeon</th><td data-col="Local">Cited answers over the browser index</td><td data-col="Cloud beta"><strong>Testing:</strong> answers over synced Gmail</td></tr>
-              <tr><th scope="row">AI provider</th><td data-col="Local">On-device, Ollama or your key</td><td data-col="Cloud beta"><strong>Live beta:</strong> hosted AI</td></tr>
-              <tr><th scope="row">Tracking</th><td data-col="Local">Optional; self-hosted</td><td data-col="Cloud beta"><strong>Testing:</strong> managed PigeonBox tracking</td></tr>
-              <tr><th scope="row">Works with Gmail closed</th><td data-col="Local">Gmail tab stays open</td><td data-col="Cloud beta">Background sync after you connect Google</td></tr>
-              <tr><th scope="row">Account and access</th><td data-col="Local">No PigeonBox account</td><td data-col="Cloud beta">Account required; invite-only beta</td></tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </section>
@@ -122,5 +142,6 @@
   </footer>
   <script type="module" src="/site.js"></script>
   <script type="module" src="/app.js"></script>
+  <script type="module" src="/pricing.js?v=11"></script>
 </body>
 </html>
