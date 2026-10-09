@@ -44,7 +44,6 @@ const PAGES = {
   inbox: { title: 'In Gmail', heading: 'In Gmail', lede: 'What the PigeonBox extension does inside Gmail in this browser.', scene: 'views', load: settingsPage('inbox') },
   tracking: { title: 'Email tracking', heading: 'Email tracking', lede: 'Opens and clicks on mail you send, recorded by PigeonBox Cloud.', scene: 'documents', load: settingsPage('tracking') },
   personalization: { title: 'Your voice', heading: 'Your voice', lede: 'How drafts should sound, here and in Cloud’s background drafts.', scene: 'memory', load: settingsPage('voice') },
-  memory: { title: 'Memory', heading: 'What Pidgy remembers', lede: 'The useful details you should not have to explain twice. Correct or forget any of it.', scene: 'memory', load: () => import('./sections/memory.js?v=memory-ux-1') },
   activity: { title: 'Audit & activity', heading: 'Dispatch log', lede: 'Everything done on your behalf, with who asked for it and why.', scene: 'activity', load: () => import('./sections/activity.js') },
   team: { title: 'Team', heading: 'Shared desk', lede: 'Share a thread’s summary with teammates, assign it, and discuss it. The email itself never leaves the sharer’s mailbox.', capability: 'cloud_team', scene: 'team', load: () => import('./sections/team.js') },
   developers: { title: 'API & MCP', heading: 'Service entrance', lede: 'Connect tools to PigeonBox with scoped tokens and signed webhooks. Everything they do is audited.', capability: 'cloud_mcp', scene: 'developers', load: () => import('./sections/developers.js') },
@@ -68,13 +67,13 @@ const NAV = {
   ],
   cloud: [
     ['Account', [['overview', 'overview'], ['billing', 'billing'], ['connections', 'connections'], ['privacy', 'privacy']]],
-    ['Settings', [['preferences', 'preferences'], ['inbox', 'inbox'], ['tracking', 'tracking'], ['personalization', 'personalization'], ['memory', 'memory']]],
+    ['Settings', [['preferences', 'preferences'], ['inbox', 'inbox'], ['tracking', 'tracking'], ['personalization', 'personalization']]],
     ['Work', [['approvals', 'approvals'], ['subscriptions', 'subscriptions'], ['activity', 'activity'], ['team', 'team'], ['developers', 'developers']]],
     ['Advanced workflows', [['automations', 'automations'], ['sequences', 'sequences'], ['views', 'views'], ['contacts', 'contacts'], ['documents', 'documents'], ['briefings', 'briefings']], true],
   ],
 };
 /** Hashes from the other mode, and older links, land on the closest page. */
-const ALIASES = { local: { overview: 'general', billing: 'cloud', connections: 'cloud', preferences: 'general', memory: 'general', activity: 'general', approvals: 'general' }, cloud: { general: 'overview', ai: 'overview', advanced: 'inbox' } };
+const ALIASES = { local: { overview: 'general', billing: 'cloud', connections: 'cloud', preferences: 'general', memory: 'general', activity: 'general', approvals: 'general' }, cloud: { general: 'overview', ai: 'overview', memory: 'overview', advanced: 'inbox' } };
 
 const view = document.getElementById('view');
 const nav = document.getElementById('cp-nav');

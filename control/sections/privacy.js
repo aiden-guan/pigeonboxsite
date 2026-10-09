@@ -92,7 +92,6 @@ export async function render({ api }) {
           'ledger',
           { title: 'More controls' },
           index([
-            ['Personal memories', 'Inspect, correct or forget them', '#memory'],
             ['Disconnect a Google account', 'Revokes access and deletes its credentials', '#connections'],
             ['Delete your Cloud account', 'Closes your Cloud account and deletes its data', '#billing'],
             ['Privacy notice', 'How PigeonBox handles your data', '/privacy'],
