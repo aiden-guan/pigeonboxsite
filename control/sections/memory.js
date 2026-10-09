@@ -2,8 +2,8 @@ import { ago, button, clear, confirmDialog, day, emptyState, h, input, link, not
 import { accountEmails, gmailLink } from '../shared.js';
 
 // Memory as pages, the way a notebook or wiki holds it: one page for you, one
-// per person, one per topic. Each page leads with a short overview, then the
-// individual facts grouped by kind. Names of other pages become links.
+// per person, one per topic. Facts are grouped by kind; names of other pages
+// become links.
 
 const CATEGORY = {
   people: 'Relationships',
@@ -27,7 +27,6 @@ export async function render({ api }) {
   const root = h('div', { class: 'stack memory-view' });
   const state = { subjects: [], organizing: false, active: null, query: '', history: false };
   const emails = await accountEmails();
-  const overview = h('div', { class: 'memory-overview' });
   const index = h('nav', { class: 'brain-index', attrs: { 'aria-label': 'Memory pages' } });
   const page = h('article', { class: 'brain-page', attrs: { 'aria-live': 'polite', tabindex: '-1' } });
   const filter = input({ type: 'search', placeholder: 'Find a page or search facts', maxLength: 500, attrs: { 'aria-label': 'Find a page or search facts' } });
@@ -88,7 +87,6 @@ export async function render({ api }) {
   // ---- Index ---------------------------------------------------------------
 
   const drawIndex = () => {
-    clear(overview, h('span', { class: 'memory-seal', attrs: { 'aria-hidden': 'true' } }, '✳'), h('div', {}, h('strong', {}, 'Less repeating. More remembering.'), h('p', {}, `${plural(state.subjects.reduce((count, subject) => count + subject.factCount, 0), 'memory', 'memories')} · ${plural(state.subjects.length, 'page')} · Encrypted in Cloud`)));
     const term = filter.value.trim().toLowerCase();
     const shown = state.subjects.filter((subject) => !term || subject.label.toLowerCase().includes(term));
     const entry = (id, label, count) =>
@@ -411,7 +409,7 @@ export async function render({ api }) {
     root,
     surface(
       'ledger',
-      { title: 'Remembered', className: 'brain' }, overview,
+      { className: 'brain' },
       h(
         'div',
         { class: 'brain-grid' },
