@@ -5,6 +5,10 @@
 //
 //   node scripts/sync-dashboard.mjs [path/to/pigeonbox-cloud]
 //   node scripts/sync-dashboard.mjs --check   (fails if the copy is stale)
+//
+// Without a path it uses $PIGEONBOX_CLOUD, then a pigeonbox-cloud checkout
+// next to this repo (../pigeonbox-cloud), then ../../pigeonbox-cloud.
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,7 +16,17 @@ import { fileURLToPath } from 'node:url';
 const site = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const check = args.includes('--check');
-const cloud = resolve(args.find((arg) => !arg.startsWith('--')) ?? join(site, '../../pigeonbox-cloud'));
+const isCloud = (dir) => existsSync(join(dir, 'apps/web/public/dashboard.html'));
+const given = args.find((arg) => !arg.startsWith('--')) ?? process.env.PIGEONBOX_CLOUD;
+const candidates = given ? [resolve(given)] : [join(site, '../pigeonbox-cloud'), join(site, '../../pigeonbox-cloud')];
+const cloud = candidates.find(isCloud);
+if (!cloud) {
+  console.error(
+    `No pigeonbox-cloud checkout found (looked for apps/web/public/dashboard.html in ${candidates.join(', ')}).\n` +
+      'Clone aiden-guan/pigeonbox-cloud next to this repo, or pass its path: node scripts/sync-dashboard.mjs [--check] <path-to-pigeonbox-cloud>',
+  );
+  process.exit(1);
+}
 const source = join(cloud, 'apps/web/public');
 
 const { cloudApiUrl } = JSON.parse(await readFile(join(site, 'site-config.json'), 'utf8'));
