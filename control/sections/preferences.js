@@ -137,7 +137,7 @@ export async function render({ api }) {
     settings({ index: '03', title: 'Background drafts', text: 'Drafts wait in PigeonBox, or in Gmail if you allow it. Nothing is sent.' }, draftsOn, placeInGmail, learn, h('p', { class: 'eyebrow kinds-label' }, 'Draft kinds'), h('div', { class: 'checks two', attrs: { role: 'group', 'aria-label': 'Draft kinds' } }, kinds)),
     settings({ index: '04', title: 'Calendar', text: 'Used when PigeonBox proposes times or prepares events for approval.' }, h('div', { class: 'grid-2' }, field('Buffer between meetings (minutes)', buffer), field('Default meeting length (minutes)', duration)), backToBack, mornings),
     settings({ index: '05', title: 'Briefings', text: 'Summaries built from synced mail and calendar.' }, morningOn, field('Morning briefing at', morningTime), eodOn, field('Wrap-up at', eodTime), meetingOn, field('Minutes before a meeting', meetingBefore), externalOnly),
-    settings({ index: '06', title: 'Notifications', text: 'Where PigeonBox tells you, and about what.' }, Object.values(notify)),
+    settings({ index: '06', title: 'Notifications', text: 'Where PigeonBox tells you, and about what. Outside your working hours, follow-up, draft and tracking alerts wait until your next workday starts.' }, Object.values(notify)),
     settings({ index: '07', title: 'Web research' }, web),
     h('div', { class: 'row sticky-actions' }, save, h('p', { class: 'hint' }, 'Saved to PigeonBox Cloud and used by every device signed in to this account.')),
   );
