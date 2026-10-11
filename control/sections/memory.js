@@ -298,7 +298,7 @@ export async function render({ api }) {
       const redraw = () => { const memories = result.memories;
       const active = memories.filter((memory) => memory.status === 'active');
       const history = memories.filter((memory) => memory.status !== 'active');
-      const historyToggle = h('label', { class: 'bp-history' }, h('input', { type: 'checkbox', checked: state.history, on: { change: (event) => { state.history = event.target.checked; open(id); } } }), 'Show replaced facts');
+      const historyToggle = h('label', { class: 'bp-history', dataset: { noUnsaved: '' } }, h('input', { type: 'checkbox', checked: state.history, on: { change: (event) => { state.history = event.target.checked; open(id); } } }), 'Show replaced facts');
       clear(
         page,
         h(

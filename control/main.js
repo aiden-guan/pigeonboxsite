@@ -12,7 +12,7 @@
 // halftone prints) is layered on afterwards and never blocks a page.
 import { api, finishSignIn, readSession, restoreExtensionAccount, signOut, startSignIn, takeLinkReturn } from '../lib/session.js';
 import { ext, findExtension, STORE_URL } from '../lib/extension.js';
-import { ago, arrowLink, button, clear, confirmDialog, emptyState, h, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
+import { ago, arrowLink, button, clear, confirmDialog, emptyState, forgetEdits, h, hasUnsavedEdits, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
 import { enter, leave, placeMarker } from './motion.js';
 import { routeHealth } from './shared.js';
 import { readIntent } from './setup-intent.js';
@@ -44,7 +44,7 @@ const PAGES = {
   inbox: { title: 'In Gmail', heading: 'In Gmail', lede: 'What the PigeonBox extension does inside Gmail in this browser.', scene: 'views', load: settingsPage('inbox') },
   tracking: { title: 'Email tracking', heading: 'Email tracking', lede: 'Opens and clicks on mail you send, recorded by PigeonBox Cloud.', scene: 'documents', load: settingsPage('tracking') },
   personalization: { title: 'Your voice', heading: 'Your voice', lede: 'How drafts should sound, here and in Cloud’s background drafts.', scene: 'memory', load: settingsPage('voice') },
-  memory: { title: 'Memory', heading: 'What Pidgy remembers', lede: 'The useful details you should not have to explain twice. Correct or forget any of it.', scene: 'memory', load: () => import('./sections/memory.js?v=memory-page-20261009-1') },
+  memory: { title: 'Memory', heading: 'What Pidgy remembers', lede: 'The useful details you should not have to explain twice. Correct or forget any of it.', scene: 'memory', load: () => import('./sections/memory.js?v=unsaved-tz-20261011-1') },
   activity: { title: 'Audit & activity', heading: 'Dispatch log', lede: 'Everything done on your behalf, with who asked for it and why.', scene: 'activity', load: () => import('./sections/activity.js') },
   team: { title: 'Team', heading: 'Shared desk', lede: 'Share a thread’s summary with teammates, assign it, and discuss it. The email itself never leaves the sharer’s mailbox.', capability: 'cloud_team', scene: 'team', load: () => import('./sections/team.js') },
   developers: { title: 'API & MCP', heading: 'Service entrance', lede: 'Connect tools to PigeonBox with scoped tokens and signed webhooks. Everything they do is audited.', capability: 'cloud_mcp', scene: 'developers', load: () => import('./sections/developers.js') },
@@ -53,7 +53,7 @@ const PAGES = {
   sequences: { title: 'Sequences', heading: 'Sequences', lede: 'Personal sequences for a small list of people you would write to anyway. Every batch waits for your approval, and replies stop it for that person.', capability: 'cloud_sequences', scene: 'sequences', load: () => import('./sections/sequences.js') },
   views: { title: 'Smart Views', heading: 'Smart Views', lede: 'Describe mail in your own words. PigeonBox turns it into rules you can read.', capability: 'cloud_automations', scene: 'views', load: () => import('./sections/views.js') },
   subscriptions: { title: 'Mailing lists', heading: 'Mailing lists', lede: 'Newsletters and stores that email you. Leave any of them in one click, the way Gmail’s Unsubscribe button works, and PigeonBox keeps the ones that ignore it out of your inbox.', capability: 'cloud_mail_sync', scene: 'views', load: () => import('./sections/subscriptions.js') },
-  contacts: { title: 'Contacts', heading: 'Correspondents', lede: 'People, open promises and recent progress from your synced conversations. Pidgy checks later emails for evidence that a promise was fulfilled.', capability: 'cloud_relationships', scene: 'contacts', load: () => import('./sections/contacts.js?v=memory-context-1') },
+  contacts: { title: 'Contacts', heading: 'Correspondents', lede: 'People, open promises and recent progress from your synced conversations. Pidgy checks later emails for evidence that a promise was fulfilled.', capability: 'cloud_relationships', scene: 'contacts', load: () => import('./sections/contacts.js?v=unsaved-tz-20261011-1') },
   documents: { title: 'Documents', heading: 'Tracked documents', lede: 'Share PDFs with per-recipient links and see the activity observed in PigeonBox’s viewer.', capability: 'cloud_documents', scene: 'documents', load: () => import('./sections/documents.js') },
   briefings: { title: 'Briefings', heading: 'Briefings', lede: 'Built from your synced mail and calendar. Every line links to where it came from.', capability: 'cloud_automations', scene: 'briefings', load: () => import('./sections/briefings.js') },
 };
@@ -95,6 +95,8 @@ if (Object.keys(landing).length || authReturn || hasSignInError || extensionHint
 
 let ctx = null;
 let renderToken = 0;
+let shownHash = '';
+let askingToLeave = false;
 let marker = null;
 
 const hashId = () => location.hash.replace(/^#/, '').split('/')[0];
@@ -185,6 +187,8 @@ async function render({ focus = false, preserveScroll = false } = {}) {
   view.style.minHeight = scroll ? `${scroll.height}px` : '';
   const { hash, page: pageId } = currentPage();
   if (hashId() !== hash) history.replaceState(null, '', `#${hash}`);
+  shownHash = location.hash;
+  forgetEdits();
   const page = PAGES[pageId];
   const token = (renderToken += 1);
   document.title = `${page.title} · PigeonBox`;
@@ -235,6 +239,27 @@ async function render({ focus = false, preserveScroll = false } = {}) {
     view.style.minHeight = '';
   }
   finish(page, focus);
+}
+
+/** Moving to another page asks first when this one has unsaved changes. */
+async function leavePage() {
+  if (!ctx?.mode || askingToLeave || location.hash === shownHash) return;
+  if (hasUnsavedEdits()) {
+    const target = location.hash;
+    // Show the page being left in the address bar while asking.
+    history.replaceState(null, '', `${location.pathname}${location.search}${shownHash}`);
+    askingToLeave = true;
+    const ok = await confirmDialog({
+      title: 'Leave without saving?',
+      body: 'You have changes on this page that are not saved yet. If you leave now, they will be lost.',
+      confirm: 'Leave page',
+      danger: true,
+      label: 'Unsaved changes',
+    }).finally(() => (askingToLeave = false));
+    if (!ok) return;
+    history.replaceState(null, '', target);
+  }
+  render({ focus: true });
 }
 
 function finish(page, focus) {
@@ -609,7 +634,13 @@ async function boot() {
   }
   if (!listening) {
     listening = true;
-    window.addEventListener('hashchange', () => ctx?.mode && render({ focus: true }));
+    window.addEventListener('hashchange', leavePage);
+    window.addEventListener('beforeunload', (event) => {
+      // Browsers show their own wording here; custom text is ignored.
+      if (!hasUnsavedEdits()) return;
+      event.preventDefault();
+      event.returnValue = '';
+    });
     document.addEventListener('pigeonbox:accounts', (event) => showRouteHealth(event.detail));
     document.getElementById('cp-signout').addEventListener('click', async () => {
       await signOut();

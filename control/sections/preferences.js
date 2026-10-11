@@ -1,4 +1,4 @@
-import { button, checkbox, field, h, input, select, settings, toast } from '../ui.js';
+import { button, checkbox, combobox, field, h, input, settings, toast } from '../ui.js';
 
 const DAYS = [
   [1, 'Mon'],
@@ -21,21 +21,49 @@ const checked = (row) => row.querySelector('input').checked;
 const time = (value) => input({ type: 'time', value, required: true });
 const number = (value, min, max) => input({ type: 'number', value, min, max });
 
-function zones(current) {
+/** The time zone this browser runs in, or null when it does not say. */
+function browserZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Offset and abbreviation right now, e.g. "GMT-7 PDT", shown beside each zone and searchable. */
+function zoneHint(zone, now) {
+  const part = (style) => {
+    try {
+      return new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: style }).formatToParts(now).find((p) => p.type === 'timeZoneName')?.value ?? '';
+    } catch {
+      return '';
+    }
+  };
+  const offset = part('shortOffset');
+  const short = part('short');
+  return short && short !== offset && !/^GMT|^UTC/.test(short) ? `${offset} ${short}` : offset;
+}
+
+function zones(...required) {
   let list = [];
   try {
     list = Intl.supportedValuesOf('timeZone');
   } catch {
-    list = [current, 'UTC'];
+    list = [];
   }
-  if (!list.includes(current)) list.unshift(current);
-  return list.map((zone) => [zone, zone.replace(/_/g, ' ')]);
+  for (const zone of ['UTC', ...required]) if (zone && !list.includes(zone)) list.push(zone);
+  const now = new Date();
+  return list.map((zone) => [zone, zone.replace(/_/g, ' '), zoneHint(zone, now)]);
 }
 
 export async function render({ api }) {
   const { preferences: p } = await api('/v1/preferences');
 
-  const zone = select(zones(p.timeZone), p.timeZone);
+  // Nobody has picked a zone until it differs from the server default (UTC).
+  // Until then, start from this browser's zone; it is saved with the form.
+  const detected = browserZone();
+  const guessed = p.timeZone === 'UTC' && detected && detected !== 'UTC' ? detected : null;
+  const zone = combobox(zones(p.timeZone, guessed), guessed ?? p.timeZone, { placeholder: 'Search time zones', empty: 'No time zone matches.' });
   const workdays = DAYS.map(([value, label]) => checkbox(label, p.workdays.includes(value), { value }));
   const workStart = time(p.workingHours.start);
   const workEnd = time(p.workingHours.end);
@@ -104,7 +132,7 @@ export async function render({ api }) {
   return h(
     'form',
     { class: 'preferences', on: { submit: (event) => event.preventDefault() } },
-    settings({ index: '01', title: 'Your working week', text: 'PigeonBox schedules reminders, briefings and send windows inside these hours.' }, field('Time zone', zone), h('div', { class: 'checks inline', attrs: { role: 'group', 'aria-label': 'Working days' } }, workdays), h('div', { class: 'grid-2' }, field('Day starts', workStart), field('Day ends', workEnd))),
+    settings({ index: '01', title: 'Your working week', text: 'PigeonBox schedules reminders, briefings and send windows inside these hours.' }, field('Time zone', zone, guessed ? 'Detected from this browser. Save preferences to use it.' : null), h('div', { class: 'checks inline', attrs: { role: 'group', 'aria-label': 'Working days' } }, workdays), h('div', { class: 'grid-2' }, field('Day starts', workStart), field('Day ends', workEnd))),
     settings({ index: '02', title: 'Follow-ups', text: 'PigeonBox reminds you and prepares a draft. It never sends a follow-up for you.' }, field('Default wait (business days)', followDays), remindOpened, remindRevived, morningDraft, field('Morning prep time', morningAt)),
     settings({ index: '03', title: 'Background drafts', text: 'Drafts wait in PigeonBox, or in Gmail if you allow it. Nothing is sent.' }, draftsOn, placeInGmail, learn, h('p', { class: 'eyebrow kinds-label' }, 'Draft kinds'), h('div', { class: 'checks two', attrs: { role: 'group', 'aria-label': 'Draft kinds' } }, kinds)),
     settings({ index: '04', title: 'Calendar', text: 'Used when PigeonBox proposes times or prepares events for approval.' }, h('div', { class: 'grid-2' }, field('Buffer between meetings (minutes)', buffer), field('Default meeting length (minutes)', duration)), backToBack, mornings),
