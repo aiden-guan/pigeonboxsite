@@ -112,12 +112,17 @@ export function toast(message, tone = 'info') {
   schedule(tone === 'error' ? 6_500 : 4_200);
 }
 
-/** A button that runs an async action, shows progress, and reports failures. */
-export function button(label, action, { variant = 'primary', busy = 'Working…', title, disabled = false, small = false } = {}) {
-  const el = h('button', { type: 'button', class: ['btn', `btn-${variant}`, small && 'btn-small'], title, disabled }, label);
+/**
+ * A button that runs an async action, shows progress, and reports failures.
+ * `saves` (default: labels starting “Save”) marks it as the Save for the
+ * edits around it; see Unsaved edits below.
+ */
+export function button(label, action, { variant = 'primary', busy = 'Working…', title, disabled = false, small = false, saves = /^Save\b/.test(label) } = {}) {
+  const el = h('button', { type: 'button', class: ['btn', `btn-${variant}`, small && 'btn-small'], title, disabled, dataset: saves ? { saves: '' } : null }, label);
   el.addEventListener('click', async (event) => {
     event.preventDefault();
     if (el.disabled) return;
+    const saving = saves ? editsSavedBy(el) : [];
     const original = el.textContent;
     el.disabled = true;
     el.classList.remove('is-done');
@@ -128,6 +133,7 @@ export function button(label, action, { variant = 'primary', busy = 'Working…'
     try {
       await action(event);
       ok = !declined;
+      if (ok) for (const control of saving) edits.delete(control);
     } catch (error) {
       toast(error?.message || 'Something went wrong.', 'error');
     } finally {
@@ -410,10 +416,12 @@ export function table(columns, rows, { emptyText = 'Nothing yet.', stack = true 
 let fieldId = 0;
 
 export function field(label, control, hint) {
-  const id = control.id || `f${(fieldId += 1)}`;
-  control.id = id;
+  // A composite control (like combobox) names the element its label points at.
+  const target = control.labelTarget ?? control;
+  const id = target.id || `f${(fieldId += 1)}`;
+  target.id = id;
   const help = hint ? h('p', { class: 'hint', id: `${id}-hint` }, hint) : null;
-  if (help) control.setAttribute('aria-describedby', help.id);
+  if (help) target.setAttribute('aria-describedby', help.id);
   return h('div', { class: 'field' }, h('label', { for: id }, label), control, help);
 }
 
@@ -431,6 +439,102 @@ export function select(options, value, props = {}) {
     { class: 'input', ...props },
     options.map(([optionValue, label]) => h('option', { value: optionValue, selected: String(optionValue) === String(value) }, label)),
   );
+}
+
+/**
+ * A text box with a filtered list under it: type to narrow, arrows and Enter
+ * or a click to pick. `options` are [value, label, extra?] where `extra` is
+ * shown dimmed and also searched. Only listed values can be chosen; leaving
+ * the box with other text puts the current choice back. Read and set the
+ * choice with `.value`; a pick fires `change` on the returned element.
+ */
+export function combobox(options, value, { placeholder = 'Type to search', empty: emptyText = 'No matches.' } = {}) {
+  const listId = `cb${(fieldId += 1)}`;
+  const text = h('input', {
+    type: 'text', class: 'input combo-input', placeholder, autocomplete: 'off', spellcheck: false,
+    dataset: { noUnsaved: '' },
+    attrs: { role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': listId },
+  });
+  // Pressing in the list (an option or its scrollbar) keeps focus in the box.
+  const list = h('ul', { class: 'combo-list', id: listId, hidden: true, attrs: { role: 'listbox' }, on: { pointerdown: (event) => event.preventDefault() } });
+  const box = h('div', { class: 'combo' }, text, list);
+  const fold = (value) => String(value).toLowerCase().replace(/[_/]+/g, ' ');
+  const entries = options.map(([optionValue, label, extra = '']) => ({ value: optionValue, label, extra, haystack: fold(`${optionValue} ${label} ${extra}`) }));
+  const byValue = new Map(entries.map((entry) => [String(entry.value), entry]));
+  let current = byValue.get(String(value)) ?? entries[0] ?? null;
+  let shown = [];
+  let active = -1;
+
+  const show = (entry) => { text.value = entry ? entry.label : ''; };
+  const highlight = (index) => {
+    active = index;
+    list.querySelectorAll('[role="option"]').forEach((item, i) => item.classList.toggle('is-active', i === index));
+    const item = list.children[index];
+    if (item?.getAttribute('role') === 'option') {
+      text.setAttribute('aria-activedescendant', item.id);
+      item.scrollIntoView({ block: 'nearest' });
+    } else text.removeAttribute('aria-activedescendant');
+  };
+  const close = () => {
+    list.hidden = true;
+    text.setAttribute('aria-expanded', 'false');
+    text.removeAttribute('aria-activedescendant');
+    active = -1;
+  };
+  const open = (query = '') => {
+    const words = fold(query).split(/\s+/).filter(Boolean);
+    shown = words.length ? entries.filter((entry) => words.every((word) => entry.haystack.includes(word))) : entries;
+    clear(
+      list,
+      shown.length
+        ? shown.map((entry, i) =>
+            h('li', { id: `${listId}-${i}`, class: entry === current ? 'is-current' : null, attrs: { role: 'option', 'aria-selected': String(entry === current) }, on: { click: () => pick(entry) } }, h('span', {}, entry.label), entry.extra ? h('span', { class: 'combo-extra' }, entry.extra) : null),
+          )
+        : h('li', { class: 'combo-empty' }, emptyText),
+    );
+    list.hidden = false;
+    text.setAttribute('aria-expanded', 'true');
+    highlight(words.length && shown.length ? 0 : shown.indexOf(current));
+  };
+  const pick = (entry) => {
+    const changed = entry !== current;
+    current = entry;
+    show(entry);
+    close();
+    if (changed) box.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  text.addEventListener('focus', () => { text.select(); open(); });
+  text.addEventListener('click', () => list.hidden && open());
+  text.addEventListener('input', () => open(text.value));
+  text.addEventListener('blur', () => { close(); show(current); });
+  text.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (list.hidden) return open();
+      if (!shown.length) return;
+      const step = event.key === 'ArrowDown' ? 1 : -1;
+      highlight(active < 0 ? (step > 0 ? 0 : shown.length - 1) : (active + step + shown.length) % shown.length);
+    } else if (event.key === 'Enter') {
+      if (list.hidden) return;
+      event.preventDefault();
+      if (shown[active]) pick(shown[active]);
+    } else if (event.key === 'Escape' && !list.hidden) {
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+      show(current);
+      text.select();
+    }
+  });
+
+  show(current);
+  Object.defineProperty(box, 'value', {
+    get: () => current?.value ?? '',
+    set: (next) => { current = byValue.get(String(next)) ?? current; show(current); },
+  });
+  box.labelTarget = text;
+  return box;
 }
 
 export function checkbox(label, checked, props = {}, hint) {
@@ -463,6 +567,45 @@ export function settings({ index: number = null, title, text = null }, ...childr
     h('div', { class: 'settings-head' }, number ? eyebrow(number) : null, h('h2', {}, title), text ? h('p', {}, text) : null),
     h('div', { class: 'settings-body' }, children),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Unsaved edits
+// ---------------------------------------------------------------------------
+
+// A control someone changed, mapped to the nearest container with buttons in
+// it, when one of those is a Save (`saves`). It stops counting when that Save
+// succeeds, or once the control is hidden or gone. Controls whose nearest
+// buttons do something else (Invite, Search…), search boxes, switches that
+// save themselves and `data-no-unsaved` controls never count.
+const edits = new Map();
+
+function noteEdit(event) {
+  const control = event.target;
+  if (!(control instanceof Element) || edits.has(control)) return;
+  if (control.matches('[type="search"], .switch') || control.closest('[data-no-unsaved], dialog')) return;
+  for (let node = control.parentElement; node && node !== document.body; node = node.parentElement) {
+    if (!node.querySelector('button')) continue;
+    if (node.querySelector('button[data-saves]')) edits.set(control, node);
+    return;
+  }
+}
+document.addEventListener('input', noteEdit, true);
+document.addEventListener('change', noteEdit, true);
+
+function editsSavedBy(saveButton) {
+  return [...edits].filter(([, scope]) => scope.contains(saveButton)).map(([control]) => control);
+}
+
+/** True while the page holds changes nobody has saved yet. */
+export function hasUnsavedEdits() {
+  for (const control of edits.keys()) if (!control.isConnected || control.closest('[hidden]')) edits.delete(control);
+  return edits.size > 0;
+}
+
+/** Drop every pending edit (the page they were on is being replaced). */
+export function forgetEdits() {
+  edits.clear();
 }
 
 // ---------------------------------------------------------------------------

@@ -841,6 +841,28 @@ select.input {
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
 }
+/* Combobox: a text box that filters the list under it. */
+.combo { position: relative; }
+.combo-input {
+  padding-right: 32px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.combo-list {
+  position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0;
+  max-height: 280px; overflow-y: auto; margin: 0; padding: 4px; list-style: none;
+  background: var(--sheet-2); border: 1px solid var(--rule-strong); border-radius: var(--r); box-shadow: var(--lift);
+}
+.combo-list > li {
+  display: flex; justify-content: space-between; gap: 12px; padding: 7px 9px; border-radius: var(--r);
+  font-size: 13.5px; cursor: pointer;
+}
+.combo-list > li.is-current { font-weight: 600; }
+.combo-list > li.is-active { background: var(--paper-3); }
+.combo-list > li.combo-empty { color: var(--muted); cursor: default; font-size: 12.5px; }
+.combo-extra { color: var(--muted); font: 400 12px/1.4 var(--mono); white-space: nowrap; }
 input[type="file"].input { padding: 6px; font-size: 12.5px; }
 input[type="file"].input::file-selector-button {
   margin-right: 10px; padding: 6px 10px; border: 1px solid var(--rule-strong); border-radius: var(--r);

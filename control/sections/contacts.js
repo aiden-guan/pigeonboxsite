@@ -77,7 +77,7 @@ export async function render({ api }) {
     let contacts = first.contacts;
     let cursor = first.nextCursor;
     const search = input({ value: filters.query, type: 'search', placeholder: 'Search people or companies', attrs: { 'aria-label': 'Search contacts' } });
-    const vipOnly = checkbox('VIPs only', filters.vipOnly);
+    const vipOnly = checkbox('VIPs only', filters.vipOnly, { dataset: { noUnsaved: '' } });
     const listEl = h('div');
     const open = async (id) => {
       const token = ++revision;
