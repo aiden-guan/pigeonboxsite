@@ -2,6 +2,8 @@
 // the PIDGY:// terminal drawer, header state and section reveals.
 // Account, auth and billing behavior stays in app.js.
 
+import './smooth-scroll.js';
+
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const GITHUB = 'https://github.com/aiden-guan/pigeonbox';
 const SHORTCUT_KEY = 'pigeonbox.shortcuts';
