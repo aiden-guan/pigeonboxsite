@@ -1,5 +1,5 @@
 import { ago, arrowLink, day, dispatchStatus, empty, h, humanize, index, link, notice, pill, plural, routeStrip, stat, surface, timeline, usageMeter } from '../ui.js';
-import { accounts, phasePill, routeHealth, syncPhase } from '../shared.js';
+import { accounts, cloudHealth, healthPill, healthReasons, healthTone, phasePill, routeHealth, syncPhase } from '../shared.js';
 
 const SUBSCRIPTION = { none: ['No subscription', 'neutral'], active: ['Active', 'good'], trialing: ['Trial', 'info'], past_due: ['Payment due', 'bad'], canceled: ['Canceled', 'neutral'], incomplete: ['Incomplete', 'warn'], incomplete_expired: ['Expired', 'neutral'], unpaid: ['Unpaid', 'bad'], paused: ['Paused', 'neutral'] };
 const DESK = [
@@ -8,16 +8,19 @@ const DESK = [
   ['WAITING_ON_THEM', 'Waiting on them'],
 ];
 const CATCHING_UP = new Set(['importing', 'recovering', 'catching_up']);
+const LEVEL_ORDER = ['healthy', 'syncing', 'degraded', 'stale', 'action_required', 'failed'];
+const worstOf = (items) => items.map((item) => item.level).reduce((a, b) => (LEVEL_ORDER.indexOf(b) > LEVEL_ORDER.indexOf(a) ? b : a), 'healthy');
 
 const auditTone = (event) => (event.undoneAt ? 'quiet' : event.policy.decision === 'denied' ? 'bad' : event.policy.decision === 'approval_required' ? 'warn' : event.tier >= 2 ? 'copper' : 'neutral');
 
 /** Account operations belong here; daily work lives in the Gmail workspace. */
 export async function render({ api, me, plan }) {
-  const [overview, connections, entitlements, audit] = await Promise.all([
+  const [overview, connections, entitlements, audit, cloud] = await Promise.all([
     api('/v1/control/overview'),
     accounts(true).catch(() => null),
     api('/v1/account/entitlements').catch(() => null),
     api('/v1/audit/list', { method: 'POST', body: { limit: 6 } }).catch(() => null),
+    cloudHealth(),
   ]);
   const health = connections ? routeHealth(connections) : null;
   const live = health?.live ?? [];
@@ -28,7 +31,12 @@ export async function render({ api, me, plan }) {
 
   // Masthead status: route health first, then what is waiting. Nothing here is invented.
   const detail = [waiting ? `${plural(waiting, 'approval')} waiting` : null, health?.lastSync ? `last sync ${ago(health.lastSync)}` : null].filter(Boolean).join(' · ');
-  const status = trouble
+  const healthState = cloud ? (cloud.level === 'healthy' ? 'idle' : cloud.level === 'syncing' ? 'route' : 'alert') : null;
+  // A connection that needs a person always leads; otherwise the server's derived health
+  // (which also knows about unprocessed pushes, overdue syncs, calendar and background work).
+  const status = !trouble && cloud && live.length
+    ? dispatchStatus({ tone: healthTone(cloud.level), label: 'Dispatch status', phrase: cloud.title, detail: detail || cloud.detail, state: healthState })
+    : trouble
     ? dispatchStatus({ tone: health?.tone === 'warn' ? 'warn' : 'bad', label: 'Dispatch status', phrase: health?.phrase ?? 'A connection needs attention', detail: detail || 'Review it in Connected accounts.', state: 'alert' })
     : !live.length
       ? dispatchStatus({ tone: 'neutral', label: 'Dispatch status', phrase: health ? 'No mail routes yet' : 'Routes not checked', detail: health ? 'Connect a Google account to begin.' : 'Connected accounts could not be loaded.', state: 'map' })
@@ -150,8 +158,26 @@ export async function render({ api, me, plan }) {
     ]),
   );
 
+  // Health: one row per part of the pipeline, in plain words. Internal codes stay on the server.
+  const healthRows = cloud && cloud.mail.length
+    ? [
+        ['Mail', worstOf(cloud.mail), cloud.mail.flatMap((item) => healthReasons(item.reasons))],
+        cloud.calendar.length ? ['Calendar', worstOf(cloud.calendar), cloud.calendar.flatMap((item) => healthReasons(item.reasons))] : null,
+        ['Background work', cloud.intelligence.level, healthReasons(cloud.intelligence.reasons)],
+      ].filter(Boolean)
+    : [];
+  const healthCard = healthRows.length
+    ? surface(
+        'ledger',
+        { eyebrow: 'Health', title: cloud.title, className: 'ov-health', actions: arrowLink('Details', '#connections') },
+        h('p', { class: 'muted' }, cloud.detail),
+        h('ul', { class: 'index' }, healthRows.map(([label, level, reasons]) => h('li', {}, h('div', { class: 'split' }, h('strong', {}, label), healthPill(level)), reasons.length ? h('p', { class: 'hint' }, [...new Set(reasons)].join(' ')) : null))),
+      )
+    : null;
+
   const content = [
     notices.length ? h('div', { class: 'stack' }, notices) : null,
+    healthCard,
     surface('card', { eyebrow: 'Cloud route', title: 'How your mail is moving', className: 'ov-route' }, strip),
     h(
       'div',
