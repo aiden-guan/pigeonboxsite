@@ -64,7 +64,7 @@ const ANSWERS = {
   },
   cloud: {
     title: 'What is Cloud?',
-    body: ['The same extension, hosted. Connect Google and it keeps sorting and preparing while Gmail is closed. Every send waits for you.', 'Cloud is on its way. Join the waitlist.'],
+    body: ['The same extension, hosted. Connect Google and it keeps sorting and preparing while Gmail is closed. Every send waits for you.', 'Cloud is an invite-only beta. Join the waitlist for an invite.'],
     link: ['/waitlist', 'Cloud beta'],
   },
   send: {

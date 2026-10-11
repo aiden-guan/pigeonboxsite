@@ -1,5 +1,5 @@
 import { ago, button, checkbox, clear, confirmDialog, day, emptyState, facts, h, note, plural, surface, toast } from '../ui.js';
-import { accounts, FEATURES, phasePill, statusPill, syncPhase, syncPill } from '../shared.js';
+import { accounts, cloudHealth, FEATURES, healthPill, healthReasons, phasePill, statusPill, syncPhase, syncPill } from '../shared.js';
 import { celebrate } from '../motion.js';
 
 const ORDER = ['mail_read', 'drafts', 'organize', 'calendar_read', 'calendar_write', 'send'];
@@ -51,9 +51,13 @@ function permissions(account) {
   );
 }
 
-function health(account) {
+function health(account, derived) {
   const sync = account.sync;
+  const mail = derived?.mail.find((item) => item.accountId === account.id) ?? null;
+  const calendar = derived?.calendar.find((item) => item.accountId === account.id) ?? null;
   return facts([
+    ...(mail ? [['Mail health', healthPill(mail.level)]] : []),
+    ...(calendar ? [['Calendar', h('span', {}, healthPill(calendar.level), ' ', calendar.lastRefreshAt ? `refreshed ${ago(calendar.lastRefreshAt)}` : 'not refreshed yet')]] : []),
     ['Sync', syncPill(sync.state)],
     ['Last sync', sync.lastSyncAt ? ago(sync.lastSyncAt) : 'Not yet'],
     ['Last Gmail push', sync.lastPushAt ? ago(sync.lastPushAt) : 'None yet'],
@@ -61,10 +65,21 @@ function health(account) {
     ['Synced since', sync.coverageSince ? day(sync.coverageSince) : '—'],
     ['Threads', sync.threadsTracked.toLocaleString()],
     ['Queued work', sync.backlog ? plural(sync.backlog, 'job') : 'None'],
+    ...(mail && mail.backfill === 'running' ? [['First import', 'Running']] : []),
   ]);
 }
 
-function accountCard(account, position, api, redraw) {
+/** Why this route is not current, in plain words; nothing when it is. */
+function healthNote(account, derived) {
+  const mail = derived?.mail.find((item) => item.accountId === account.id);
+  const calendar = derived?.calendar.find((item) => item.accountId === account.id);
+  const reasons = [...healthReasons(mail?.reasons), ...healthReasons(calendar?.reasons)].filter((text) => account.status !== 'needs_reauth' || !/reconnect/i.test(text));
+  if (!reasons.length) return null;
+  const tone = [mail?.level, calendar?.level].some((level) => level === 'failed' || level === 'action_required') ? 'error' : [mail?.level, calendar?.level].some((level) => level === 'stale' || level === 'degraded') ? 'warn' : 'info';
+  return note([...new Set(reasons)].join(' '), tone);
+}
+
+function accountCard(account, position, api, redraw, derived) {
   const missing = ORDER.filter((feature) => !account.features.includes(feature));
   const add = featurePicker(account.features, account.features);
   const problem =
@@ -86,7 +101,8 @@ function accountCard(account, position, api, redraw) {
     },
     problem,
     track(account),
-    health(account),
+    healthNote(account, derived),
+    health(account, derived),
     h('div', { class: 'rc-perms' }, h('p', { class: 'eyebrow' }, 'Permissions'), permissions(account)),
     missing.length
       ? h(
@@ -156,14 +172,14 @@ export async function render({ api, landing, me }) {
   delete landing.missing;
 
   const draw = async () => {
-    const data = await accounts(true);
+    const [data, derived] = await Promise.all([accounts(true), cloudHealth()]);
     const fresh = featurePicker(['mail_read', 'drafts'], ['mail_read']);
     clear(
       root,
       banner,
       data.googleConfigured ? null : note('Google sign-in is not configured on this server yet, so accounts cannot be connected.', 'warn'),
       data.accounts.length
-        ? data.accounts.map((account, position) => accountCard(account, position, api, draw))
+        ? data.accounts.map((account, position) => accountCard(account, position, api, draw, derived))
         : emptyState({ state: 'map', title: 'No Google account is connected.', text: 'Connect one and PigeonBox Cloud keeps triage, follow-ups and drafts current while Gmail is closed.' }),
       data.googleConfigured && data.accounts.length < data.maxAccounts
         ? surface(

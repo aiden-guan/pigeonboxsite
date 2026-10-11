@@ -166,3 +166,55 @@ export function download(filename, text, type = 'text/csv') {
   anchor.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1_000);
 }
+
+/**
+ * Server-derived health (`/v1/control/health`). Null when the server predates it,
+ * so every caller keeps its connection-only fallback.
+ */
+export async function cloudHealth() {
+  try {
+    return await api('/v1/control/health');
+  } catch {
+    return null;
+  }
+}
+
+export const HEALTH = {
+  healthy: ['Up to date', 'good'],
+  syncing: ['Catching up', 'info'],
+  degraded: ['Delayed', 'warn'],
+  stale: ['Out of date', 'warn'],
+  action_required: ['Needs you', 'bad'],
+  failed: ['Stopped', 'bad'],
+};
+export const healthPill = (level) => pill(...(HEALTH[level] ?? ['Unknown', 'neutral']));
+export const healthTone = (level) => HEALTH[level]?.[1] ?? 'neutral';
+
+/** Plain words for the server's fixed reason codes. Unknown codes are not shown. */
+const REASONS = {
+  mail_needs_reauth: 'Google needs you to reconnect.',
+  mail_paused: 'Syncing is paused.',
+  mail_sync_stalled: 'Syncing stopped after repeated errors.',
+  mail_sync_failing: 'Recent syncs keep failing.',
+  mail_sync_retrying: 'The last sync failed; PigeonBox is retrying.',
+  mail_sync_degraded: 'Syncing is working around an error.',
+  mail_backfill_running: 'The first import is still running.',
+  mail_recovering: 'Rebuilding recent history.',
+  mail_catching_up: 'Syncing new mail.',
+  mail_push_pending: 'New mail just arrived and is being synced.',
+  mail_push_unprocessed: 'Gmail reported new mail that has not been synced yet.',
+  mail_sync_overdue: 'No sync has completed for several hours.',
+  mail_watch_expired: 'Gmail notifications lapsed; PigeonBox checks on a schedule instead.',
+  mail_dead_sync_jobs: 'Some sync work failed in the last day.',
+  calendar_needs_reauth: 'Google needs you to reconnect.',
+  calendar_paused: 'Calendar refresh is paused with this account.',
+  calendar_refresh_failed: 'The last calendar refresh failed.',
+  calendar_first_refresh: 'First calendar refresh is pending.',
+  calendar_stale: 'Calendar has not refreshed in over an hour.',
+  analysis_catching_up: 'Reviewing new conversations.',
+  analysis_delayed: 'Reviewing new conversations is running late.',
+  memory_indexing: 'Updating what PigeonBox remembers.',
+  drafts_preparing: 'Preparing drafts.',
+  background_jobs_failed: 'Some background work failed in the last day.',
+};
+export const healthReasons = (reasons = []) => reasons.map((code) => REASONS[code]).filter(Boolean);
