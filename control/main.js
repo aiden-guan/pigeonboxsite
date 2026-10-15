@@ -15,7 +15,6 @@ import { ext, findExtension, STORE_URL } from '../lib/extension.js';
 import { ago, arrowLink, button, clear, confirmDialog, emptyState, forgetEdits, h, hasUnsavedEdits, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
 import { enter, leave, placeMarker } from './motion.js';
 import { routeHealth } from './shared.js';
-import { readIntent } from './setup-intent.js';
 
 const settingsPage = (name) => () => import(`./sections/settings/${name}.js`);
 
@@ -34,7 +33,7 @@ const PAGES = {
   localPrivacy: { title: 'Privacy & data', heading: 'What stays where', lede: 'Your mail index, settings and drafts stay in this browser.', scene: 'privacy', load: settingsPage('privacy') },
   advanced: { title: 'Advanced', heading: 'Advanced', lede: 'Rules, archive thresholds, keyboard and diagnostics.', scene: 'developers', load: settingsPage('advanced') },
   // Switching to Cloud
-  cloud: { title: 'PigeonBox Cloud', heading: 'Switch to Cloud', lede: 'Cloud keeps working while Gmail is closed: prepared drafts, follow-ups, briefings and calendar context.', scene: 'billing', load: () => import('./sections/cloud-setup.js') },
+  cloud: { title: 'PigeonBox Cloud', heading: 'Get PigeonBox Cloud', lede: 'Cloud keeps working while Gmail is closed: prepared drafts, follow-ups, briefings and calendar context. Sign in, subscribe, then turn it on, in that order.', scene: 'billing', load: () => import('./sections/cloud-setup.js') },
   // Cloud mode
   overview: { title: 'Overview', heading: 'Your PigeonBox', lede: 'Everything moving through your Cloud workspace.', capability: 'cloud_mail_sync', load: () => import('./sections/overview.js') },
   billing: { title: 'Billing & subscription', heading: 'Account ledger', lede: 'Your plan, its renewal, and what Cloud has used.', scene: 'billing', load: () => import('./sections/billing.js') },
@@ -468,8 +467,8 @@ function signedOut() {
         : surface(
           'slip',
           { title: 'Not on Cloud yet?' },
-          h('p', { class: 'muted' }, 'PigeonBox works locally in Gmail without an account. Install it, then open Settings from PigeonBox to set it up.'),
-          h('div', { class: 'row' }, arrowLink('Get PigeonBox for Chrome', STORE_URL, { target: '_blank', rel: 'noopener' })),
+          h('p', { class: 'muted' }, 'PigeonBox works locally in Gmail without an account. Cloud setup walks you through signing in, subscribing and turning it on.'),
+          h('div', { class: 'row' }, arrowLink('Get PigeonBox Cloud', '#cloud', { on: { click: () => setTimeout(() => void boot()) } }), arrowLink('Get PigeonBox for Chrome', STORE_URL, { target: '_blank', rel: 'noopener' })),
         ),
     )],
   );
@@ -599,8 +598,9 @@ async function boot() {
     unreachable(error);
     return;
   }
-  // A Cloud setup that was waiting for a subscription finishes as soon as Stripe sends the person back.
-  if (landing.checkout === 'success' && readIntent() && ctx.mode === 'local') history.replaceState(null, '', '#cloud');
+  // Setup continues where it left off when Stripe sends the person back: anyone not yet running
+  // Cloud in this browser (Local mode, or no extension yet) returns to the setup steps.
+  if (landing.checkout && (ctx.mode === 'local' || !ctx.extension)) history.replaceState(null, '', '#cloud');
   // Otherwise make sure the extension sees the new subscription now rather than later.
   else if (landing.checkout === 'success' && ctx.extension) void ext('REFRESH').catch(() => undefined);
   if (landing.setup === 'cloud') history.replaceState(null, '', ctx.mode === 'cloud' && ctx.plan === 'cloud'
