@@ -11,6 +11,7 @@
 // Each section is its own module, loaded on first visit. Decoration (motion,
 // halftone prints) is layered on afterwards and never blocks a page.
 import { api, finishSignIn, readSession, restoreExtensionAccount, signOut, startSignIn, takeLinkReturn } from '../lib/session.js';
+import { pendingMcpAuthorization } from './mcp-auth.js';
 import { ext, findExtension, STORE_URL } from '../lib/extension.js';
 import { ago, arrowLink, button, clear, confirmDialog, emptyState, forgetEdits, h, hasUnsavedEdits, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
 import { enter, leave, placeMarker } from './motion.js';
@@ -90,6 +91,7 @@ const signInErrorCode = params.get('error_code') ?? (hasErrorFragment ? errorFra
 const landing = Object.fromEntries(['connected', 'missing', 'error', 'invite', 'checkout', 'setup'].filter((name) => params.has(name)).map((name) => [name, params.get(name)]));
 const extensionHint = params.get('ext');
 const authReturn = params.has('code') || params.has('state') ? new URLSearchParams(params) : null;
+if (pendingMcpAuthorization()) history.replaceState(null, '', `${location.pathname}#developers`);
 if (Object.keys(landing).length || authReturn || hasSignInError || extensionHint) history.replaceState(null, '', `${location.pathname}${hasErrorFragment ? '' : location.hash}`);
 
 let ctx = null;
@@ -557,7 +559,7 @@ async function completeAuthReturn() {
 /** What this dashboard knows: the extension, the mode, and (when signed in) the Cloud account. */
 async function loadContext(hello) {
   const extension = hello ? { ...hello, product: hello.product } : null;
-  const mode = extension ? (extension.product.runMode === 'cloud' ? 'cloud' : 'local') : 'cloud';
+  const mode = pendingMcpAuthorization() ? 'cloud' : extension ? (extension.product.runMode === 'cloud' ? 'cloud' : 'local') : 'cloud';
   let me = null;
   let accountError = null;
   let capabilities = { plan: 'local', capabilities: [] };

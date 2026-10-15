@@ -1,13 +1,14 @@
 import { API_BASE } from '../../lib/session.js';
 import { ago, button, checkbox, clear, confirmDialog, copyText, day, field, h, input, note, pill, secretDialog, select, surface, table, tabs } from '../ui.js';
+import { clearMcpAuthorization, pendingMcpAuthorization } from '../mcp-auth.js';
 
 // The API's origin: same-origin on Cloud, the named API when the website hosts this page.
 const MCP_URL = `${API_BASE || location.origin}/v1/mcp`;
 
 const SCOPES = [
-  ['read', 'Read', 'Search mail PigeonBox has synced, threads, contacts, follow-ups, calendar availability.'],
+  ['read', 'Read', 'Search synced mail, contacts and calendar; check send receipts and tracking activity.'],
   ['prepare', 'Prepare', 'Prepare drafts, events and reminders inside PigeonBox. Nothing changes in Gmail.'],
-  ['write', 'Write', 'Label, archive, place drafts, create events — audited and undoable. Sending only creates an approval for you.'],
+  ['write', 'Write', 'Label, archive, place drafts and create events. Request tracked email sends for your approval.'],
 ];
 const EVENTS = [
   ['approval', 'Approval waiting'],
@@ -83,10 +84,37 @@ function tokens(api) {
         h('div', { class: 'term-bar' }, h('span', {}, 'MCP endpoint'), button('Copy', () => copyText(endpoint), { variant: 'ghost', small: true, busy: 'Copying…' })),
         h('pre', {}, h('span', { class: 'p', attrs: { 'aria-hidden': 'true' } }, '› '), endpoint),
       ),
-      note('Tokens can never approve anything, change your account, manage Google connections or send email. Everything they do is audited under the token’s name.', 'info'),
+      surface('slip', { title: 'Tracked email from your AI assistant' },
+        h('p', {}, 'Ask your assistant to use PigeonBox request_send. You review the message in Approvals, then PigeonBox adds the tracking pixel and links and sends through your connected Gmail account.'),
+        h('p', {}, 'The assistant checks get_send_status for the receipt and get_tracked_email for opens and clicks. One request per recipient keeps their activity separate.'),
+        note('Messages sent through another Gmail connector or browser automation bypass PigeonBox. Tracking cannot be added after a message is delivered. Images, privacy proxies and scanners can limit or obscure open signals.', 'info'),
+        h('pre', { class: 'code' }, 'Use PigeonBox to request a tracked email to [recipient]. Show me the draft, wait for my approval in PigeonBox, then check the send receipt.')),
+      note('Connected clients can request sends but can never approve them or manage your account. Requests and actions are audited.', 'info'),
       holder,
     );
   };
+}
+
+async function consent(api, authorizationId) {
+  const cancel = () => { clearMcpAuthorization(); location.hash = '#developers'; location.reload(); };
+  let details;
+  try { details = await api('/v1/control/mcp/oauth/details', { method: 'POST', body: { authorizationId } }); }
+  catch (error) { return surface('slip', { title: 'Connection could not continue' }, note(error?.message || 'Start the connection again from your assistant.', 'warn'), button('Cancel connection', cancel)); }
+  const leave = (url) => { clearMcpAuthorization(); location.assign(url); };
+  if (details.redirectUrl) return surface('slip', { title: 'Connection already authorized' }, button('Return to your assistant', () => leave(details.redirectUrl)));
+  const boxes = SCOPES.map(([value, label, hint]) => checkbox(label, value === 'read', { value }, hint));
+  const decide = async (decision) => {
+    const scopes = boxes.map(box => box.querySelector('input')).filter(box => box.checked).map(box => box.value);
+    if (decision === 'approve' && !scopes.length) throw new Error('Choose at least one permission.');
+    const result = await api('/v1/control/mcp/oauth/decide', { method: 'POST', body: { authorizationId, decision, scopes: scopes.length ? scopes : ['read'] } });
+    leave(result.redirectUrl);
+  };
+  return surface('parcel', { title: `Connect ${details.clientName}?` },
+    h('p', {}, 'Choose what this AI client can do in your PigeonBox account. Select Read and Write to request tracked sends and check their activity.'),
+    h('p', { class: 'muted' }, `Return address: ${new URL(details.redirectUri).origin}`),
+    h('div', { class: 'checks' }, boxes),
+    note('Connecting does not approve any email. Every send still waits for you in Approvals. You can revoke this connection here at any time.', 'info'),
+    h('div', { class: 'row' }, button('Connect', () => decide('approve')), button('Deny', () => decide('deny'), { variant: 'ghost' }), button('Cancel', cancel, { variant: 'ghost' })));
 }
 
 function webhooks(api) {
@@ -141,8 +169,14 @@ function webhooks(api) {
 }
 
 export async function render({ api }) {
+  const authorizationId = pendingMcpAuthorization();
+  if (authorizationId) return consent(api, authorizationId);
+  const config = await api('/v1/control/mcp/config');
   return tabs([
-    ['tokens', 'Tokens & MCP', tokens(api)],
+    ['tokens', 'Connections & MCP', async () => h('div', { class: 'stack' },
+      note(config.oauthEnabled ? 'ChatGPT and OAuth clients: add the MCP endpoint below, sign in to PigeonBox, then choose Read and Write for tracked sends. Claude and clients that support headers can also use a token.' : 'OAuth connections are not enabled on this server yet. Claude and clients that support an Authorization header can use a token below. ChatGPT’s hosted connector needs the server’s OAuth setup first.', 'info'),
+      config.trackingConfigured ? null : note('The hosted tracker is not configured. Tracked send requests will stop before approval until setup is complete.', 'warn'),
+      await tokens(api)())],
     ['webhooks', 'Webhooks', webhooks(api)],
   ]);
 }
