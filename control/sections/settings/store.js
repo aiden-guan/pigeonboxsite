@@ -2,7 +2,9 @@
 // changes back. Secrets never come back from the extension; it only says
 // whether one is set. When a saved address (tracker, AI provider) needs a new
 // Chrome permission, the extension opens its own window to ask for it.
+// Changes are also saved to the signed-in account (lib/settings-sync.js).
 import { button, notice } from '../../ui.js';
+import { remember } from '../../../lib/settings-sync.js';
 
 /** { settings, rules, analytics, missingOrigins, product } from the extension. */
 export const load = (ext) => ext('GET_SETTINGS');
@@ -10,6 +12,7 @@ export const load = (ext) => ext('GET_SETTINGS');
 /** Save a partial settings object. Resolves to the saved settings view. */
 export async function save(ext, patch) {
   const reply = await ext('SAVE_SETTINGS', { settings: patch });
+  remember(patch);
   if (reply.missingOrigins?.length) await ext('GRANT', { origins: reply.missingOrigins });
   return reply.settings;
 }

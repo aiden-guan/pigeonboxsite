@@ -1,5 +1,6 @@
 import { button, field, h, settings, textarea, toast } from '../../ui.js';
 import { load, save } from './store.js';
+import { remember } from '../../../lib/settings-sync.js';
 
 const lines = (value) => value.split('\n').map((line) => line.trim()).filter(Boolean);
 const emails = (value) => lines(value).map((line) => line.toLowerCase()).filter((line) => /^[^\s@]+@[^\s@]+$|^@?[a-z0-9.-]+\.[a-z]{2,}$/.test(line));
@@ -19,6 +20,7 @@ export async function render({ ext }) {
       field('Rules', ruleBox),
       h('div', { class: 'row' }, button('Save rules', async () => {
         const reply = await ext('SAVE_RULES', { lines: lines(ruleBox.value) });
+        remember({}, reply.rules);
         ruleBox.value = reply.rules.join('\n');
         toast(`${reply.rules.length} rule${reply.rules.length === 1 ? '' : 's'} saved.`, 'success');
       }, { busy: 'Saving…' })),

@@ -13,6 +13,7 @@
 import { api, finishSignIn, readSession, restoreExtensionAccount, signOut, startSignIn, takeLinkReturn } from '../lib/session.js';
 import { pendingMcpAuthorization } from './mcp-auth.js';
 import { ext, findExtension, STORE_URL } from '../lib/extension.js';
+import { configure as configureSettingsSync, reconcile as reconcileSettings } from '../lib/settings-sync.js';
 import { ago, arrowLink, button, clear, confirmDialog, emptyState, forgetEdits, h, hasUnsavedEdits, link, notice, pageLoading, plural, postmarkDate, surface, tag, toast } from './ui.js';
 import { enter, leave, placeMarker } from './motion.js';
 import { routeHealth } from './shared.js';
@@ -617,6 +618,10 @@ async function boot() {
   }
   document.body.dataset.auth = 'in';
   document.body.dataset.mode = ctx.mode;
+  // The extension's settings follow the account: restore them after a reinstall before any page reads them.
+  configureSettingsSync({ api, ext, userId: ctx.me?.user.id, extension: ctx.extension });
+  const settingsSync = await reconcileSettings(ctx.extension).catch(() => null);
+  if (settingsSync === 'restored') toast('Your settings were restored from your PigeonBox account. API keys are never saved there, so add yours again under AI if you use one.', 'success');
   try {
     const saved = sessionStorage.getItem(INVITE_KEY);
     if (saved && !landing.invite) landing.invite = saved;
