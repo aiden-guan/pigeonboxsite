@@ -10,7 +10,7 @@ export async function render({ ext, extension }) {
   const mode = surface(
     'card',
     { eyebrow: 'Mode', title: 'Local · on this computer', actions: pill('In use', 'good') },
-    h('p', { class: 'muted' }, 'Private and free, no account needed. Summaries, sorting, Ask and drafts work while Gmail is open. Mail stays in this browser unless you set up an AI provider.'),
+    h('p', { class: 'muted' }, 'Private and free, no account needed. Summaries, sorting, Chat and drafts work while Gmail is open. Mail stays in this browser unless you set up an AI provider.'),
     facts([
       ['AI', aiProviderLabel(s)],
       ['Where mail goes', aiDestination(product)],

@@ -89,7 +89,7 @@ export async function accountEmails() {
 export const FEATURES = {
   mail_read: { title: 'Read and sync mail', detail: 'Keeps triage, follow-ups and drafts current while Gmail is closed.' },
   drafts: { title: 'Create drafts', detail: 'Places prepared drafts in Gmail. Nothing is sent.' },
-  organize: { title: 'Organize mail', detail: 'Applies labels and archives for rules you turn on. Every change is undoable.' },
+  organize: { title: 'Organize mail', detail: 'Applies labels and archives for rules you turn on, and makes the changes you allow in Chat. Every rule change is undoable.' },
   calendar_read: { title: 'Read calendar', detail: 'Finds free time and prepares meeting briefs.' },
   calendar_write: { title: 'Add calendar events', detail: 'Creates events after you approve them.' },
   send: { title: 'Send mail', detail: 'Only sends messages you approve. Off unless you turn it on.' },

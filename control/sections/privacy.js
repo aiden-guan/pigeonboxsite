@@ -35,7 +35,7 @@ export async function render({ api }) {
         surface(
           'card',
           { eyebrow: 'Message text', title: 'Fast Recall' },
-          h('p', { class: 'muted' }, 'By default PigeonBox keeps no message text: Ask Pigeon searches summaries and re-reads Gmail when it needs detail. Fast Recall keeps encrypted excerpts of synced messages so deep questions are answered faster.'),
+          h('p', { class: 'muted' }, 'By default PigeonBox keeps no message text: Chat searches summaries and re-reads Gmail when it needs detail. Fast Recall keeps encrypted excerpts of synced messages so deep questions are answered faster.'),
           h(
             'div',
             { class: 'toggles' },

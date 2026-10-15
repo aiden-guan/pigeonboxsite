@@ -189,7 +189,7 @@ export async function render({ api, me, plan }) {
         approvals,
         overview.latestBriefing ? surface('slip', { title: 'Latest briefing', href: '#briefings' }, h('p', {}, h('strong', {}, overview.latestBriefing.title)), h('p', { class: 'muted' }, `Prepared ${ago(overview.latestBriefing.generatedAt)}`)) : null,
       ),
-      surface('ledger', { title: 'On your desk', className: 'ov-desk' }, h('div', { class: 'stats' }, deskStats), h('p', { class: 'hint' }, 'Use the PigeonBox workspace in Gmail for replies, follow-ups, Ask and tasks. Manage your account and data here.')),
+      surface('ledger', { title: 'On your desk', className: 'ov-desk' }, h('div', { class: 'stats' }, deskStats), h('p', { class: 'hint' }, 'Use the PigeonBox workspace in Gmail for replies, follow-ups, Chat and tasks. Manage your account and data here.')),
       planCard,
       activity,
       controls,

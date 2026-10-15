@@ -125,7 +125,7 @@ export async function render({ api }) {
       h(
         'div',
         { class: 'stack' },
-        note('Tip: in Gmail, just tell Ask Pigeon “unsubscribe me from Uber Eats, LinkedIn and the Medium digest”.', 'info'),
+        note('Tip: in Gmail, just tell Chat “unsubscribe me from Uber Eats, LinkedIn and the Medium digest”.', 'info'),
         surface(
           'ledger',
           {

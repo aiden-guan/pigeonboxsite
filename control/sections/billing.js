@@ -26,7 +26,7 @@ const SERVICES = {
   cloud_team: 'Team workspaces',
   cloud_mcp: 'API & MCP',
   cloud_semantic_search: 'Semantic search',
-  cloud_ask_inbox: 'Ask your inbox',
+  cloud_ask_inbox: 'Chat with your inbox',
   cloud_calendar: 'Calendar',
 };
 const PAYMENT_TROUBLE = new Set(['past_due', 'unpaid', 'incomplete']);
