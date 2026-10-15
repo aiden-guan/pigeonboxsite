@@ -85,8 +85,8 @@ async function renderPublicPrice() {
     period.textContent = '/ ' + price.interval;
     output.append(period);
     $('#cloud-price-detail').textContent = 'Hosted AI and background Gmail sync. More Cloud features are still rolling out in beta. Cancel from your account.';
-    $('#cloud-cta').href = '/dashboard#billing';
-    $('#cloud-cta').textContent = 'Subscribe from your dashboard →';
+    $('#cloud-cta').href = '/dashboard#cloud';
+    $('#cloud-cta').textContent = 'Get Cloud: sign in, subscribe, turn it on →';
   } catch {
     // Missing billing configuration is an early-access state, not a page error.
   }
