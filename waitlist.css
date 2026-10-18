@@ -8,13 +8,13 @@ body[data-page=waitlist]{background:var(--paper)}
 .wl-prop[hidden]{display:none}
 .wl-tip{display:none}
 .wl-content{z-index:2}
-.wl-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:radial-gradient(circle,#d9d3c6 1px,transparent 1.5px) 0 0/14px 14px;mask-image:radial-gradient(ellipse at 72% 50%,#000 5%,transparent 60%);-webkit-mask-image:radial-gradient(ellipse at 72% 50%,#000 5%,transparent 60%)}
+.wl-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:url("/brand/dot-grid.svg") 0 0/14px 14px}
 .wl-content{position:relative;max-width:620px;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none}
 .wl-content>*{pointer-events:auto}
 
 
-.wl-title{font-family:var(--serif);font-weight:400;font-size:clamp(44px,6.2vw,88px);line-height:.98;letter-spacing:-.045em;margin:0 0 36px;color:var(--text)}
-.wl-accent{font-style:italic;background:linear-gradient(100deg,var(--copper) 10%,var(--copper-bright) 55%,var(--copper) 95%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.06em}
+.wl-title{font-family:var(--display);font-weight:400;font-size:clamp(44px,6.2vw,88px);line-height:.98;letter-spacing:-.045em;margin:0 0 36px;color:var(--text)}
+.wl-accent{font-style:normal;color:var(--copper);padding-right:.06em}
 .wl-w{display:inline-block;opacity:0;filter:blur(12px);transform:translateY(.35em);animation:wl-word .9s var(--ease) forwards;animation-delay:calc(var(--d) * 70ms + 150ms)}
 .wl-in{opacity:0;transform:translateY(14px);animation:wl-word .9s var(--ease) forwards;animation-delay:calc(var(--d) * 70ms + 250ms)}
 @keyframes wl-word{to{opacity:1;filter:blur(0);transform:none}}
@@ -43,7 +43,7 @@ body[data-page=waitlist]{background:var(--paper)}
 .wl-perks article{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid var(--rule);border-radius:14px;background:var(--sheet);transition:transform var(--t-content) var(--ease),border-color var(--t-content) var(--ease)}
 .wl-perks article:hover{transform:translateY(-3px);border-color:var(--rule-strong)}
 .wl-perks .pidgy{--size:56px;}
-.wl-perks h2{font-family:var(--serif);font-weight:400;font-size:21px;letter-spacing:-.02em;margin:0 0 2px}
+.wl-perks h2{font-family:var(--display);font-weight:400;font-size:21px;letter-spacing:-.02em;margin:0 0 2px}
 .wl-perks p{margin:0;font-size:14px;color:var(--muted)}
 .wl-local{text-align:center;font-size:14px;color:var(--muted);padding-top:18px;padding-bottom:40px;margin:0 auto}
 .wl-local a{color:var(--text);font-weight:600;text-decoration:underline;text-underline-offset:4px}

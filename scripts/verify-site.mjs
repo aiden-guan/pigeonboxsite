@@ -21,7 +21,7 @@ const server = createServer(async (req, res) => {
   if (!extname(file)) file += '.html';
   try {
     await stat(file);
-    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
+    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
     for (const header of config.headers[0].headers) res.setHeader(header.key, header.value);
     res.setHeader('Content-Type', types[extname(file)] || 'application/octet-stream'); res.end(await readFile(file));
   } catch { res.writeHead(404); res.end(); }
@@ -84,11 +84,11 @@ try {
     assert.equal(await page.locator('button[type=submit]').isDisabled(), true);
     assert.equal(requests, 3);
     await page.goto(origin + '/');
-    const capabilities = page.locator('#dispatch .glyph');
+    const capabilities = page.locator('#dispatch .sheet[data-plate]');
     assert.equal(await capabilities.count(), 5, 'the five current product capabilities are present');
     for (const capability of await capabilities.all()) {
       assert.equal(await capability.locator('h3').isVisible(), true, 'capability heading is visible');
-      assert.equal(await capability.locator('.glyph-status div').count(), 2, 'Local and Cloud availability are shown');
+      assert.equal(await capability.locator('.sheet-status div').count(), 2, 'Local and Cloud availability are shown');
     }
     // Compare with the requested width: mobile engines can widen innerWidth to fit overflow.
     assert.equal(await page.evaluate(width => document.documentElement.scrollWidth <= width, width), true, `dispatch overflow at ${width}`);
@@ -366,6 +366,8 @@ try {
   assert.equal((await page.locator('#view').innerText()).includes('PRIVATE_PROVIDER_CANARY'), false);
   assert.equal(await page.getByRole('link', { name: 'Join the waitlist', exact: true }).getAttribute('href'), 'https://usepigeonbox.com/waitlist');
   await page.goto(origin + '/');
+  // The walkthrough sits below the hero and only plays while it is on screen.
+  await page.locator('[data-gmail-demo]').scrollIntoViewIfNeeded();
   const autoplay = page.frameLocator('[data-gmail-demo] iframe');
   for (const stage of ['inbox', 'brief', 'summary', 'drafting', 'compose', 'ask', 'answer', 'source']) {
     await autoplay.locator(`.gm-demo[data-stage="${stage}"]`).waitFor();
