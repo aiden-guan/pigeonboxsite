@@ -32,6 +32,8 @@ const browser = await chromium.launch({ headless: true });
 const errors = [];
 const cspErrors = [];
 const results = [];
+const pages = ['/', '/local', '/cloud', '/pricing', '/docs', '/privacy', '/security', '/terms'];
+const localLinks = new Set();
 function observe(page) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('console', message => {
@@ -43,46 +45,6 @@ try {
     const context = await browser.newContext({ viewport: { width, height: 1000 }, isMobile: width <= 768, hasTouch: width <= 768, reducedMotion: 'reduce' });
     const page = await context.newPage();
     observe(page);
-    let requests = 0, mode = 'failure', submitted;
-    await page.route('https://pigeonbox-cloud-api.pigeonbox.workers.dev/v1/waitlist', async route => {
-      if (route.request().method() === 'OPTIONS') { await route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Headers': 'content-type', 'Access-Control-Allow-Methods': 'POST' } }); return; }
-      requests++; submitted = route.request().postDataJSON();
-      await route.fulfill({ status: mode === 'failure' ? 500 : mode === 'limited' ? 429 : 202, headers: { 'Access-Control-Allow-Origin': origin }, contentType: 'application/json', body: mode === 'success' ? '{"ok":true}' : '{"error":{"message":"test failure"}}' });
-    });
-    await page.goto(origin + '/waitlist?source=extension');
-    await page.locator('canvas.wl-dots').waitFor();
-    await page.waitForFunction(() => document.querySelector('canvas.wl-dots').width > 1);
-    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `overflow at ${width}`);
-    assert.ok(await page.locator('#waitlist-email').evaluate(input => parseFloat(getComputedStyle(input).fontSize) >= 16), 'email must not trigger mobile focus zoom');
-    if (width <= 900) {
-      const gap = await page.evaluate(() => {
-        const title = document.querySelector('.wl-title').getBoundingClientRect();
-        const props = [...document.querySelectorAll('.wl-prop')].filter(button => button.getAttribute('aria-label') !== 'Catch the plane');
-        return title.top - Math.max(...props.map(button => button.getBoundingClientRect().bottom));
-      });
-      assert.ok(gap >= 20, `waitlist artwork overlaps text at ${width}`);
-    }
-    await page.screenshot({ path: `${output}/waitlist-${width}.png`, fullPage: true });
-    const canvas = await page.locator('canvas').evaluate(canvas => canvas.toDataURL());
-    await page.waitForTimeout(300);
-    assert.equal(await page.locator('canvas').evaluate(canvas => canvas.toDataURL()), canvas, 'reduced motion canvas must be static');
-    assert.equal(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length), 0, 'no reduced motion animations');
-    await page.locator('#waitlist-email').fill('invalid');
-    await page.locator('button[type=submit]').click();
-    assert.equal(requests, 0);
-    assert.equal(await page.locator('#waitlist-email').getAttribute('aria-invalid'), 'true');
-    await page.locator('#waitlist-email').fill('owner@example.test');
-    await page.locator('button[type=submit]').click();
-    await page.getByText('We couldn’t save your place.', { exact: false }).waitFor();
-    assert.equal(await page.locator('#waitlist-email').inputValue(), 'owner@example.test');
-    mode = 'limited'; await page.locator('button[type=submit]').click();
-    await page.getByText('Too many attempts.', { exact: false }).waitFor();
-    mode = 'success'; await page.locator('button[type=submit]').click();
-    await page.getByText('You’re on the list. Thanks for coming along.').waitFor();
-    assert.deepEqual(submitted, { email: 'owner@example.test', source: 'extension', website: '' });
-    assert.equal(await page.locator('button[type=submit]').isDisabled(), true);
-    assert.equal(requests, 3);
     await page.goto(origin + '/');
     const capabilities = page.locator('#dispatch .glyph');
     assert.equal(await capabilities.count(), 5, 'the five current product capabilities are present');
@@ -141,7 +103,11 @@ try {
       const card = node.closest('.cloud-plan').getBoundingClientRect();
       return box.bottom <= card.bottom && box.right <= card.right;
     }), true, `Cloud CTA stays inside the card at ${width}`);
-    await page.waitForFunction(() => document.querySelector('[data-cloud-art]').dataset.cloudPainted === 'true');
+    await page.waitForFunction(() => document.querySelector('[data-cloud-art]').dataset.cloudPainted === 'true', null, { timeout: 5000 }).catch(async error => {
+      console.log('Pricing paint state', await page.locator('[data-cloud-art]').evaluate(canvas => ({ width: innerWidth, hidden: document.hidden, painted: canvas.dataset.cloudPainted, rect: canvas.getBoundingClientRect().toJSON(), size: [canvas.width, canvas.height], context: Boolean(canvas.getContext('2d')) })));
+      await page.screenshot({ path: `${output}/pricing-paint-failure-${width}.png`, fullPage: true });
+      throw error;
+    });
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.equal(await page.locator('.orbit-feature').count(), 18);
     assert.equal(await cloudList.innerText().then(text => /Testing|Tracked documents|Sequences/.test(text)), false);
@@ -170,7 +136,7 @@ try {
     assert.equal(await cloudTrigger.getAttribute('aria-expanded'), 'true');
     await cloudTrigger.press('Escape');
     assert.equal(await cloudList.isVisible(), false);
-    results.push({ width, layout: 'pass', reducedMotion: 'pass', invalid: 'pass', persistenceFailureRetry: 'pass', rateLimit: 'pass', signup: 'pass', dispatchViewport: 'pass', expandedDemo: 'pass', inboxCategories: 'pass', workspacePause: 'pass', pricingOrbit: 'pass' });
+    results.push({ width, layout: 'pass', reducedMotion: 'pass', dispatchViewport: 'pass', expandedDemo: 'pass', inboxCategories: 'pass', workspacePause: 'pass', pricingOrbit: 'pass' });
     await context.close();
   }
   // Exercise touch opening/closing with motion, including short screens and rotation.
@@ -220,7 +186,7 @@ try {
       await trigger.tap();
       await touchPage.waitForFunction(() => !document.querySelector('.cloud-orbit-list').inert);
       await touchPage.locator('#cloud-cta').tap();
-      await touchPage.waitForURL(origin + '/waitlist');
+      await touchPage.waitForURL(origin + '/cloud');
     }
     await context.close();
   }
@@ -348,23 +314,9 @@ try {
   await noJs.close();
   for (const path of ['/', '/local', '/cloud', '/pricing', '/docs', '/privacy', '/security', '/terms']) {
     const response = await page.goto(origin + path); assert.equal(response.status(), 200);
-    for (const link of await page.locator('a[href="/waitlist"]').all()) assert.equal(await link.getAttribute('href'), '/waitlist');
-    assert.ok(await page.locator('.site-nav a[href="/waitlist"]').count(), `${path} Cloud nav`);
+    for (const link of await page.locator('a[href="/cloud"]').all()) assert.equal(await link.getAttribute('href'), '/cloud');
+    assert.ok(await page.locator('.site-nav a[href="/cloud"]').count(), `${path} Cloud nav`);
   }
-  for (const path of ['/dashboard', '/account', '/sign-in', '/app']) {
-    await page.goto(origin + path);
-    await page.getByRole('button', { name: 'Sign in', exact: true }).waitFor();
-    assert.equal(new URL(page.url()).pathname, '/dashboard');
-    assert.equal(await page.locator('body').getAttribute('data-auth'), 'out');
-  }
-  await page.goto(origin + '/auth/callback?code=release-invalid-code&state=release-invalid-state');
-  await page.getByText('Sign-in could not be verified. Start again.', { exact: true }).waitFor();
-  assert.equal(new URL(page.url()).search, '', 'invalid callback credentials must be removed from the URL');
-  await page.goto(origin + '/dashboard?error=access_denied&error_code=signup_disabled&error_description=PRIVATE_PROVIDER_CANARY');
-  await page.getByText('An invitation is needed', { exact: true }).waitFor();
-  assert.equal(new URL(page.url()).search, '');
-  assert.equal((await page.locator('#view').innerText()).includes('PRIVATE_PROVIDER_CANARY'), false);
-  assert.equal(await page.getByRole('link', { name: 'Join the waitlist', exact: true }).getAttribute('href'), 'https://usepigeonbox.com/waitlist');
   await page.goto(origin + '/');
   const autoplay = page.frameLocator('[data-gmail-demo] iframe');
   for (const stage of ['inbox', 'brief', 'summary', 'drafting', 'compose', 'ask', 'answer', 'source']) {
@@ -379,11 +331,51 @@ try {
   await page.waitForTimeout(300);
   assert.notEqual(await autoplay.locator('.gm-recording').getAttribute('data-time'), pausedTime, 'Play must resume the walkthrough clock');
   await page.getByRole('button', { name: 'Open command palette' }).last().click();
-  await page.getByRole('option').filter({ hasText: 'Cloud beta' }).click();
-  await page.waitForURL('**/waitlist');
+  await page.getByRole('option').filter({ hasText: 'Your server' }).click();
+  await page.waitForURL('**/cloud');
+  for (const width of [1440, 768, 390, 320]) {
+    const context = await browser.newContext({ viewport: { width, height: 1000 }, reducedMotion: 'reduce' });
+    const page = await context.newPage();
+    page.on('pageerror', error => errors.push(error.message));
+    const hostedRequests = [];
+    page.on('request', request => { if (/workers\.dev|posthog|stripe|supabase/.test(new URL(request.url()).hostname)) hostedRequests.push(request.url()); });
+    for (const path of pages) {
+      const response = await page.goto(origin + path);
+      assert.equal(response.status(), 200, path);
+      await page.locator('h1').waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      const content = await page.locator('body').innerText();
+      assert.doesNotMatch(content, /invite-only|join the (?:Cloud )?waitlist|\$10|live beta/i, path);
+      assert.equal(await page.locator('input[type=email]').count(), 0, 'no collection form');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `overflow at ${path} ${width}`);
+      for (const href of await page.locator('a[href]').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')))) if (href.startsWith('/') && !href.startsWith('//')) localLinks.add(href.split('#')[0]);
+      if (path === '/pricing') {
+        await page.locator('[data-cloud-trigger]').click();
+        assert.equal(await page.locator('[data-cloud-trigger]').getAttribute('aria-expanded'), 'true');
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true, `expanded pricing ${width}`);
+      }
+      if ([1440, 390].includes(width) && ['/', '/cloud', '/pricing'].includes(path)) await page.screenshot({ path: `${output}/${path.slice(1) || 'home'}-${width}.png`, fullPage: true });
+      results.push(`${path} at ${width}px`);
+    }
+    for (const path of ['/waitlist', '/dashboard', '/account', '/sign-in', '/auth/callback', '/app']) {
+      await page.goto(origin + path);
+      assert.equal(new URL(page.url()).pathname, '/cloud', `legacy ${path}`);
+      assert.match(await page.locator('h1').innerText(), /Your server/);
+    }
+    assert.deepEqual(hostedRequests, [], 'public pages must not call a hosted PigeonBox service or telemetry endpoint');
+    if (width <= 768) {
+      await page.getByRole('button', { name: 'Open menu', exact: true }).click();
+      await page.locator('#site-nav').getByRole('link', { name: /Docs/ }).click();
+      assert.equal(new URL(page.url()).pathname, '/docs');
+    }
+    await context.close();
+  }
+  for (const path of localLinks) {
+    const response = await fetch(origin + path);
+    assert.equal(response.ok, true, `broken internal link ${path}`);
+  }
   assert.deepEqual(errors, []);
   assert.deepEqual(cspErrors, [], 'pages and their embedded walkthrough must obey the production CSP');
   await page.close();
-  await readFile(resolve(root, 'waitlist.js')); // all scripts were exercised in browser
   console.log(JSON.stringify({ results, cloudNavigation: 'pass', walkthroughAutoplay: 'pass', pageErrors: errors, cspErrors, screenshots: output }, null, 2));
 } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }

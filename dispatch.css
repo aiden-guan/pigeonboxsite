@@ -408,7 +408,7 @@ main:focus { outline: none; }
 
 /* ---------- Prose (legal, docs) ---------- */
 
-.prose { max-width: 70ch; font-size: 17px; line-height: 1.7; }
+.prose { min-width: 0; max-width: 70ch; font-size: 17px; line-height: 1.7; }
 .prose h2 { font: 400 clamp(26px, 2.6vw, 32px)/1.15 var(--serif); letter-spacing: -.012em; margin: 56px 0 14px; }
 .prose h2:first-child { margin-top: 0; }
 .prose h3 { font: 600 16px/1.4 var(--sans); margin: 28px 0 8px; }
@@ -769,3 +769,6 @@ main:focus { outline: none; }
 .art-frame figcaption { padding: 10px 14px; border-top: 1px solid var(--rule); color: var(--faint); }
 .head-art { display: grid; gap: 22px; }
 @media (max-width: 920px) { .art-frame { max-width: 520px; } }
+
+/* Deployment commands keep their own horizontal scroll on narrow screens. */
+.prose pre { max-width: 100%; overflow-x: auto; padding: 16px; background: var(--paper, #f5f1e8); font: 13px/1.7 var(--mono); }

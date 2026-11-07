@@ -4,3 +4,12 @@ _headers
 archive/
 scripts/
 README.md
+
+# The public site has no hosted account service.
+control/
+lib/
+dashboard.html
+waitlist.html
+waitlist.js
+waitlist-stage.js
+waitlist.css

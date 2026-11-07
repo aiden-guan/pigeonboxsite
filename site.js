@@ -1,6 +1,6 @@
 // Site-wide interaction layer: ⌘K command palette, single-key navigation,
 // the PIDGY:// terminal drawer, header state and section reveals.
-// Account, auth and billing behavior stays in app.js.
+// Install links and the mobile menu live in app.js.
 
 import './smooth-scroll.js';
 
@@ -8,7 +8,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const GITHUB = 'https://github.com/aiden-guan/pigeonbox';
 const SHORTCUT_KEY = 'pigeonbox.shortcuts';
 
-const installHref = () => document.querySelector('[data-install]')?.href || `${GITHUB}#-install`;
+const installHref = () => document.querySelector('[data-install]')?.href || `${GITHUB}#install`;
 const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 function shortcutsEnabled() {
@@ -65,13 +65,13 @@ const ANSWERS = {
     link: ['/privacy', 'Privacy'],
   },
   cloud: {
-    title: 'What is Cloud?',
-    body: ['The same extension, hosted. Connect Google and it keeps sorting and preparing while Gmail is closed. Every send waits for you.', 'Cloud is an invite-only beta. Join the waitlist for an invite.'],
-    link: ['/waitlist', 'Cloud beta'],
+    title: 'What is the server?',
+    body: ['An optional server you run on your own Cloudflare and Supabase accounts. Connect Google for background sync, prepared drafts and briefings.', 'The code is free and open source. You provide the AI key and pay your infrastructure and provider bills.'],
+    link: ['/cloud', 'Self-hosting'],
   },
   send: {
     title: 'Does PigeonBox send email for me?',
-    body: ['No. You press Send. In Cloud, every send waits for your approval.'],
+    body: ['Drafts are prepared for review. Server sends go through an approval queue; scheduled sends and enabled rules follow the permissions you configure.'],
     link: ['/security', 'Security'],
   },
   track: {
@@ -93,7 +93,7 @@ function restoreFocus(previous, fallback) {
 const baseCommands = () => [
   { group: 'Go to', label: 'Product', glyph: '◇', hint: 'P', run: () => go('/#dispatch') },
   { group: 'Go to', label: 'Local', glyph: '◇', hint: 'L', run: () => go('/local') },
-  { group: 'Go to', label: 'Cloud beta', glyph: '◇', hint: 'C', run: () => go('/waitlist') },
+  { group: 'Go to', label: 'Your server', glyph: '◇', hint: 'C', run: () => go('/cloud') },
   { group: 'Go to', label: 'Pricing', glyph: '◇', hint: '$', run: () => go('/pricing') },
   { group: 'Go to', label: 'Docs', glyph: '◇', hint: 'D', run: () => go('/docs') },
   { group: 'Go to', label: 'Privacy', glyph: '◇', run: () => go('/privacy') },
@@ -102,7 +102,7 @@ const baseCommands = () => [
   { group: 'Actions', label: 'Install Local', glyph: '↓', hint: 'free', run: () => go(installHref()), keywords: 'download chrome extension setup' },
   { group: 'Actions', label: 'Copy install command', glyph: '$', run: copyInstall, keywords: 'git clone npm terminal' },
   { group: 'Ask Pigeon', label: 'What stays local?', glyph: '?', answer: 'local', keywords: 'privacy data browser' },
-  { group: 'Ask Pigeon', label: 'What is Cloud?', glyph: '?', answer: 'cloud', keywords: 'beta hosted always-on' },
+  { group: 'Ask Pigeon', label: 'What is the server?', glyph: '?', answer: 'cloud', keywords: 'self-hosted server always-on' },
   { group: 'Ask Pigeon', label: 'Does PigeonBox send email for me?', glyph: '?', answer: 'send', keywords: 'auto send approval' },
   { group: 'Ask Pigeon', label: 'Is an open a read receipt?', glyph: '?', answer: 'track', keywords: 'tracking opens clicks' },
   { group: 'Pidgy', label: 'Open PIDGY:// terminal', glyph: '>', hint: '`', run: () => openTerminal(), keywords: 'console easter egg' },
@@ -252,7 +252,7 @@ function closePalette(restore = true) {
 
 let term = null;
 let termReturn = null;
-const TERM_PAGES = { product: '/', home: '/', local: '/local', cloud: '/waitlist', pricing: '/pricing', docs: '/docs', privacy: '/privacy', security: '/security', terms: '/terms' };
+const TERM_PAGES = { product: '/', home: '/', local: '/local', cloud: '/cloud', pricing: '/pricing', docs: '/docs', privacy: '/privacy', security: '/security', terms: '/terms' };
 
 function buildTerminal() {
   const log = el('div', { class: 'term-log', role: 'log', 'aria-live': 'polite' });
@@ -279,8 +279,8 @@ function buildTerminal() {
       printLink('       → ', '/local', '/local');
     },
     cloud: () => {
-      print('CLOUD  private beta · hosted · works while Gmail is closed', 'ok');
-      printLink('       → ', '/waitlist', '/waitlist');
+      print('SERVER  self-hosted · your infrastructure · works while Gmail is closed', 'ok');
+      printLink('       → ', '/cloud', '/cloud');
     },
     privacy: () => {
       print('local   stays in your browser');
@@ -362,7 +362,7 @@ function closeTerminal() {
 
 /* ---------------- Keyboard ---------------- */
 
-const NAV_KEYS = { p: '/#dispatch', l: '/local', c: '/waitlist', $: '/pricing', d: '/docs' };
+const NAV_KEYS = { p: '/#dispatch', l: '/local', c: '/cloud', $: '/pricing', d: '/docs' };
 
 function typingTarget(target) {
   return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
