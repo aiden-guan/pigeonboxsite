@@ -44,7 +44,7 @@ if (stage && cloud && trigger && world && list) {
     stage.dataset.open = String(next);
     cloud.classList.toggle('is-expanded', next);
     trigger.setAttribute('aria-expanded', String(next));
-    hint.textContent = next ? 'Cloud features' : closedHint();
+    hint.textContent = next ? 'Server features' : closedHint();
     list.hidden = !next;
     list.inert = !next;
     if (!next) icons.stop();

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cloud beta · PigeonBox</title>
-  <meta name="description" content="PigeonBox Cloud adds hosted AI, background Gmail sync, thread analysis and a Focus Queue. See what is live in the invite-only beta and what is still testing.">
+  <title>Self-hosting · PigeonBox</title>
+  <meta name="description" content="Run the open-source PigeonBox server on your own Cloudflare and Supabase accounts with your own AI endpoint and API key.">
   <link rel="canonical" href="https://usepigeonbox.com/cloud">
   <meta property="og:url" content="https://usepigeonbox.com/cloud">
   <meta name="theme-color" content="#f3f0e8">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PigeonBox">
-  <meta property="og:title" content="Cloud beta · PigeonBox">
-  <meta property="og:description" content="PigeonBox Cloud adds hosted AI, background Gmail sync, thread analysis and a Focus Queue. See what is live in the invite-only beta and what is still testing.">
+  <meta property="og:title" content="Self-hosting · PigeonBox">
+  <meta property="og:description" content="Run the open-source PigeonBox server on your own Cloudflare and Supabase accounts with your own AI endpoint and API key.">
   <meta property="og:image" content="https://usepigeonbox.com/og.png?v=20261007">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
@@ -32,148 +32,23 @@
       <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
       <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-        <a href="/#dispatch"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/waitlist" aria-current="page"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a href="/#dispatch"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud" aria-current="page"><span class="key" aria-hidden="true">C</span>Your server</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
         <a class="account-link" href="/dashboard">Sign in</a>
         <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
-        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Install Local <span aria-hidden="true">↗</span></a>
       </nav>
     </div>
   </header>
 
   <main id="main" tabindex="-1">
-    <header class="page-head">
-      <div class="wrap page-head-split">
-        <div>
-          <div class="meta"><span class="tag tag-copper">Early access / Beta</span></div>
-          <h1 class="display">Cloud keeps Gmail moving after you close it.</h1>
-          <p class="lede">Local runs in the Gmail tab you have open. Cloud adds hosted AI; connect Google for background sync, thread analysis and a Focus Queue while Gmail is closed. Prepared drafts, synced Ask and managed tracking are still testing.</p>
-          <div class="actions">
-            <a class="btn btn-primary" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span class="arr" aria-hidden="true">↗</span></a>
-            <a class="btn btn-line" href="/waitlist">Join the waitlist <span class="arr" aria-hidden="true">↗</span></a>
-          </div>
-          <p class="invite-line muted">Already invited? <a class="text-link" href="/dashboard">Sign in to your dashboard →</a></p>
-        </div>
-        <div class="access-card">
-          <p class="label"><span class="pidgy pidgy-sm" data-state="alert" aria-hidden="true"></span> Access</p>
-          <p>Cloud is in invite-only beta. Join the waitlist for an invite.</p>
-          <ul class="ledger">
-            <li><span>Sign-ups</span><span>Invite-only beta</span></li>
-            <li><span>Dashboard</span><span><a href="/dashboard">Sign in →</a></span></li>
-            <li><span>Waitlist</span><span><a href="/waitlist">Join →</a></span></li>
-          </ul>
-        </div>
-      </div>
-    </header>
-
-    <section class="section" aria-labelledby="pay-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>01</b> — The difference</span><span class="label">Local now · Cloud invite-only beta</span></div>
-          <h2 class="h-section" id="pay-title">What Cloud adds.</h2>
-        </div>
-        <div class="matrix-wrap" data-reveal>
-          <table class="matrix matrix-stack">
-            <thead><tr><th scope="col"></th><th scope="col">Local · available now</th><th scope="col">Cloud · invite-only beta</th></tr></thead>
-            <tbody>
-              <tr><th scope="row">Inbox work</th><td data-col="Local">Triage and thread summaries in Gmail</td><td data-col="Cloud"><strong>Live beta:</strong> thread analysis and Focus Queue</td></tr>
-              <tr><th scope="row">When it runs</th><td data-col="Local">While your Gmail tab is open</td><td data-col="Cloud"><strong>Background sync:</strong> keeps working after you close Gmail, once Google is connected</td></tr>
-              <tr><th scope="row">AI</th><td data-col="Local">Choose on-device, Ollama or your own key</td><td data-col="Cloud"><strong>Live beta:</strong> hosted AI, no model download or key</td></tr>
-              <tr><th scope="row">Drafts and Ask</th><td data-col="Local">AI drafts and cited Ask Pigeon over your browser index</td><td data-col="Cloud"><strong>Testing:</strong> prepared drafts and Ask across synced mail</td></tr>
-              <tr><th scope="row">Tracking</th><td data-col="Local">Optional; use a tracker you host</td><td data-col="Cloud"><strong>Testing:</strong> managed PigeonBox tracking</td></tr>
-              <tr><th scope="row">Rules and automation</th><td data-col="Local">Inbox sorting rules; triage works with AI off</td><td data-col="Cloud">Focus Queue is live; Smart Views and automations are testing</td></tr>
-              <tr><th scope="row">Google access</th><td data-col="Local">No Gmail API OAuth or Google connection</td><td data-col="Cloud">Google connection is optional; it enables background Gmail sync</td></tr>
-              <tr><th scope="row">Where data lives</th><td data-col="Local">Index, settings, drafts and downloaded models stay in this browser</td><td data-col="Cloud">Metadata and encrypted summaries are stored; mail bodies aren’t kept by default. Opt-in Fast Recall stores encrypted excerpts</td></tr>
-              <tr><th scope="row">Account and price</th><td data-col="Local">Free, open source; no PigeonBox account</td><td data-col="Cloud">Invite-only beta; account required. $10 a month. Billing is available only to invited accounts</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" aria-labelledby="arch-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>02</b> — Live beta flow</span><span class="label">Connect Google for background sync</span></div>
-          <h2 class="h-section" id="arch-title">A desk that keeps working.</h2>
-        </div>
-        <div class="spec-grid arch" data-reveal>
-          <div><p class="label"><b>01</b> Connect</p><h3>You choose the access.</h3><p>Connect Google only when you want Gmail to sync in the background.</p></div>
-          <div><p class="label"><b>02</b> Sync</p><h3>Gmail keeps moving.</h3><p>Cloud receives mailbox changes while Gmail is closed.</p></div>
-          <div><p class="label"><b>03</b> Analyze</p><h3>Know what changed.</h3><p>Thread analysis prepares summaries and context in Cloud.</p></div>
-          <div><p class="label"><b>04</b> Focus</p><h3>Start with what needs you.</h3><p>Focus Queue shows the threads that need attention, and why.</p></div>
-          <div><p class="label"><b>05</b> Ask</p><h3>Hosted AI, ready to use.</h3><p>No model setup. If the service fails, PigeonBox shows an error; it never switches providers silently.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section on-ink cloud-board" aria-labelledby="board-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>03</b> — Beta status</span><span class="label">Live · Testing · Not enabled</span></div>
-          <h2 class="h-section" id="board-title">What’s live. What’s still being built.</h2>
-        </div>
-        <div class="city" data-reveal>
-          <canvas data-halftone="always" aria-hidden="true"></canvas>
-          <p class="city-cap label" aria-hidden="true"><span class="state state-live">Live beta</span><span>Syncing after you connect Google</span></p>
-        </div>
-                <div class="board" data-reveal>
-          <div class="board-legend">
-            <span class="state state-live">Live beta</span>
-            <span class="state state-testing">Testing</span>
-            <span class="state state-off">Off in beta</span>
-            <p>Live beta means verified in production. Nothing here is general availability.</p>
-          </div>
-          <div class="board-group">
-            <p class="label"><span>Verified</span><span>5</span></p>
-            <ul class="board-grid">
-              <li><span class="board-row-head"><span class="board-code">sync.connect</span><span class="state state-live">Live beta</span></span><strong>Google connection</strong><span>You authorize each permission, feature by feature.</span></li>
-              <li><span class="board-row-head"><span class="board-code">sync.gmail</span><span class="state state-live">Live beta</span></span><strong>Background Gmail sync</strong><span>Stays current without Gmail open.</span></li>
-              <li><span class="board-row-head"><span class="board-code">thread.analyze</span><span class="state state-live">Live beta</span></span><strong>Thread analysis</strong><span>Encrypted summaries. Mail treated as untrusted.</span></li>
-              <li><span class="board-row-head"><span class="board-code">focus.queue</span><span class="state state-live">Live beta</span></span><strong>Focus Queue</strong><span>What needs you, and why.</span></li>
-              <li><span class="board-row-head"><span class="board-code">ai.hosted</span><span class="state state-live">Live beta</span></span><strong>Hosted AI</strong><span>One model. Errors, never silent fallback.</span></li>
-            </ul>
-          </div>
-          <div class="board-group">
-            <p class="label"><span>Roadmap · advanced beta</span><span>15</span></p>
-            <ul class="board-grid">
-              <li><span class="board-row-head"><span class="board-code">draft.prepare</span><span class="state state-testing">Testing</span></span><strong>Prepared drafts</strong><span>Ready when you open the thread. Your edits win.</span></li>
-              <li><span class="board-row-head"><span class="board-code">approvals</span><span class="state state-testing">Testing</span></span><strong>Approval queue</strong><span>Nothing sends or invites without you.</span></li>
-              <li><span class="board-row-head"><span class="board-code">ask.cloud</span><span class="state state-testing">Testing</span></span><strong>Ask Pigeon, synced</strong><span>Answers across your mailbox, with sources.</span></li>
-              <li><span class="board-row-head"><span class="board-code">followups</span><span class="state state-testing">Testing</span></span><strong>Follow-ups &amp; reminders</strong><span>Timed to your working week.</span></li>
-              <li><span class="board-row-head"><span class="board-code">briefings</span><span class="state state-testing">Testing</span></span><strong>Briefings</strong><span>What changed, each line sourced.</span></li>
-              <li><span class="board-row-head"><span class="board-code">overview</span><span class="state state-testing">Testing</span></span><strong>Overview &amp; activity</strong><span>What Cloud did while you were away.</span></li>
-              <li><span class="board-row-head"><span class="board-code">calendar</span><span class="state state-testing">Testing</span></span><strong>Calendar Copilot</strong><span>Your schedule, in your replies.</span></li>
-              <li><span class="board-row-head"><span class="board-code">relationships</span><span class="state state-testing">Testing</span></span><strong>Relationships</strong><span>Context on who you’re writing to.</span></li>
-              <li><span class="board-row-head"><span class="board-code">views.shadow</span><span class="state state-testing">Testing</span></span><strong>Smart Views &amp; Shadow Mode</strong><span>Rules show their work before they act.</span></li>
-              <li><span class="board-row-head"><span class="board-code">automations</span><span class="state state-testing">Testing</span></span><strong>Automations</strong><span>Risk-tiered, audited, undoable.</span></li>
-              <li><span class="board-row-head"><span class="board-code">tracking.hosted</span><span class="state state-testing">Testing</span></span><strong>Managed tracking</strong><span>Signals with no tracker to run.</span></li>
-              <li><span class="board-row-head"><span class="board-code">teams</span><span class="state state-testing">Testing</span></span><strong>Teams &amp; snippets</strong><span>Shared threads and reusable replies.</span></li>
-              <li><span class="board-row-head"><span class="board-code">api.mcp</span><span class="state state-testing">Testing</span></span><strong>MCP, API &amp; webhooks</strong><span>Plug PigeonBox into your tools.</span></li>
-              <li><span class="board-row-head"><span class="board-code">documents</span><span class="state state-off">Off in beta</span></span><strong>Tracked documents</strong><span>Built. Not enabled yet.</span></li>
-              <li><span class="board-row-head"><span class="board-code">sequences</span><span class="state state-off">Off in beta</span></span><strong>Sequences</strong><span>Built. Not enabled yet.</span></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" aria-labelledby="data-title">
-      <div class="wrap">
-        <div class="section-head" data-reveal>
-          <div class="index"><span class="label"><b>04</b> — Data</span></div>
-          <h2 class="h-section" id="data-title">Processed, not archived.</h2>
-        </div>
-        <ul class="ledger" data-reveal>
-          <li><span>Requests</span><span>Processed over TLS. Never logged.</span></li>
-          <li><span>Metadata</span><span>Kept so sync can run. No bodies.</span></li>
-          <li><span>Summaries</span><span>Encrypted, account-scoped.</span></li>
-          <li><span>Fast Recall</span><span>Opt-in. Encrypted excerpts, your retention.</span></li>
-          <li><span>Tracking</span><span>Metadata and events. No bodies.</span></li>
-          <li><span>Payments</span><span>Handled by Stripe.</span></li>
-        </ul>
-        <div class="flow-links"><a class="text-link" href="/privacy">Privacy →</a><a class="text-link" href="/security">Security →</a></div>
-      </div>
-    </section>
+    <header class="page-head"><div class="wrap"><div class="meta"><span class="label">Self-hosting</span></div><h1 class="display">Your server. Your key.</h1><p class="lede">PigeonBox is free and open source. Run the optional server on accounts you own.</p></div></header>
+    <div class="wrap doc-layout"><nav class="doc-toc" aria-label="On this page"><p class="label">On this page</p><a href="#start">Start with the extension</a><a href="#server">Add your server</a><a href="#access">Connect Gmail</a><a href="#maintain">Keep it running</a></nav><article class="prose">
+<h2 id="start">Start with the extension</h2><p>Local inbox triage, briefs, drafts and chat run while Gmail is open. Choose on-device AI, Ollama, or your own API endpoint and key. Local features need no PigeonBox account.</p><p><a href="https://github.com/aiden-guan/pigeonbox#install">Install PigeonBox from source or a release</a>.</p>
+<h2 id="server">Add your own server</h2><p>The server adds background Gmail sync, prepared drafts, follow-ups, briefings, calendar help, tracking and tracked PDFs. Each feature becomes available when you configure its dependencies.</p><p>You need Cloudflare, a Supabase project, a Google Cloud OAuth client, and an AI provider with Chat Completions, tool calls, structured JSON and embeddings support.</p><pre><code>cp server.env.example server.env
+npm run server:deploy -- --dry-run
+npm run server:deploy</code></pre><p>Fill in your Supabase settings, AI endpoint, model and key, and allowed email addresses before deploying. The script applies the schema, deploys both Workers and points your extension build at them. <a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/self-hosting.md">Follow the complete self-hosting guide</a>.</p>
+<h2 id="access">Connect Gmail when you need it</h2><p>Use your own Supabase project for sign-in. <code>ALLOWED_EMAILS</code> controls who can use your server and spend its AI credits. Always-on Gmail additionally needs the Gmail and Calendar APIs and a Google Pub/Sub subscription.</p><p>Personal OAuth apps have Google consent and testing limits. Review those in the guide before inviting other people. Sending and other actions follow the permissions and approvals you configure.</p>
+<h2 id="maintain">Keep your keys and backups</h2><p>Keep <code>server.env</code> and <code>.local/server-secrets.json</code> private. Back up the encryption keys: stored mail data and Google credentials need those same keys after an update or a move.</p><p>The software is MIT-licensed. You pay your infrastructure and AI provider directly. There is no PigeonBox subscription, hosted account or waitlist.</p><p><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/server/operations.md">Server operations</a> · <a href="/pricing">Costs</a> · <a href="/privacy">Data flows</a></p></article></div>
   </main>
 
   <footer class="site-footer">
@@ -183,7 +58,7 @@
     </div>
     <div class="wrap footer-grid">
       <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
-      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#dispatch">Product</a><a href="/local">Local</a><a href="/waitlist">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#dispatch">Product</a><a href="/local">Local</a><a href="/cloud">Your server</a><a href="/pricing">Pricing</a></nav>
       <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
       <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
     </div>
@@ -198,6 +73,5 @@
   </footer>
   <script type="module" src="/site.js"></script>
   <script type="module" src="/app.js"></script>
-  <script type="module" src="/lib/page-analytics.js"></script>
 </body>
 </html>

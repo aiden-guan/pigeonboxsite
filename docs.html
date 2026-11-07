@@ -32,10 +32,10 @@
       <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
       <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-        <a href="/#dispatch"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/waitlist"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs" aria-current="page"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a href="/#dispatch"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud"><span class="key" aria-hidden="true">C</span>Your server</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs" aria-current="page"><span class="key" aria-hidden="true">D</span>Docs</a>
         <a class="account-link" href="/dashboard">Sign in</a>
         <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
-        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Install Local <span aria-hidden="true">↗</span></a>
       </nav>
     </div>
   </header>
@@ -56,16 +56,16 @@
           <h2 class="h-section" id="guides-title">Guides.</h2>
         </div>
         <ul class="doc-index" data-reveal>
-          <li><a href="https://github.com/aiden-guan/pigeonbox#-install"><span class="n">01</span><strong>Install</strong><span>Three ways to get started.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox#install"><span class="n">01</span><strong>Install</strong><span>Three ways to get started.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/local-setup.md"><span class="n">02</span><strong>Local setup</strong><span>Choosing a model.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/INSTALL.md"><span class="n">03</span><strong>Install with an AI agent</strong><span>For your coding agent.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/architecture.md"><span class="n">04</span><strong>Architecture</strong><span>How it fits together.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/privacy-model.md"><span class="n">05</span><strong>Privacy model</strong><span>Every data flow.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/threat-model.md"><span class="n">06</span><strong>Threat model</strong><span>Boundaries and limits.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/tracking.md"><span class="n">07</span><strong>Tracking</strong><span>How opens are classified.</span><span class="arr" aria-hidden="true">↗</span></a></li>
-          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/self-hosting.md"><span class="n">08</span><strong>Self-hosting a tracker</strong><span>Run your own tracker.</span><span class="arr" aria-hidden="true">↗</span></a></li>
-          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/convex-self-hosting.md"><span class="n">09</span><strong>Convex self-hosting</strong><span>The default tracker.</span><span class="arr" aria-hidden="true">↗</span></a></li>
-          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/cloud-protocol.md"><span class="n">10</span><strong>Cloud protocol</strong><span>Extension ↔ Cloud contract.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/self-hosting.md"><span class="n">08</span><strong>Self-hosting the server</strong><span>Accounts, keys and deployment.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/convex-self-hosting.md"><span class="n">09</span><strong>Convex self-hosting</strong><span>An optional standalone tracker.</span><span class="arr" aria-hidden="true">↗</span></a></li>
+          <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/cloud-protocol.md"><span class="n">10</span><strong>Cloud protocol</strong><span>Extension ↔ server contract.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/blob/main/SECURITY.md"><span class="n">11</span><strong>Security policy</strong><span>Report a vulnerability.</span><span class="arr" aria-hidden="true">↗</span></a></li>
           <li><a href="https://github.com/aiden-guan/pigeonbox/releases"><span class="n">12</span><strong>Releases &amp; changelog</strong><span>Downloads and changes.</span><span class="arr" aria-hidden="true">↗</span></a></li>
         </ul>
@@ -97,7 +97,7 @@
         </div>
         <ul class="ledger keys-ledger" data-reveal>
           <li><span><kbd data-mod-key>⌘K</kbd> <kbd>/</kbd></span><span>Open the command palette</span></li>
-          <li><span><kbd>P</kbd> <kbd>L</kbd> <kbd>C</kbd> <kbd>$</kbd> <kbd>D</kbd></span><span>Product, Local, Cloud, Pricing, Docs</span></li>
+          <li><span><kbd>P</kbd> <kbd>L</kbd> <kbd>C</kbd> <kbd>$</kbd> <kbd>D</kbd></span><span>Product, Local, Server, Pricing, Docs</span></li>
           <li><span><kbd>`</kbd></span><span>PIDGY:// terminal</span></li>
           <li><span><kbd>J</kbd> <kbd>K</kbd> <kbd>1–4</kbd></span><span>Threads and queues in the demos</span></li>
         </ul>
@@ -112,7 +112,7 @@
     </div>
     <div class="wrap footer-grid">
       <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
-      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#dispatch">Product</a><a href="/local">Local</a><a href="/waitlist">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#dispatch">Product</a><a href="/local">Local</a><a href="/cloud">Your server</a><a href="/pricing">Pricing</a></nav>
       <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
       <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
     </div>
@@ -127,6 +127,5 @@
   </footer>
   <script type="module" src="/site.js"></script>
   <script type="module" src="/app.js"></script>
-  <script type="module" src="/lib/page-analytics.js"></script>
 </body>
 </html>

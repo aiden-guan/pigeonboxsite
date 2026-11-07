@@ -32,10 +32,10 @@
       <button class="cmdk-btn menu-cmdk" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu"><span></span><span></span></button>
       <nav class="site-nav" id="site-nav" aria-label="Main navigation">
-        <a href="/#dispatch"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/waitlist"><span class="key" aria-hidden="true">C</span>Cloud</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
+        <a href="/#dispatch"><span class="key" aria-hidden="true">P</span>Product</a><a href="/local"><span class="key" aria-hidden="true">L</span>Local</a><a href="/cloud"><span class="key" aria-hidden="true">C</span>Your server</a><a href="/pricing"><span class="key" aria-hidden="true">$</span>Pricing</a><a href="/docs"><span class="key" aria-hidden="true">D</span>Docs</a>
         <a class="account-link" href="/dashboard">Sign in</a>
         <button class="cmdk-btn" type="button" data-palette-open aria-haspopup="dialog" aria-expanded="false" aria-label="Open command palette"><span data-mod-key>⌘K</span></button>
-        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#-install">Install Local <span aria-hidden="true">↗</span></a>
+        <a class="nav-install" data-install href="https://github.com/aiden-guan/pigeonbox#install">Install Local <span aria-hidden="true">↗</span></a>
       </nav>
     </div>
   </header>
@@ -53,7 +53,7 @@
       <nav class="doc-toc" aria-label="On this page">
         <p class="label">On this page</p>
         <a href="#extension">Extension</a>
-        <a href="#cloud">Cloud</a>
+        <a href="#cloud">Your server</a>
         <a href="#actions">Sending</a>
         <a href="#report">Report an issue</a>
       </nav>
@@ -62,20 +62,20 @@
         <ul>
           <li>Keys and tokens live in the background worker, never the page.</li>
           <li>The Gmail page can’t change settings or sign in.</li>
-          <li>Cloud errors stay errors. No silent fallback.</li>
+          <li>Server errors are shown. The extension does not silently send requests to another provider.</li>
         </ul>
 
-        <h2 id="cloud">Cloud</h2>
+        <h2 id="cloud">Your server</h2>
         <ul>
           <li>Sign-in uses OAuth with PKCE.</li>
           <li>Your account comes from a verified token, never the client.</li>
           <li>Row-level security on every table.</li>
           <li>Sensitive data sealed with AES-256-GCM. API tokens hashed.</li>
-          <li>Stripe webhooks verified. Outgoing webhooks signed.</li>
+          <li>Outgoing webhooks are signed. API tokens are scoped and revocable.</li>
         </ul>
 
         <h2 id="actions">Sending</h2>
-        <p>Local can’t send, delete or mark spam without you. Cloud sends only what you approved, checked again before it goes. New rules start in Shadow Mode.</p>
+        <p>Generated drafts can be placed in Gmail for review. Server send approvals are checked again before execution. Scheduled sends and enabled rules follow the permissions you configure; review those settings.</p>
 
         <h2 id="report">Report an issue</h2>
         <p>Follow <a href="https://github.com/aiden-guan/pigeonbox/blob/main/SECURITY.md">SECURITY.md</a>. Known limits are in the <a href="https://github.com/aiden-guan/pigeonbox/blob/main/docs/threat-model.md">threat model</a>.</p>
@@ -90,7 +90,7 @@
     </div>
     <div class="wrap footer-grid">
       <div class="footer-brand"><span class="wordmark">PigeonBox</span><p>Gmail, sorted. Local first.</p></div>
-      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#dispatch">Product</a><a href="/local">Local</a><a href="/waitlist">Cloud beta</a><a href="/pricing">Pricing</a></nav>
+      <nav class="footer-col" aria-label="Product"><span class="label">Product</span><a href="/#dispatch">Product</a><a href="/local">Local</a><a href="/cloud">Your server</a><a href="/pricing">Pricing</a></nav>
       <nav class="footer-col" aria-label="Resources"><span class="label">Resources</span><a href="/docs">Docs</a><a href="https://github.com/aiden-guan/pigeonbox">GitHub ↗</a><a href="https://github.com/aiden-guan/pigeonbox/releases">Releases ↗</a></nav>
       <nav class="footer-col" aria-label="Trust"><span class="label">Trust</span><a href="/privacy">Privacy</a><a href="/security">Security</a><a href="/terms">Terms</a></nav>
     </div>
@@ -105,6 +105,5 @@
   </footer>
   <script type="module" src="/site.js"></script>
   <script type="module" src="/app.js"></script>
-  <script type="module" src="/lib/page-analytics.js"></script>
 </body>
 </html>
